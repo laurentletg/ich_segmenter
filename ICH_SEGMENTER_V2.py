@@ -103,13 +103,15 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.BrowseFolders.connect('clicked(bool)', self.onBrowseFoldersButton)
     self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
     self.ui.NewICHSegm.connect('clicked(bool)', self.onNewICHSegm)
+    self.ui.NewIVHSegm.connect('clicked(bool)', self.onNewIVHSegm)
+    self.ui.NewPHESegm.connect('clicked(bool)', self.onNewPHESegm)
     self.ui.SaveSegmentationButton.connect('clicked(bool)', self.onSaveSegmentationButton)
     self.ui.BrowseFolders_2.connect('clicked(bool)', self.onBrowseFolders_2Button)
     self.ui.LoadPrediction.connect('clicked(bool)', self.onLoadPredictionButton)
     self.ui.Previous.connect('clicked(bool)', self.onPreviousButton)
     self.ui.Next.connect('clicked(bool)', self.onNextButton)
     self.ui.pushButton_Paint.connect('clicked(bool)', self.onPushButton_Paint)
-    self.ui.pushButton_4.connect('clicked(bool)', self.onPushButton_4)  
+    self.ui.PushButton_segmeditor.connect('clicked(bool)', self.onPushButton_segmeditor)  
     self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
     self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
     self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
@@ -279,7 +281,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       items = vtk.vtkIdList()
       sc = shn.GetSceneItemID()
       shn.GetItemChildren(sc, items, True)
-      self.ICH_segment_name = shn.GetItemName(items.GetId(2))
+    #   self.ICH_segment_name = shn.GetItemName(items.GetId(2))
       self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
       self.updateCurrentSegmenationLabel()
       # Toggle paint brush right away.
@@ -305,7 +307,41 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #     # Call the updatelcdNumber function
   #     self.updatelcdNumber()
 
+  def onNewIVHSegm(self):
+      if 
+      # slicer.util.selectModule("SegmentEditor")
+      self.ICH_segm_name = "{}_ICH".format(self.currentCase)
+      self.IVH_segm_name = "{}_IVH".format(self.currentCase)
+      self.PHE_segm_name = "{}_PHE".format(self.currentCase)
+      print(f'Segmentation name:: {self.IVH_segm_name}')
+      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+      self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
+      self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
+      self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+      # set refenrence geometry to Volume node
+      self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+      #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
+      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segm_name)
+      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.IVH_segm_name)
+      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.PHE_segm_name)
+      #Select Segment (else you need to click on it yourself)
+      shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      items = vtk.vtkIdList()
+      sc = shn.GetSceneItemID()
+      shn.GetItemChildren(sc, items, True)
+      self.ICH_segment_name2 = shn.GetItemName(items.GetId(2))
+      self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name2)
+      # Toggle paint brush right away.
+      self.onPushButton_Paint()
+      self.startTimer()
+      
+  def onNewPHESegm(self):
+      pass
 
+
+      # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
+      self.called = False
   def startTimer(self):
       print('ICH segment name::: {}'.format(self.ICH_segment_name))
       self.counter = 0
@@ -421,8 +457,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.output_dir_time= os.path.join(self.CurrentFolder, f'Time_{self.annotator_name}_{self.revision_step[0]}')
           os.makedirs(self.output_dir_time, exist_ok=True)
     
-          self.output_vol_nii= os.path.join(self.CurrentFolder, f'Volumes_nii')
-          os.makedirs(self.output_vol_nii, exist_ok=True)
+          self.output_dir_vol_nii= os.path.join(self.CurrentFolder, f'Volumes_nii')
+          os.makedirs(self.output_dir_vol_nii, exist_ok=True)
           
       else:
           print('Please select revision step !!!')
@@ -443,10 +479,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   # ----- Modification -----
   def onSaveSegmentationButton(self):
-      # Note that perf_counter should only be used for interval counting, returns float of time in SECONDS
       #By default creates a new folder in the volume directory 
-      # FUTURE IMPROVEMENT: add the name of the segmenter and level in the name
-
       # Stop the timer when the button is pressed
       self.time = self.stopTimer()
       self.annotator_name = self.ui.Annotator_name.text
@@ -484,6 +517,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg1.exec()
 
           # Save seg.nrrd file
+          
           self.outputSegmFile = os.path.join(self.output_dir_labels,
                                                  "{}_{}_{}.seg.nrrd".format(self.ICH_segm_name, self.annotator_name, self.revision_step[0]))
 
@@ -501,7 +535,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg2.exec()
 
 
-          # Save alternative nitfi
+          # Save alternative nitfi segmentation
           # Export segmentation to a labelmap volume
           # Note to save to nifti you need to convert to labelmapVolumeNode
           self.labelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
@@ -530,16 +564,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.CurrentSegmenationLabel.setText(f'Case {self.VolumeNode.GetName()} saved !')
           
           # Saving a nii.gz version of the volume
-          self.outputVolfile = os.path.join(self.output_dir_volume,"{}.nii.gz".format(self.SlicerVolumeName))
+          self.outputVolfile = os.path.join(self.output_dir_vol_nii,"{}.nii.gz".format(self.currentCase))
           
           if not os.path.isfile(self.outputVolfile):
-              slicer.util.saveNode(self.VolumeNode, self.outputSegmFile)
+              slicer.util.saveNode(self.VolumeNode, self.outputVolfile)
           else:
               print('This .nii.gz file already exists')
               msg4 = qt.QMessageBox()
               msg4.setWindowTitle('Save As')
               msg4.setText(
-                  f'The file {self.SlicerVolumeName}.nii.gz already exists \n Do you want to replace the existing file?')
+                  f'The file {self.ICH_segm_name}.nii.gz already exists \n Do you want to replace the existing file?')
               msg4.setIcon(qt.QMessageBox.Warning)
               msg4.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg4.buttonClicked.connect(self.msg2_clicked)
@@ -587,6 +621,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def msg3_clicked(self, msg3_button):
       if msg3_button.text == 'OK':
           slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
+      else:
+          return
+  def msg4_clicked(self, msg4_button):
+      if msg4_button.text == 'OK':
+          slicer.util.saveNode(self.VolumeNode, self.outputVolfile)
       else:
           return
       
@@ -752,8 +791,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
             
 
-
-
   def toggleFillButton(self):
       if self.ui.pushButton_ToggleFill.isChecked():
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : lightgreen")
@@ -772,31 +809,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
 
 
-  def onPushButton_4(self):
-        self.segmentEditorWidget.setActiveEffectByName("Paint")
-        # Note it seems that sometimes you need to activate the effect first with :
-        # Assign effect to the segmentEditorWidget using the active effect
-        self.effect = self.segmentEditorWidget.activeEffect()
-        #Seems that you need to activate the effect to see it in Slicer
-        self.effect.activate()
-        # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
-        self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-        #Set if using Editable intensity range (the range is defined below using object.setParameter)
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
-        self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
-        # Paint mode
-        # # Note I added self for segment editor widget but not for the other in an attempt to be able to undo on the same instance...last button... does not workd
-        # self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-        # self.segmentEditorWidget.setSegmentationNode(self.Segmentation)
-        # self.segmentEditorWidget.setMasterVolumeNode(self.Volume)
-        # segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
-        # segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentEditorNode.PaintAllowedEverywhere)
-        # #Set if using Editable intensity range (the range is defined below using object.setParameter)
-        # segmentEditorNode.SetMasterVolumeIntensityMask(False)
-        # # Set to erase then paint (so you can use the space bar)
-        # self.segmentEditorWidget.setActiveEffectByName("Paint")
-        # effect = self.segmentEditorWidget.activeEffect()
-        # effect.setParameter('BrushSphere', 0) 
+  def onPushButton_segmeditor(self):
+      slicer.util.selectModule("SegmentEditor")
 
   def onPushButton_Erase(self):
       self.segmentEditorWidget.setActiveEffectByName("Erase")
@@ -851,20 +865,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.setParameter("KernelSizeMm", 3)
       effect.self().onApply()
 
-  def onPushButton_Paint1(self):
-      # Toggle segement editor
-      # Set segment editor and get the right segmentations
-      slicer.util.selectModule("SegmentEditor")
-      # segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      # segmentEditorWidget.setSegmentationNode(self.Segmentation)
-      # segmentEditorWidget.setMasterVolumeNode(self.Volume)
-      
-  def onPushButton_Paint0(self):
-      pass
-
-  def onToggleFill(self):
-      print('Does not work yet :-( ')
-  #     pass
 
 
 
