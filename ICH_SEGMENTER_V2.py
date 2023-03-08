@@ -6,12 +6,9 @@ import logging
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
-from slicer.util import getNode
 from glob import glob
 import re
-import time
 import pandas as pd
-from datetime import datetime
 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
