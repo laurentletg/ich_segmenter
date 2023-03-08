@@ -649,7 +649,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onLoadPredictionButton(self): 
       # Get list of prediction names
       try:
-        self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_ICH_predictions.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
+        self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_segmentation.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
         print(self.predictions_names)
         self.called = False # restart timer
       except AttributeError as e:
