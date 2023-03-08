@@ -55,7 +55,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     ScriptedLoadableModuleWidget.__init__(self, parent)
     VTKObservationMixin.__init__(self)  # needed for parameter node observation
-    self.logic = None
+    # self.logic = None
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
     self.ICH_segm_name = None
@@ -64,7 +64,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ICH_segm_name = None
     self.predictions_names= None
     self.DefaultDir = '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE ÉTUDIANTS/An Ni Wu/Brats project/Brats_binary_to_ICH/data/For ANW'
-
+    self.category ='ICH'
+    self.LCD_cat_timer = 'ICH'
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadPrediction = False
@@ -96,7 +97,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
-    self.logic = ICH_SEGMENTER_V2Logic(category=None)
+    self.logic = ICH_SEGMENTER_V2Logic(parent=None)
+    
+    ## LLG : Create timer class
+    # self.timer = Timer(parent=None, category=None)
 
 
     # Buttons
@@ -118,7 +122,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
     self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
     self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
-    self.ui.pushButton_Test.connect('clicked(bool)', self.logic.onpushButton_Test)  
+    self.ui.pushButton_Test.connect('clicked(bool)', self.testTimer)  
 
     ### ANW CONNECTIONS
     # Pause button
@@ -302,7 +306,15 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.resetTimer()
       
       
-  def timer_management(self):
+  def timer_management(self, category):
+      if category == 'ICH':
+          self.testTimer('ICH')
+          
+      
+    #   match category:
+    #       case 'ICH':
+    #           self.startTimer()
+              
       pass
       
 
@@ -316,9 +328,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.LB_HU = 30
       self.UB_HU = 90
       self.onPushButton_Paint()
-      self.ICH_flag = True
-      self.ICH_timer = ICH_SEGMENTER_V2Logic('ICH')
-      self.ICH_timer.startTimer()
+      
+      self.testTimer('ICH')
+      self.TESTstartTimer()
+
 
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
     #   self.called = False
@@ -359,6 +372,93 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             
  
  #### TIMER BLOCK ####
+      
+  def testTimer(self, category='IVH'):
+    #   category = category
+    #   match category:
+    #       case 'ICH':
+    #           self.LCR_cat_timer = self.ui.lcdNumber_ICH.display
+    #       case 'IVH':
+    #           self.LCR_cat_timer = self.ui.lcdNumber_IVH.display
+    #       case 'PHE':
+    #           self.LCR_cat_timer = self.ui.lcdNumber_PHE.display
+    
+    self.category = category
+    
+    if self.category == 'ICH':
+        self.LCD_cat_timer = self.ui.lcdNumber_ICH
+    if self.category == 'IVH':
+        self.LCD_cat_timer = self.ui.lcdNumber_IVH
+    if self.category == 'PHE':
+        self.LCD_cat_timer = self.ui.lcdNumber_PHE
+              
+    print('testTimer called with category: {}'.format(category))
+    # self.startTimer()
+    # self.timer_management(category)
+    self.timer = qt.QTimer()
+    self.timer.timeout.connect(self.TESTupdatelcdNumber)
+    # Start the timer and update every second
+    self.timer.start(100) # 1000 ms = 1 second
+    self.TESTupdatelcdNumber()
+    
+        
+  def TESTstartTimer(self, category):
+
+      self.counter = 0
+      # Add flag to avoid counting time when user clicks on save segm button
+      self.flag = True
+      print("STARTING TIMER !!!!")
+
+      # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
+      # Create a timer
+      self.timer = qt.QTimer()
+      self.timer.timeout.connect(self.TESTupdatelcdNumber)
+
+      # Start the timer and update every second
+      self.timer.start(100) # 1000 ms = 1 second
+
+      # Call the updatelcdNumber function
+      self.TESTupdatelcdNumber()
+
+      
+      
+  def TESTupdatelcdNumber(self):
+      # Get the time
+      if self.flag: # add flag to avoid counting time when user clicks on save segm button
+            # the timer sends a signal every second (1000 ms). 
+        self.counter += 1  # the self.timer.timeout.connect(self.updatelcdNumber) function is called every second and updates the counter
+
+      self.LCD_cat_timer.display(self.counter/10)
+
+
+  def TESTstopTimer(self):
+      # If already called once (i.e when user pressed save segm button but forgot to annotator name), simply return the time
+      if self.called:
+          return self.total_time
+      else:
+          try:
+              print('STOPPING TIMER!')
+              self.total_time = self.counter/10
+              self.timer.stop()
+              print(f"Total segmentation time: {self.total_time} seconds")
+              self.flag = False
+              self.called = True
+            #   self.time_allocation()
+              return self.total_time
+          except AttributeError as e:
+              print(f'!!! YOU DID NOT START THE COUNTER !!! :: {e}')
+              return None
+
+  def TESTresetTimer(self):
+      # making flag to false
+      self.flag = False
+
+      # reseting the count
+      self.counter = 0
+      
+      self.ICH_time = 0
+      self.IVH_time = 0 
+      self.PHE_time = 0
       
   def startTimer(self):
       print('ICH segment name::: {}'.format(self.ICH_segment_name))
@@ -884,6 +984,25 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 #ICH_SEGMENTER_V2Logic
 #
 
+# class Timer(ScriptedLoadableModuleWidget, VTKObservationMixin):
+#     """Uses ScriptedLoadableModuleWidget base class, available at:
+#     https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
+#     """
+
+#     def __init__(self, parent=None, category=None):
+#         """
+#         Called when the user opens the module the first time and the widget is initialized.
+#         """
+#         ScriptedLoadableModuleWidget.__init__(self, parent)
+#         VTKObservationMixin.__init__(self)  # needed for parameter node observation
+#         def __init__(self, category):
+#             self.category = str(category)
+        
+#     def onpushButton_Test(self):
+#         self.category = "ICHtest"
+#         print(f"test{self.category}")
+#  #### TIMER BLOCK ####
+
 class ICH_SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
   computation done by your module.  The interface
@@ -894,13 +1013,16 @@ class ICH_SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
-  def __init__(self, category):
+  def __init__(self, parent):
     """
     Called when the logic class is instantiated. Can be used for initializing member variables.
     """
     ScriptedLoadableModuleLogic.__init__(self)
-    self.category = str(category)
 
+    
+    # self.widget = ICH_SEGMENTER_V2Widget()
+    
+    
   def onpushButton_Test(self):
         self.category = "ICHtest"
         print(f"test{self.category}")
