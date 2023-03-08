@@ -306,14 +306,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onICHSegm(self):
 
     #   slicer.util.selectModule("SegmentEditor")
-      # below is the code to select the segment in the segment editor (from the segmentation node))      
-      self.segment_name2 =self.shn.GetItemName(self.items.GetId(2))
-      self.segmentEditorNode.SetSelectedSegmentID(self.segment_name2)
+      # below is the code to select the segment in the segment editor (from the segmentation node))
+      ICH_segment_name = f'{self.currentCase}_ICH'
+      Segmentation = self.segmentationNode.GetSegmentation()
+      SegmentID = Segmentation.GetSegmentIdBySegmentName(ICH_segment_name)
+    #   self.segment_name2 =self.shn.GetItemName(self.items.GetId(2))
+      self.segmentEditorNode.SetSelectedSegmentID(SegmentID)
       self.updateCurrentSegmenationLabel()
       # Toggle paint brush right away.
       self.LB_HU = 30
       self.UB_HU = 90
-      self.newSegments()
       self.onPushButton_Paint()
 
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
@@ -323,8 +325,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onIVHSegm(self):
       # slicer.util.selectModule("SegmentEditor")
-      self.segment_name3 = self.shn.GetItemName(self.items.GetId(3))
-      self.segmentEditorNode.SetSelectedSegmentID(self.segment_name3)
+      IVH_segment_name = f'{self.currentCase}_IVH'
+      Segmentation = self.segmentationNode.GetSegmentation()
+      SegmentID = Segmentation.GetSegmentIdBySegmentName(IVH_segment_name)
+    #   self.segment_name3 = self.shn.GetItemName(self.items.GetId(3))
+      self.segmentEditorNode.SetSelectedSegmentID(SegmentID)
       self.LB_HU = 30
       self.UB_HU = 90
       # Toggle paint brush right away.
@@ -334,8 +339,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     #   self.segment_category = 'IVH'
     
   def onPHESegm(self):
-      self.segment_name4 = self.shn.GetItemName(self.items.GetId(4))
-      self.segmentEditorNode.SetSelectedSegmentID(self.segment_name4)
+      PHE_segment_name = f'{self.currentCase}_PHE'
+      Segmentation = self.segmentationNode.GetSegmentation()
+      SegmentID = Segmentation.GetSegmentIdBySegmentName(PHE_segment_name)
+    #   self.segment_name4 = self.shn.GetItemName(self.items.GetId(4))
+      self.segmentEditorNode.SetSelectedSegmentID(SegmentID)
       self.LB_HU = 0
       self.UB_HU = 24
       # Toggle paint brush right away.
@@ -584,7 +592,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   f'The file {self.ICH_segm_name}.nii.gz already exists \n Do you want to replace the existing file?')
               msg4.setIcon(qt.QMessageBox.Warning)
               msg4.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-              msg4.buttonClicked.connect(self.msg2_clicked)
+              msg4.buttonClicked.connect(self.msg2_clicked)f
               msg4.exec()
 
       # If annotator_name empty or timer not started.
