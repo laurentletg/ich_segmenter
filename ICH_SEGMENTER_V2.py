@@ -228,7 +228,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.CurrentFolder.setText('Current folder : \n...{}'.format(self.CurrentFolder[-80:]))
       
   def updateCurrentPatient(self):
-      self.ui.CurrentPatient.setText(f'Current case : {self.currentCase}')  
+      self.ui.CurrentPatient.setText(f'Current case : {self.currentCase}')
+      self.updateCaseIndex(self.currentCase_index)
   
   def updateCurrentSegmenationLabel(self):
       self.ui.CurrentSegmenationLabel.setText('Current segment : {}'.format(self.ICH_segm_name))
