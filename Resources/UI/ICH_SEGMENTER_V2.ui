@@ -326,7 +326,7 @@
         <item>
          <widget class="QPushButton" name="BrowseFolders_2">
           <property name="text">
-           <string>Browse prediction folder</string>
+           <string>Browse mask folder</string>
           </property>
          </widget>
         </item>

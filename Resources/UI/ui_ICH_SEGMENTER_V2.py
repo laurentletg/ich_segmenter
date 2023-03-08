@@ -226,7 +226,7 @@ class Ui_Form(object):
         self.Next.setText(_translate("Form", "Next  >>"))
         self.CurrentPatient.setText(_translate("Form", "Current Patient:"))
         self.CurrentSegmenationLabel.setText(_translate("Form", "Current Segmentation Label:"))
-        self.BrowseFolders_2.setText(_translate("Form", "Browse prediction folder"))
+        self.BrowseFolders_2.setText(_translate("Form", "Browse mask folder"))
         self.IVHSegm.setText(_translate("Form", "IVH segm"))
         self.PauseTimerButton.setText(_translate("Form", "Pause"))
 from ctkCollapsibleGroupBox import ctkCollapsibleGroupBox
