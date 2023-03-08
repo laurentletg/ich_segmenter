@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="qMRMLWidget" name="Form">
+ <class>PushButton_Test</class>
+ <widget class="qMRMLWidget" name="PushButton_Test">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -21,8 +21,8 @@
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
       <item row="8" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2" native="true">
-        <property name="text" stdset="0">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
+        <property name="text">
          <string>Tools</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_6">
@@ -89,6 +89,13 @@
             <widget class="QPushButton" name="PushButton_segmeditor">
              <property name="text">
               <string>Segm Editor</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QPushButton" name="pushButton_Test">
+             <property name="text">
+              <string>Test</string>
              </property>
             </widget>
            </item>
@@ -362,8 +369,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>329</width>
-           <height>347</height>
+           <width>385</width>
+           <height>388</height>
           </rect>
          </property>
          <widget class="QListWidget" name="SlicerDirectoryListView">
@@ -377,6 +384,36 @@
           </property>
           <property name="selectionRectVisible">
            <bool>false</bool>
+          </property>
+         </widget>
+         <widget class="QLCDNumber" name="lcdNumber_ICH">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>350</y>
+            <width>64</width>
+            <height>23</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QLCDNumber" name="lcdNumber_IVH">
+          <property name="geometry">
+           <rect>
+            <x>90</x>
+            <y>350</y>
+            <width>64</width>
+            <height>23</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QLCDNumber" name="lcdNumber_PEH">
+          <property name="geometry">
+           <rect>
+            <x>160</x>
+            <y>350</y>
+            <width>64</width>
+            <height>23</height>
+           </rect>
           </property>
          </widget>
         </widget>

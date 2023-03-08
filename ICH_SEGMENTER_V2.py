@@ -6,12 +6,9 @@ import logging
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
-from slicer.util import getNode
 from glob import glob
 import re
-import time
 import pandas as pd
-from datetime import datetime
 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
@@ -99,7 +96,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
-    self.logic = ICH_SEGMENTER_V2Logic()
+    self.logic = ICH_SEGMENTER_V2Logic(category=None)
 
 
     # Buttons
@@ -121,7 +118,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
     self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
     self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
-
+    self.ui.pushButton_Test.connect('clicked(bool)', self.logic.onpushButton_Test)  
 
     ### ANW CONNECTIONS
     # Pause button
@@ -228,7 +225,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.CurrentFolder.setText('Current folder : \n...{}'.format(self.CurrentFolder[-80:]))
       
   def updateCurrentPatient(self):
-      self.ui.CurrentPatient.setText(f'Current case : {self.currentCase}')  
+      self.ui.CurrentPatient.setText(f'Current case : {self.currentCase}')
+      self.updateCaseIndex(self.currentCase_index)
   
   def updateCurrentSegmenationLabel(self):
       self.ui.CurrentSegmenationLabel.setText('Current segment : {}'.format(self.ICH_segm_name))
@@ -302,6 +300,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # ----- ANW Addition ----- : Reset timer when change case
       self.resetTimer()
+      
+      
+  def timer_management(self):
+      pass
+      
 
   def onICHSegm(self):
       # slicer.util.selectModule("SegmentEditor")
@@ -313,6 +316,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.LB_HU = 30
       self.UB_HU = 90
       self.onPushButton_Paint()
+      self.ICH_flag = True
+      self.ICH_timer = ICH_SEGMENTER_V2Logic('ICH')
+      self.ICH_timer.startTimer()
 
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
     #   self.called = False
@@ -888,56 +894,75 @@ class ICH_SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
-  def __init__(self):
+  def __init__(self, category):
     """
     Called when the logic class is instantiated. Can be used for initializing member variables.
     """
     ScriptedLoadableModuleLogic.__init__(self)
+    self.category = str(category)
 
-  def setDefaultParameters(self, parameterNode):
-    """
-    Initialize parameter node with default settings.
-    """
-    if not parameterNode.GetParameter("Threshold"):
-      parameterNode.SetParameter("Threshold", "100.0")
-    if not parameterNode.GetParameter("Invert"):
-      parameterNode.SetParameter("Invert", "false")
+  def onpushButton_Test(self):
+        self.category = "ICHtest"
+        print(f"test{self.category}")
+ #### TIMER BLOCK ####
+      
+  def startTimer(self):
+      print('ICH segment name::: {}'.format(self.ICH_segment_name))
+      
+      self.counter = 0
+      # Add flag to avoid counting time when user clicks on save segm button
+      self.flag = True
+      print("STARTING TIMER !!!!")
 
-  def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
-    """
-    Run the processing algorithm.
-    Can be used without GUI widget.
-    :param inputVolume: volume to be thresholded
-    :param outputVolume: thresholding result
-    :param imageThreshold: values above/below this threshold will be set to 0
-    :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
-    :param showResult: show output volume in slice viewers
-    """
+      # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
+      # Create a timer
+      self.timer = qt.QTimer()
+      self.timer.timeout.connect(self.updatelcdNumber)
 
-    if not inputVolume or not outputVolume:
-      raise ValueError("Input or output volume is invalid")
+      # Start the timer and update every second
+      self.timer.start(100) # 1000 ms = 1 second
 
-    import time
-    startTime = time.time()
-    logging.info('Processing started')
+      # Call the updatelcdNumber function
+      self.updatelcdNumber()
 
-    # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
-    cliParams = {
-      'InputVolume': inputVolume.GetID(),
-      'OutputVolume': outputVolume.GetID(),
-      'ThresholdValue' : imageThreshold,
-      'ThresholdType' : 'Above' if invert else 'Below'
-      }
-    cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
-    # We don't need the CLI module node anymore, remove it to not clutter the scene with it
-    slicer.mrmlScene.RemoveNode(cliNode)
+  def updatelcdNumber(self):
+      # Get the time
+      if self.flag: # add flag to avoid counting time when user clicks on save segm button
+            # the timer sends a signal every second (1000 ms). 
+          self.counter += 1  # the self.timer.timeout.connect(self.updatelcdNumber) function is called every second and updates the counter
 
-    stopTime = time.time()
-    logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
+      self.ui.lcdNumber.display(self.counter/10)
 
 
-#
-#ICH_SEGMENTER_V2Test
+  def stopTimer(self):
+      # If already called once (i.e when user pressed save segm button but forgot to annotator name), simply return the time
+      if self.called:
+          return self.total_time
+      else:
+          try:
+              print('STOPPING TIMER!')
+              self.total_time = self.counter/10
+              self.timer.stop()
+              print(f"Total segmentation time: {self.total_time} seconds")
+              self.flag = False
+              self.called = True
+            #   self.time_allocation()
+              return self.total_time
+          except AttributeError as e:
+              print(f'!!! YOU DID NOT START THE COUNTER !!! :: {e}')
+              return None
+
+  def resetTimer(self):
+      # making flag to false
+      self.flag = False
+
+      # reseting the count
+      self.counter = 0
+      
+      self.ICH_time = 0
+      self.IVH_time = 0 
+      self.PHE_time = 0
+
 
 
 class ICH_SEGMENTER_V2Test(ScriptedLoadableModuleTest):
