@@ -63,7 +63,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # LLG CODE BELOW
     self.ICH_segm_name = None
     self.predictions_names= None
-    self.DefaultDir = '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2021_RSNA_ Kaggle_segmentation/2023 2023_03_07 RSNA SEGMENTATION 3 CLASSES/data'
+    self.DefaultDir = '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2021_RSNA_ Kaggle_segmentation/2023 2023_03_07 RSNA SEGMENTATION 3 CLASSES/data/RSNA_Volumes'
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
@@ -592,7 +592,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   f'The file {self.ICH_segm_name}.nii.gz already exists \n Do you want to replace the existing file?')
               msg4.setIcon(qt.QMessageBox.Warning)
               msg4.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-              msg4.buttonClicked.connect(self.msg2_clicked)f
+              msg4.buttonClicked.connect(self.msg2_clicked)
               msg4.exec()
 
       # If annotator_name empty or timer not started.
