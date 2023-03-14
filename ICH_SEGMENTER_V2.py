@@ -9,6 +9,7 @@ from slicer.util import VTKObservationMixin
 from glob import glob
 import re
 import pandas as pd
+import time
 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
@@ -39,6 +40,55 @@ See more information in <a href="https://github.com/organization/projectname#ICH
 This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc., Andras Lasso, PerkLab,
 and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
 """
+
+### Timer class -custom class
+
+class Timer():
+    def __init__(self, number=None):
+        self.number = number
+        self.total_time = 0
+        # counting flag to allow to PAUSE the time
+        self.counting = False # False = not counting, True = counting (for pause button)
+
+
+    def start(self):
+        if self.counting == True:
+            print("Timer already started for number ", self.number)
+        if self.counting == False:
+            print('*'*20,"STARTING TIME", '*'*20)
+            print("Timer started for number", self.number) 
+            # start counting flag (to allow to pause the time if False)
+            self.counting = True
+            self.start_time = time.time()
+            
+            
+    def stop(self):
+        # print("Timer stopped for number ", self.number)
+        if self.counting == False:
+            print("Timer already stopped for number ", self.number)
+        if self.counting == True:
+            print("Timer stopped for number ", self.number)
+            self.inter_time = time.time() - self.start_time
+            print('*'*20,"INTERMEDIATE TIME", '*'*20)
+            print("Intermediate time for number ", self.number, " is ", self.inter_time)
+            print('*'*20)
+            self.total_time += self.inter_time
+            print('#'*20, "TOTAL TIME", '#'*20)
+            print("Total time for number ", self.number, " is ", self.total_time)
+            print('#'*20)
+            
+            self.counting = False
+        
+    def reset(self):
+        print('Do you want to reset the timer?')
+        answer = input('y/n')
+        if answer == 'y':
+            self.total_time = 0
+            print("Timer reset")
+        self.total_time = 0
+
+
+
 
 #
 # ICH_SEGMENTER_V2Widget
@@ -71,11 +121,20 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     self.LB_HU = 30
     self.UB_HU = 90
-    # self.editor = None
 
-    # self.ICH_time = 0
-    # self.IVH_time = 0 
-    # self.PHE_time = 0
+
+    #Initialize timers
+    self.timer1 = Timer(number=1)
+    self.timer2 = Timer(number=2)
+    self.timer3 = Timer(number=3)
+    #Create a dictionary to call the timers and route them to the right function
+    self.dict_router = {
+        1: self.timer1, 
+        2: self.timer2,
+        3: self.timer3
+        }
+
+
 
   def setup(self):
     """
@@ -317,6 +376,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.LB_HU = 30
       self.UB_HU = 90
       self.onPushButton_Paint()
+      self.number=1
+      self.timer_router()
+
 
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
     #   self.called = False
@@ -334,6 +396,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.UB_HU = 90
       # Toggle paint brush right away.
       self.onPushButton_Paint()
+      self.number=2
+      self.timer_router()
+
     #   self.startTimer()
     #   self.called = False    
     #   self.segment_category = 'IVH'
@@ -348,6 +413,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.UB_HU = 24
       # Toggle paint brush right away.
       self.onPushButton_Paint()
+      self.number=3
+      self.timer_router()
+
     #   self.startTimer()
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
     #   self.called = False
@@ -366,7 +434,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   def startTimer(self):
       print('ICH segment name::: {}'.format(self.ICH_segment_name))
-      
       self.counter = 0
       # Add flag to avoid counting time when user clicks on save segm button
       self.flag = True
@@ -402,7 +469,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               self.total_time = self.counter/10
               self.timer.stop()
               print(f"Total segmentation time: {self.total_time} seconds")
-              self.flag = False
+              self.flag = False  # Flag is for the timer to stop counting
               self.called = True
             #   self.time_allocation()
               return self.total_time
@@ -411,7 +478,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               return None
 
   def resetTimer(self):
-      # making flag to false
+      # making flag to false : stops the timer
       self.flag = False
 
       # reseting the count
@@ -438,7 +505,36 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #         self.ui.PauseTimerButton.setText('Pause')
   #         self.timer.start(1000)
 
-
+  def timer_router(self):
+      # Create dictionary of timers methods to call based on the number
+      
+      # Excute the method
+      # using get method to avoid key error if the number is not in the dictionary (not instanciated)
+      # Stat the time with self.number flag (active label)
+      self.dict_router.get(self.number).start()
+      # Uncheck the pause button if it was paused (i.e. restart if we click on the segment)
+      self.flag = True
+      
+      #Below is the most elegant way to do it 
+      # stop the other timers (not the one that was just started))
+      for key in self.dict_router:
+          if key != self.number:
+              self.dict_router.get(key).stop()  
+      
+      # Stop the other timers (not the one that was just started))
+      # Not the best way to do it but it works
+      # if self.number == 1:
+      #     self.timer2.stop()
+      #     self.timer3.stop()
+      # elif self.number == 2:
+      #     self.timer1.stop()
+      #     self.timer3.stop()
+      # elif self.number == 3:
+      #     self.timer1.stop()
+      #     self.timer2.stop()
+      # else:
+      #     print("No timer started")
+            
   def togglePauseTimerButton(self):
       # if button is checked - Time paused
       if self.ui.PauseTimerButton.isChecked():
