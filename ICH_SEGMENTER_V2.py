@@ -47,26 +47,27 @@ class Timer():
     def __init__(self, number=None):
         self.number = number
         self.total_time = 0
+        self.inter_time = 0
         # counting flag to allow to PAUSE the time
-        self.counting = False # False = not counting, True = counting (for pause button)
+        self.flag = False # False = not counting, True = counting (for pause button)
 
 
     def start(self):
-        if self.counting == True:
+        if self.flag == True:
             print("Timer already started for number ", self.number)
-        if self.counting == False:
+        if self.flag == False:
             print('*'*20,"STARTING TIME", '*'*20)
             print("Timer started for number", self.number) 
             # start counting flag (to allow to pause the time if False)
-            self.counting = True
+            self.flag = True
             self.start_time = time.time()
             
             
     def stop(self):
         # print("Timer stopped for number ", self.number)
-        if self.counting == False:
+        if self.flag == False:
             print("Timer already stopped for number ", self.number)
-        if self.counting == True:
+        if self.flag == True:
             print("Timer stopped for number ", self.number)
             self.inter_time = time.time() - self.start_time
             print('*'*20,"INTERMEDIATE TIME", '*'*20)
@@ -75,9 +76,8 @@ class Timer():
             self.total_time += self.inter_time
             print('#'*20, "TOTAL TIME", '#'*20)
             print("Total time for number ", self.number, " is ", self.total_time)
-            print('#'*20)
-            
-            self.counting = False
+            print('#'*20)           
+            self.flag = False
         
     def reset(self):
         print('Do you want to reset the timer?')
@@ -122,17 +122,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.LB_HU = 30
     self.UB_HU = 90
 
-
-    #Initialize timers
-    self.timer1 = Timer(number=1)
-    self.timer2 = Timer(number=2)
-    self.timer3 = Timer(number=3)
     #Create a dictionary to call the timers and route them to the right function
-    self.dict_router = {
-        1: self.timer1, 
-        2: self.timer2,
-        3: self.timer3
-        }
+    #Initialize timers
+
+
 
 
 
@@ -202,8 +195,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.LB_HU.setValue(self.LB_HU)
     self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
     self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
-
-
+    
+    
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
       print(f'This is the Default Directory : {self.DefaultDir}')
@@ -304,7 +297,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Vol_displayNode.SetLevel(45)
       self.newSegments()
       self.startTimer()
+
       
+
+  
+  
+  # Set the seegmentation node name    
+  @property
+  def segmentationNodeName(self):
+    return f'{self.currentCase}_segmentation'
+  
       
   def newSegments(self):
     #   pass
@@ -316,7 +318,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
       self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
-      self.segmentationNode.SetName(f'{self.currentCase}_segmentation')
+      # Next time use a setter method @property
+      self.segmentationNode.SetName(self.segmentationNodeName)
       self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
       self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node
@@ -331,6 +334,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.items = vtk.vtkIdList()
       self.sc = self.shn.GetSceneItemID()
       self.shn.GetItemChildren(self.sc, self.items, True)
+      
+      #Initialize timers (unique to each patients)
+      self.timer1 = Timer(number=1)
+      self.timer2 = Timer(number=2)
+      self.timer3 = Timer(number=3)
+      
+
       
       
             
@@ -484,10 +494,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # reseting the count
       self.counter = 0
       
-      self.ICH_time = 0
-      self.IVH_time = 0 
-      self.PHE_time = 0
-
 
   # def togglePauseTimerButton(self):
   #     # if button is checked
@@ -505,9 +511,33 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #         self.ui.PauseTimerButton.setText('Pause')
   #         self.timer.start(1000)
 
+
+  def togglePauseTimerButton(self):
+      # if button is checked - Time paused
+      if self.ui.PauseTimerButton.isChecked():
+          # setting background color to light-blue
+          self.ui.PauseTimerButton.setStyleSheet("background-color : lightblue")
+          self.ui.PauseTimerButton.setText('Restart')
+          self.timer.stop()
+          self.flag = False
+
+      # if it is unchecked
+      else:
+          # set background color back to light-grey
+          self.ui.PauseTimerButton.setStyleSheet("background-color : indianred")
+          self.ui.PauseTimerButton.setText('Pause')
+          self.timer.start(100)
+          self.flag = True
+
+  # for the timer Class not the LCD one
   def timer_router(self):
       # Create dictionary of timers methods to call based on the number
-      
+      self.dict_router = {
+        1: self.timer1, 
+        2: self.timer2,
+        3: self.timer3
+        }
+    
       # Excute the method
       # using get method to avoid key error if the number is not in the dictionary (not instanciated)
       # Stat the time with self.number flag (active label)
@@ -535,25 +565,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # else:
       #     print("No timer started")
             
-  def togglePauseTimerButton(self):
-      # if button is checked - Time paused
-      if self.ui.PauseTimerButton.isChecked():
-          # setting background color to light-blue
-          self.ui.PauseTimerButton.setStyleSheet("background-color : lightblue")
-          self.ui.PauseTimerButton.setText('Restart')
-          self.timer.stop()
-          self.flag = False
-
-      # if it is unchecked
-      else:
-          # set background color back to light-grey
-          self.ui.PauseTimerButton.setStyleSheet("background-color : indianred")
-          self.ui.PauseTimerButton.setText('Pause')
-          self.timer.start(100)
-          self.flag = True
-
-
-
   def createFolders(self):
       self.revision_step = self.ui.RevisionStep.currentText
       if len(self.revision_step) != 0:
@@ -591,6 +602,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       #By default creates a new folder in the volume directory 
       # Stop the timer when the button is pressed
       self.time = self.stopTimer()
+      #Stop timer of the Timer class
+      for v in self.dict_router.values():
+            v.stop()
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
 
@@ -608,10 +622,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None:
           print('Saving time')
+          print(f'total time for ICH:: {self.timer1.total_time:0.2f}')
+          print(f'total time for IVH:: {self.timer2.total_time:0.2f}')
+          print(f'total time for PHE:: {self.timer3.total_time:0.2f}')  
           # Save time to csv
           self.df = pd.DataFrame(
               {'Case number': [self.currentCase], 'Annotator Name': [self.annotator_name], 'Annotator degree': [self.annotator_degree],
-               'Time': [str(self.time)], 'Revision step': [self.revision_step[0]]})
+               'Time': [str(self.time)], 'Time2': [self.ui.lcdNumber.value], 'Revision step': [self.revision_step[0]], 'Time ICH':[self.timer1.total_time], 'Time IVH':[self.timer2.total_time], 'Time PEH':[self.timer3.total_time]})
 
           self.outputTimeFile = os.path.join(self.output_dir_time,
                                              '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
@@ -631,7 +648,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           # Save seg.nrrd file
           
           self.outputSegmFile = os.path.join(self.output_dir_labels,
-                                                 "{}_{}_{}.seg.nrrd".format(self.ICH_segm_name, self.annotator_name, self.revision_step[0]))
+                                                 "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name, self.revision_step[0]))
 
           if not os.path.isfile(self.outputSegmFile):
               slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
@@ -640,7 +657,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg2 = qt.QMessageBox()
               msg2.setWindowTitle('Save As')
               msg2.setText(
-                  f'The file {self.ICH_segm_name}_{self.annotator_name}_{self.revision_step[0]}.seg.nrrd already exists \n Do you want to replace the existing file?')
+                  f'The file {self.currentCase}_{self.annotator_name}_{self.revision_step[0]}.seg.nrrd already exists \n Do you want to replace the existing file?')
               msg2.setIcon(qt.QMessageBox.Warning)
               msg2.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg2.buttonClicked.connect(self.msg2_clicked)
@@ -656,7 +673,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                                                    self.VolumeNode)
 
           self.outputSegmFileNifti = os.path.join(self.output_dir_labels_nii,
-                                                  "{}_{}_{}.nii.gz".format(self.ICH_segm_name, self.annotator_name, self.revision_step[0]))
+                                                  "{}_{}_{}.nii.gz".format(self.currentCase, self.annotator_name, self.revision_step[0]))
 
           if not os.path.isfile(self.outputSegmFileNifti):
               slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
@@ -665,7 +682,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg3 = qt.QMessageBox()
               msg3.setWindowTitle('Save As')
               msg3.setText(
-                  f'The file {self.ICH_segm_name}_{self.annotator_name}_{self.revision_step[0]}.nii.gz already exists \n Do you want to replace the existing file?')
+                  f'The file {self.currentCase}_{self.annotator_name}_{self.revision_step[0]}.nii.gz already exists \n Do you want to replace the existing file?')
               msg3.setIcon(qt.QMessageBox.Warning)
               msg3.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg3.buttonClicked.connect(self.msg3_clicked)
@@ -685,7 +702,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg4 = qt.QMessageBox()
               msg4.setWindowTitle('Save As')
               msg4.setText(
-                  f'The file {self.ICH_segm_name}.nii.gz already exists \n Do you want to replace the existing file?')
+                  f'The file {self.currentCase}.nii.gz already exists \n Do you want to replace the existing file?')
               msg4.setIcon(qt.QMessageBox.Warning)
               msg4.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg4.buttonClicked.connect(self.msg2_clicked)
@@ -714,6 +731,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         print('Matched Volume number (sanity check)!')
       except AssertionError as e:
         print('Mismatch in case error :: {}'.format(str(e)))
+      
+      
+      
+      #delete instances of class timer (regenerated when  new case loaded)
+      del self.timer1, self.timer2, self.timer3
+      self.time = 0
+      
 
 
 
