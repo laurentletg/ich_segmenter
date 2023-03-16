@@ -195,28 +195,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
     
     
-    self.selectParameterNode()
-    
-
-
-    
-  def selectParameterNode(self):
-        # Select parameter set node if one is found in the scene, and create one otherwise
-        segmentEditorSingletonTag = "SegmentEditor"
-        segmentEditorNode = slicer.mrmlScene.GetSingletonNode(segmentEditorSingletonTag, "vtkMRMLSegmentEditorNode")
-        if segmentEditorNode is None:
-            segmentEditorNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSegmentEditorNode")
-            segmentEditorNode.UnRegister(None)
-            segmentEditorNode.SetSingletonTag(segmentEditorSingletonTag)
-            segmentEditorNode = slicer.mrmlScene.AddNode(segmentEditorNode)
-        if self.parameterSetNode == segmentEditorNode:
-            # nothing changed
-            return
-        self.parameterSetNode = segmentEditorNode
-        self.editor.setMRMLSegmentEditorNode(self.parameterSetNode)
-  
-    
-    
+   
     
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
