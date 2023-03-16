@@ -108,8 +108,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.logic = None
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
-    self.ICH_segm_name = None
-    
     # LLG CODE BELOW
     self.ICH_segm_name = None
     self.predictions_names= None
@@ -733,10 +731,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         print('Mismatch in case error :: {}'.format(str(e)))
       
       
-      
-      #delete instances of class timer (regenerated when  new case loaded)
-      del self.timer1, self.timer2, self.timer3
-      self.time = 0
+      # #delete instances of class timer (regenerated when  new case loaded)
+      # del self.timer1, self.timer2, self.timer3
+      # self.time = 0
       
 
 
@@ -900,6 +897,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         dstNode.GetSegmentation().CopySegmentFromSegmentation(srcSegmentation, srcSegmentId)
     
       
+      # Then delete the second segmentation node
+      self.msg_mask_delete = qt.QMessageBox()
+      self.msg_mask_delete.setText("Do you want to delete the loaded mask?")
+      self.msg_mask_delete.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+      self.msg_mask_delete.buttonClicked.connect(self.onmsg_mask_delete)
+      self.msg_mask_delete.exec()
+      
+  def onmsg_mask_delete(self):    
+      srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
+      slicer.mrmlScene.RemoveNode(srcNode)
       
       
       
