@@ -623,9 +623,14 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           print(f'total time for PHE:: {self.timer3.total_time:0.2f}')  
           # Save time to csv
           self.df = pd.DataFrame(
-              {'Case number': [self.currentCase], 'Annotator Name': [self.annotator_name], 'Annotator degree': [self.annotator_degree],
-               'Time': [str(self.time)], 'Time2': [self.ui.lcdNumber.value], 'Revision step': [self.revision_step[0]], 'Time ICH':[self.timer1.total_time], 'Time IVH':[self.timer2.total_time], 'Time PEH':[self.timer3.total_time]})
-
+              {'Case number': [self.currentCase], 
+               'Annotator Name': [self.annotator_name], 
+               'Annotator degree': [self.annotator_degree],
+               'Time': [self.ui.lcdNumber.value], 
+               'Revision step': [self.revision_step[0]], 
+               'Time ICH':[self.timer1.total_time], 
+               'Time IVH':[self.timer2.total_time], 
+               'Time PEH':[self.timer3.total_time]})
           self.outputTimeFile = os.path.join(self.output_dir_time,
                                              '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
           if not os.path.isfile(self.outputTimeFile):
