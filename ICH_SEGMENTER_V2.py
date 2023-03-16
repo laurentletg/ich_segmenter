@@ -300,7 +300,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   
   
-  # Set the seegmentation node name    
+  # Getter the seegmentation node name    - Not sure if this is really useful here. 
   @property
   def segmentationNodeName(self):
     return f'{self.currentCase}_segmentation'
@@ -487,9 +487,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def resetTimer(self):
       # making flag to false : stops the timer
-      self.flag = False
-
-      # reseting the count
+      self.flag = False # For case after the first one the timer stops until the user clicks on the 
       self.counter = 0
       
 
