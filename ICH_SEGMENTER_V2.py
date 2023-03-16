@@ -120,10 +120,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.LB_HU = 30
     self.UB_HU = 90
 
-    #Create a dictionary to call the timers and route them to the right function
-    #Initialize timers
-
-
+        # Add margin to the sides
 
 
 
@@ -131,6 +128,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Called when the user opens the module the first time and the widget is initialized.
     """
+    ### Segment editor widget
+    self.layout.setContentsMargins(4, 0, 4, 0)
+
     ScriptedLoadableModuleWidget.setup(self)
 
     # Load widget from .ui file (created by Qt Designer).
@@ -193,6 +193,29 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.LB_HU.setValue(self.LB_HU)
     self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
     self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
+    
+    
+    self.selectParameterNode()
+    
+
+
+    
+  def selectParameterNode(self):
+        # Select parameter set node if one is found in the scene, and create one otherwise
+        segmentEditorSingletonTag = "SegmentEditor"
+        segmentEditorNode = slicer.mrmlScene.GetSingletonNode(segmentEditorSingletonTag, "vtkMRMLSegmentEditorNode")
+        if segmentEditorNode is None:
+            segmentEditorNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSegmentEditorNode")
+            segmentEditorNode.UnRegister(None)
+            segmentEditorNode.SetSingletonTag(segmentEditorSingletonTag)
+            segmentEditorNode = slicer.mrmlScene.AddNode(segmentEditorNode)
+        if self.parameterSetNode == segmentEditorNode:
+            # nothing changed
+            return
+        self.parameterSetNode = segmentEditorNode
+        self.editor.setMRMLSegmentEditorNode(self.parameterSetNode)
+  
+    
     
     
   def getDefaultDir(self):

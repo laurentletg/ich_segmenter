@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>553</width>
-    <height>907</height>
+    <width>674</width>
+    <height>1067</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,12 +20,41 @@
       <string>Configuration</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
+      <item row="6" column="1">
+       <widget class="QLCDNumber" name="lcdNumber"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="LoadPrediction">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="statusTip">
+         <string>Timer started</string>
+        </property>
+        <property name="text">
+         <string>Load mask</string>
+        </property>
+       </widget>
+      </item>
       <item row="8" column="0" colspan="2">
        <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
         <property name="text">
          <string>Tools</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_6">
+         <item row="0" column="0">
+          <widget class="QPushButton" name="SegmentWindowPushButton">
+           <property name="text">
+            <string>Dock Segment Editor</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="0">
           <layout class="QGridLayout" name="gridLayout">
            <item row="2" column="1">
@@ -94,40 +123,7 @@
            </item>
           </layout>
          </item>
-         <item row="0" column="0">
-          <widget class="QPushButton" name="SegmentWindowPushButton">
-           <property name="text">
-            <string>Dock Segment Editor</string>
-           </property>
-           <property name="checkable">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
         </layout>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QPushButton" name="LoadPrediction">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="statusTip">
-         <string>Timer started</string>
-        </property>
-        <property name="text">
-         <string>Load mask</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QPushButton" name="ICHSegm">
-        <property name="text">
-         <string>ICH segm</string>
-        </property>
        </widget>
       </item>
       <item row="4" column="1">
@@ -332,16 +328,6 @@
         </item>
        </layout>
       </item>
-      <item row="6" column="1">
-       <widget class="QLCDNumber" name="lcdNumber"/>
-      </item>
-      <item row="3" column="1">
-       <widget class="QPushButton" name="IVHSegm">
-        <property name="text">
-         <string>IVH segm</string>
-        </property>
-       </widget>
-      </item>
       <item row="7" column="1">
        <widget class="QPushButton" name="PauseTimerButton">
         <property name="text">
@@ -362,8 +348,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>385</width>
-           <height>388</height>
+           <width>506</width>
+           <height>183</height>
           </rect>
          </property>
          <widget class="QListWidget" name="SlicerDirectoryListView">
@@ -381,6 +367,31 @@
          </widget>
         </widget>
        </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QPushButton" name="ICHSegm">
+        <property name="text">
+         <string>ICH segm</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QPushButton" name="IVHSegm">
+        <property name="text">
+         <string>IVH segm</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0" colspan="2">
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="qMRMLSegmentEditorWidget" name="SegmentEditorWidget">
+          <property name="defaultTerminologyEntrySettingsKey">
+           <string notr="true"/>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>
@@ -411,6 +422,11 @@
    <extends>QWidget</extends>
    <header>qMRMLWidget.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLSegmentEditorWidget</class>
+   <extends>qMRMLWidget</extends>
+   <header>qMRMLSegmentEditorWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
