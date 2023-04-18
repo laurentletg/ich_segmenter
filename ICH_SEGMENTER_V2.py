@@ -10,6 +10,8 @@ from glob import glob
 import re
 import pandas as pd
 import time
+import slicerio
+import nrrd
 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
@@ -193,9 +195,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.LB_HU.setValue(self.LB_HU)
     self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
     self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
-    
-    
-   
+
+    ### ANW ICH TYPE/LOCATION CONNECTIONS
+    self.listichtype = [self.ui.ichtype1, self.ui.ichtype2, self.ui.ichtype3, self.ui.ichtype4, self.ui.ichtype5,
+                        self.ui.ichtype6, self.ui.ichtype7, self.ui.ichtype8, self.ui.ichtype9]
+    self.listichloc = [self.ui.ichloc1, self.ui.ichloc2, self.ui.ichloc3, self.ui.ichloc4, self.ui.ichloc5,
+                       self.ui.ichloc6, self.ui.ichloc7, self.ui.ichloc8, self.ui.ichloc9, self.ui.ichloc10]
+
     
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
@@ -298,9 +304,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.newSegments()
       self.startTimer()
 
-      
-
-  
   
   # Getter the seegmentation node name    - Not sure if this is really useful here. 
   @property
@@ -321,7 +324,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Next time use a setter method @property
       self.segmentationNode.SetName(self.segmentationNodeName)
       self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node
       self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
@@ -585,14 +588,41 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msgboxtime.exec()
 
 
-#   def onCheckEdema(self):
+  def checkboxChanged(self):
+      self.checked_ichtype = []
+      self.checked_ichloc = []
+      for i in self.listichtype:
+          if i.isChecked():
+              ichtype = i.text
+              self.checked_ichtype.append(ichtype)
+      for j in self.listichloc:
+          if j.isChecked():
+              ichloc = j.text
+              self.checked_ichloc.append(ichloc)
+      self.checked_ichtype = ','.join(self.checked_ichtype)
+      self.checked_ichloc = ','.join(self.checked_ichloc)
+      return self.checked_ichtype, self.checked_ichloc
 
-#       if self.ui.radioButton_Edema.isChecked(): # Uncheck autoExclusive in UI or else it will stay checked forever
-#           self.edema = self.ui.radioButton_Edema.text
-#       else:
-#           self.edema = None
 
-#       return self.edema
+  def rearrangeNRRDSegments(self):
+      # Ideally, we would implement this: https://github.com/Slicer/Slicer/issues/5044 but I don't know how...
+      # open the tmp file, rearrange, save new rearranged file and remove tmp file.
+      # I tried to overwrite the original file without using tmp file but it doesn't work...
+      self.srcFile = self.tmp
+      self.dstFile = os.path.join(self.output_dir_labels,
+                                  "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name,
+                                                             self.revision_step[0]))
+
+      segment_names_to_labels = [(self.ICH_segment_name, 1), (self.IVH_segment_name, 2), (self.PHE_segment_name, 3)]
+
+      segmentation_info = slicerio.read_segmentation_info(self.srcFile)
+      voxels, header = nrrd.read(self.srcFile)
+      extracted_voxels, extracted_header = slicerio.extract_segments(voxels, header, segmentation_info,
+                                                                     segment_names_to_labels)
+      nrrd.write(self.dstFile, extracted_voxels, extracted_header)
+      os.remove(self.tmp)
+
+
 
 
   # ----- Modification -----
@@ -606,15 +636,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
 
+      # get ICH types and locations
+      self.checked_ichtype, self.checked_ichloc = self.checkboxChanged()
+      self.ichtype_other = self.ui.ichtype_other.text
+
       
       # Create folders if not exist
       self.createFolders()
       
       # Make sure to select the first segmentation node  (i.e. the one that was created when the module was loaded, not the one created when the user clicked on the "Load mask" button)
       self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-
-
-    #   self.edema = self.onCheckEdema()
 
 
       # Save if annotator_name is not empty and timer started:
@@ -632,7 +663,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                'Revision step': [self.revision_step[0]], 
                'Time ICH':[self.timer1.total_time], 
                'Time IVH':[self.timer2.total_time], 
-               'Time PEH':[self.timer3.total_time]})
+               'Time PHE':[self.timer3.total_time], 
+               'ICH type': self.checked_ichtype,
+               'ICH location': self.checked_ichloc,
+               'Other': [self.ichtype_other]})
           self.outputTimeFile = os.path.join(self.output_dir_time,
                                              '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
           if not os.path.isfile(self.outputTimeFile):
@@ -648,13 +682,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg1.buttonClicked.connect(self.msg1_clicked)
               msg1.exec()
 
-          # Save seg.nrrd file
+          # Save .seg.nrrd file
           
           self.outputSegmFile = os.path.join(self.output_dir_labels,
                                                  "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name, self.revision_step[0]))
 
           if not os.path.isfile(self.outputSegmFile):
-              slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
+              self.tmp = os.path.join(self.output_dir_labels,
+                                                 "{}_{}_{}_tmp.seg.nrrd".format(self.currentCase, self.annotator_name, self.revision_step[0]))
+              slicer.util.saveNode(self.segmentationNode, self.tmp)
+
           else:
               print('This .nrrd file already exists')
               msg2 = qt.QMessageBox()
@@ -666,6 +703,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg2.buttonClicked.connect(self.msg2_clicked)
               msg2.exec()
 
+          self.rearrangeNRRDSegments()
 
           # Save alternative nitfi segmentation
           # Export segmentation to a labelmap volume
@@ -742,7 +780,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
 
 
-
   # ----- ANW Addition ----- : Actions for pop-up message box buttons
   def msg1_clicked(self, msg1_button):
       if msg1_button.text == 'OK':
@@ -752,7 +789,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def msg2_clicked(self, msg2_button):
       if msg2_button.text == 'OK':
-          slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
+          slicer.util.saveNode(self.segmentationNode, self.tmp)
       else:
           return
 
@@ -761,6 +798,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
       else:
           return
+
   def msg4_clicked(self, msg4_button):
       if msg4_button.text == 'OK':
           slicer.util.saveNode(self.VolumeNode, self.outputVolfile)
@@ -816,7 +854,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
       self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node
       self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       # self.segmentationNode= slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLSegmentationNode")
@@ -831,7 +869,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       #  self.segmentationNode.
       # self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      # self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+      # self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       
       #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
@@ -937,7 +975,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   # def setVolumeandSegmentationNodes(self):
   #     self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
   #     self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-  #     self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+  #     self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
   #     self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
   #     # Set reference geometry
   #     self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
@@ -984,8 +1022,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
           self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
           #Set if using Editable intensity range (the range is defined below using object.setParameter)
-          self.segmentEditorNode.SetSourceVolumeIntensityMask(True)
-          self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+          self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+          self.segmentEditorNode.SetMasterVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
           self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
       else:
           self.ui.pushButton_Paint.setStyleSheet("background-color : indianred")
