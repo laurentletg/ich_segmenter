@@ -9,6 +9,9 @@ from slicer.util import VTKObservationMixin
 from glob import glob
 import re
 import pandas as pd
+import time
+import slicerio
+import nrrd
 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
@@ -40,6 +43,55 @@ This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc
 and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
 """
 
+### Timer class -custom class
+
+class Timer():
+    def __init__(self, number=None):
+        self.number = number
+        self.total_time = 0
+        self.inter_time = 0
+        # counting flag to allow to PAUSE the time
+        self.flag = False # False = not counting, True = counting (for pause button)
+
+
+    def start(self):
+        if self.flag == True:
+            print("Timer already started for number ", self.number)
+        if self.flag == False:
+            print('*'*20,"STARTING TIME", '*'*20)
+            print("Timer started for number", self.number) 
+            # start counting flag (to allow to pause the time if False)
+            self.flag = True
+            self.start_time = time.time()
+            
+            
+    def stop(self):
+        # print("Timer stopped for number ", self.number)
+        if self.flag == False:
+            print("Timer already stopped for number ", self.number)
+        if self.flag == True:
+            print("Timer stopped for number ", self.number)
+            self.inter_time = time.time() - self.start_time
+            print('*'*20,"INTERMEDIATE TIME", '*'*20)
+            print("Intermediate time for number ", self.number, " is ", self.inter_time)
+            print('*'*20)
+            self.total_time += self.inter_time
+            print('#'*20, "TOTAL TIME", '#'*20)
+            print("Total time for number ", self.number, " is ", self.total_time)
+            print('#'*20)           
+            self.flag = False
+        
+    def reset(self):
+        print('Do you want to reset the timer?')
+        answer = input('y/n')
+        if answer == 'y':
+            self.total_time = 0
+            print("Timer reset")
+        self.total_time = 0
+
+
+
+
 #
 # ICH_SEGMENTER_V2Widget
 #
@@ -58,8 +110,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.logic = None
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
-    self.ICH_segm_name = None
-    
     # LLG CODE BELOW
     self.ICH_segm_name = None
     self.predictions_names= None
@@ -71,16 +121,18 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     self.LB_HU = 30
     self.UB_HU = 90
-    # self.editor = None
 
-    # self.ICH_time = 0
-    # self.IVH_time = 0 
-    # self.PHE_time = 0
+        # Add margin to the sides
+
+
 
   def setup(self):
     """
     Called when the user opens the module the first time and the widget is initialized.
     """
+    ### Segment editor widget
+    self.layout.setContentsMargins(4, 0, 4, 0)
+
     ScriptedLoadableModuleWidget.setup(self)
 
     # Load widget from .ui file (created by Qt Designer).
@@ -144,7 +196,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
     self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
 
+    ### ANW ICH TYPE/LOCATION CONNECTIONS
+    self.listichtype = [self.ui.ichtype1, self.ui.ichtype2, self.ui.ichtype3, self.ui.ichtype4, self.ui.ichtype5,
+                        self.ui.ichtype6, self.ui.ichtype7, self.ui.ichtype8, self.ui.ichtype9]
+    self.listichloc = [self.ui.ichloc1, self.ui.ichloc2, self.ui.ichloc3, self.ui.ichloc4, self.ui.ichloc5,
+                       self.ui.ichloc6, self.ui.ichloc7, self.ui.ichloc8, self.ui.ichloc9, self.ui.ichloc10]
 
+    
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
       print(f'This is the Default Directory : {self.DefaultDir}')
@@ -245,7 +303,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Vol_displayNode.SetLevel(45)
       self.newSegments()
       self.startTimer()
-      
+
+  
+  # Getter the seegmentation node name    - Not sure if this is really useful here. 
+  @property
+  def segmentationNodeName(self):
+    return f'{self.currentCase}_segmentation'
+  
       
   def newSegments(self):
     #   pass
@@ -257,9 +321,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
       self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
-      self.segmentationNode.SetName(f'{self.currentCase}_segmentation')
+      # Next time use a setter method @property
+      self.segmentationNode.SetName(self.segmentationNodeName)
       self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node
       self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
@@ -272,6 +337,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.items = vtk.vtkIdList()
       self.sc = self.shn.GetSceneItemID()
       self.shn.GetItemChildren(self.sc, self.items, True)
+      
+      #Initialize timers (unique to each patients)
+      self.timer1 = Timer(number=1)
+      self.timer2 = Timer(number=2)
+      self.timer3 = Timer(number=3)
+      
+
       
       
             
@@ -317,6 +389,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.LB_HU = 30
       self.UB_HU = 90
       self.onPushButton_Paint()
+      self.number=1
+      self.timer_router()
+
 
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
     #   self.called = False
@@ -334,6 +409,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.UB_HU = 90
       # Toggle paint brush right away.
       self.onPushButton_Paint()
+      self.number=2
+      self.timer_router()
+
     #   self.startTimer()
     #   self.called = False    
     #   self.segment_category = 'IVH'
@@ -348,6 +426,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.UB_HU = 24
       # Toggle paint brush right away.
       self.onPushButton_Paint()
+      self.number=3
+      self.timer_router()
+
     #   self.startTimer()
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
     #   self.called = False
@@ -366,7 +447,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   def startTimer(self):
       print('ICH segment name::: {}'.format(self.ICH_segment_name))
-      
       self.counter = 0
       # Add flag to avoid counting time when user clicks on save segm button
       self.flag = True
@@ -402,7 +482,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               self.total_time = self.counter/10
               self.timer.stop()
               print(f"Total segmentation time: {self.total_time} seconds")
-              self.flag = False
+              self.flag = False  # Flag is for the timer to stop counting
               self.called = True
             #   self.time_allocation()
               return self.total_time
@@ -411,16 +491,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               return None
 
   def resetTimer(self):
-      # making flag to false
-      self.flag = False
-
-      # reseting the count
+      # making flag to false : stops the timer
+      self.flag = False # For case after the first one the timer stops until the user clicks on the 
       self.counter = 0
       
-      self.ICH_time = 0
-      self.IVH_time = 0 
-      self.PHE_time = 0
-
 
   # def togglePauseTimerButton(self):
   #     # if button is checked
@@ -456,8 +530,42 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.timer.start(100)
           self.flag = True
 
-
-
+  # for the timer Class not the LCD one
+  def timer_router(self):
+      # Create dictionary of timers methods to call based on the number
+      self.dict_router = {
+        1: self.timer1, 
+        2: self.timer2,
+        3: self.timer3
+        }
+    
+      # Excute the method
+      # using get method to avoid key error if the number is not in the dictionary (not instanciated)
+      # Stat the time with self.number flag (active label)
+      self.dict_router.get(self.number).start()
+      # Uncheck the pause button if it was paused (i.e. restart if we click on the segment)
+      self.flag = True
+      
+      #Below is the most elegant way to do it 
+      # stop the other timers (not the one that was just started))
+      for key in self.dict_router:
+          if key != self.number:
+              self.dict_router.get(key).stop()  
+      
+      # Stop the other timers (not the one that was just started))
+      # Not the best way to do it but it works
+      # if self.number == 1:
+      #     self.timer2.stop()
+      #     self.timer3.stop()
+      # elif self.number == 2:
+      #     self.timer1.stop()
+      #     self.timer3.stop()
+      # elif self.number == 3:
+      #     self.timer1.stop()
+      #     self.timer2.stop()
+      # else:
+      #     print("No timer started")
+            
   def createFolders(self):
       self.revision_step = self.ui.RevisionStep.currentText
       if len(self.revision_step) != 0:
@@ -480,14 +588,41 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msgboxtime.exec()
 
 
-#   def onCheckEdema(self):
+  def checkboxChanged(self):
+      self.checked_ichtype = []
+      self.checked_ichloc = []
+      for i in self.listichtype:
+          if i.isChecked():
+              ichtype = i.text
+              self.checked_ichtype.append(ichtype)
+      for j in self.listichloc:
+          if j.isChecked():
+              ichloc = j.text
+              self.checked_ichloc.append(ichloc)
+      self.checked_ichtype = ','.join(self.checked_ichtype)
+      self.checked_ichloc = ','.join(self.checked_ichloc)
+      return self.checked_ichtype, self.checked_ichloc
 
-#       if self.ui.radioButton_Edema.isChecked(): # Uncheck autoExclusive in UI or else it will stay checked forever
-#           self.edema = self.ui.radioButton_Edema.text
-#       else:
-#           self.edema = None
 
-#       return self.edema
+  def rearrangeNRRDSegments(self):
+      # Ideally, we would implement this: https://github.com/Slicer/Slicer/issues/5044 but I don't know how...
+      # open the tmp file, rearrange, save new rearranged file and remove tmp file.
+      # I tried to overwrite the original file without using tmp file but it doesn't work...
+      self.srcFile = self.tmp
+      self.dstFile = os.path.join(self.output_dir_labels,
+                                  "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name,
+                                                             self.revision_step[0]))
+
+      segment_names_to_labels = [(self.ICH_segment_name, 1), (self.IVH_segment_name, 2), (self.PHE_segment_name, 3)]
+
+      segmentation_info = slicerio.read_segmentation_info(self.srcFile)
+      voxels, header = nrrd.read(self.srcFile)
+      extracted_voxels, extracted_header = slicerio.extract_segments(voxels, header, segmentation_info,
+                                                                     segment_names_to_labels)
+      nrrd.write(self.dstFile, extracted_voxels, extracted_header)
+      os.remove(self.tmp)
+
+
 
 
   # ----- Modification -----
@@ -495,8 +630,15 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       #By default creates a new folder in the volume directory 
       # Stop the timer when the button is pressed
       self.time = self.stopTimer()
+      #Stop timer of the Timer class
+      for v in self.dict_router.values():
+            v.stop()
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
+
+      # get ICH types and locations
+      self.checked_ichtype, self.checked_ichloc = self.checkboxChanged()
+      self.ichtype_other = self.ui.ichtype_other.text
 
       
       # Create folders if not exist
@@ -506,17 +648,25 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
 
 
-    #   self.edema = self.onCheckEdema()
-
-
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None:
           print('Saving time')
+          print(f'total time for ICH:: {self.timer1.total_time:0.2f}')
+          print(f'total time for IVH:: {self.timer2.total_time:0.2f}')
+          print(f'total time for PHE:: {self.timer3.total_time:0.2f}')  
           # Save time to csv
           self.df = pd.DataFrame(
-              {'Case number': [self.currentCase], 'Annotator Name': [self.annotator_name], 'Annotator degree': [self.annotator_degree],
-               'Time': [str(self.time)], 'Revision step': [self.revision_step[0]]})
-
+              {'Case number': [self.currentCase], 
+               'Annotator Name': [self.annotator_name], 
+               'Annotator degree': [self.annotator_degree],
+               'Time': [self.ui.lcdNumber.value], 
+               'Revision step': [self.revision_step[0]], 
+               'Time ICH':[self.timer1.total_time], 
+               'Time IVH':[self.timer2.total_time], 
+               'Time PHE':[self.timer3.total_time], 
+               'ICH type': self.checked_ichtype,
+               'ICH location': self.checked_ichloc,
+               'Other': [self.ichtype_other]})
           self.outputTimeFile = os.path.join(self.output_dir_time,
                                              '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
           if not os.path.isfile(self.outputTimeFile):
@@ -532,24 +682,28 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg1.buttonClicked.connect(self.msg1_clicked)
               msg1.exec()
 
-          # Save seg.nrrd file
+          # Save .seg.nrrd file
           
           self.outputSegmFile = os.path.join(self.output_dir_labels,
-                                                 "{}_{}_{}.seg.nrrd".format(self.ICH_segm_name, self.annotator_name, self.revision_step[0]))
+                                                 "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name, self.revision_step[0]))
 
           if not os.path.isfile(self.outputSegmFile):
-              slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
+              self.tmp = os.path.join(self.output_dir_labels,
+                                                 "{}_{}_{}_tmp.seg.nrrd".format(self.currentCase, self.annotator_name, self.revision_step[0]))
+              slicer.util.saveNode(self.segmentationNode, self.tmp)
+
           else:
               print('This .nrrd file already exists')
               msg2 = qt.QMessageBox()
               msg2.setWindowTitle('Save As')
               msg2.setText(
-                  f'The file {self.ICH_segm_name}_{self.annotator_name}_{self.revision_step[0]}.seg.nrrd already exists \n Do you want to replace the existing file?')
+                  f'The file {self.currentCase}_{self.annotator_name}_{self.revision_step[0]}.seg.nrrd already exists \n Do you want to replace the existing file?')
               msg2.setIcon(qt.QMessageBox.Warning)
               msg2.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg2.buttonClicked.connect(self.msg2_clicked)
               msg2.exec()
 
+          self.rearrangeNRRDSegments()
 
           # Save alternative nitfi segmentation
           # Export segmentation to a labelmap volume
@@ -560,7 +714,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                                                    self.VolumeNode)
 
           self.outputSegmFileNifti = os.path.join(self.output_dir_labels_nii,
-                                                  "{}_{}_{}.nii.gz".format(self.ICH_segm_name, self.annotator_name, self.revision_step[0]))
+                                                  "{}_{}_{}.nii.gz".format(self.currentCase, self.annotator_name, self.revision_step[0]))
 
           if not os.path.isfile(self.outputSegmFileNifti):
               slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
@@ -569,7 +723,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg3 = qt.QMessageBox()
               msg3.setWindowTitle('Save As')
               msg3.setText(
-                  f'The file {self.ICH_segm_name}_{self.annotator_name}_{self.revision_step[0]}.nii.gz already exists \n Do you want to replace the existing file?')
+                  f'The file {self.currentCase}_{self.annotator_name}_{self.revision_step[0]}.nii.gz already exists \n Do you want to replace the existing file?')
               msg3.setIcon(qt.QMessageBox.Warning)
               msg3.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg3.buttonClicked.connect(self.msg3_clicked)
@@ -589,10 +743,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg4 = qt.QMessageBox()
               msg4.setWindowTitle('Save As')
               msg4.setText(
-                  f'The file {self.ICH_segm_name}.nii.gz already exists \n Do you want to replace the existing file?')
+                  f'The file {self.currentCase}.nii.gz already exists \n Do you want to replace the existing file?')
               msg4.setIcon(qt.QMessageBox.Warning)
               msg4.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-              msg4.buttonClicked.connect(self.msg2_clicked)f
+              msg4.buttonClicked.connect(self.msg2_clicked)
               msg4.exec()
 
       # If annotator_name empty or timer not started.
@@ -618,7 +772,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         print('Matched Volume number (sanity check)!')
       except AssertionError as e:
         print('Mismatch in case error :: {}'.format(str(e)))
-
+      
+      
+      # #delete instances of class timer (regenerated when  new case loaded)
+      # del self.timer1, self.timer2, self.timer3
+      # self.time = 0
+      
 
 
   # ----- ANW Addition ----- : Actions for pop-up message box buttons
@@ -630,7 +789,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def msg2_clicked(self, msg2_button):
       if msg2_button.text == 'OK':
-          slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
+          slicer.util.saveNode(self.segmentationNode, self.tmp)
       else:
           return
 
@@ -639,6 +798,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
       else:
           return
+
   def msg4_clicked(self, msg4_button):
       if msg4_button.text == 'OK':
           slicer.util.saveNode(self.VolumeNode, self.outputVolfile)
@@ -694,7 +854,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
       self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node
       self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       # self.segmentationNode= slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLSegmentationNode")
@@ -709,7 +869,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       #  self.segmentationNode.
       # self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      # self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+      # self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       
       #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
@@ -780,6 +940,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         dstNode.GetSegmentation().CopySegmentFromSegmentation(srcSegmentation, srcSegmentId)
     
       
+      # Then delete the second segmentation node
+      self.msg_mask_delete = qt.QMessageBox()
+      self.msg_mask_delete.setText("Do you want to delete the loaded mask?")
+      self.msg_mask_delete.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+      self.msg_mask_delete.buttonClicked.connect(self.onmsg_mask_delete)
+      self.msg_mask_delete.exec()
+      
+  def onmsg_mask_delete(self):    
+      srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
+      slicer.mrmlScene.RemoveNode(srcNode)
       
       
       
@@ -805,7 +975,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   # def setVolumeandSegmentationNodes(self):
   #     self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
   #     self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-  #     self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+  #     self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
   #     self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
   #     # Set reference geometry
   #     self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
@@ -852,8 +1022,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
           self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
           #Set if using Editable intensity range (the range is defined below using object.setParameter)
-          self.segmentEditorNode.SetSourceVolumeIntensityMask(True)
-          self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+          self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+          self.segmentEditorNode.SetMasterVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
           self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
       else:
           self.ui.pushButton_Paint.setStyleSheet("background-color : indianred")
