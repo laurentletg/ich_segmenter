@@ -1,3 +1,5 @@
+# To install a package in slicer python environment, use the following command:
+# pip install --user package_name
 from genericpath import exists
 import os
 from ssl import _create_unverified_context
@@ -10,8 +12,8 @@ from glob import glob
 import re
 import pandas as pd
 import time
-import slicerio
-import nrrd
+# import slicerio # cannot install in slicer
+# import nrrd
 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
@@ -44,7 +46,7 @@ and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR0132
 """
 
 ### Timer class -custom class
-
+#Class below could be at some point moved to a separate file
 class Timer():
     def __init__(self, number=None):
         self.number = number
@@ -90,12 +92,8 @@ class Timer():
         self.total_time = 0
 
 
-
-
 #
 # ICH_SEGMENTER_V2Widget
-#
-
 class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -122,6 +120,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.LB_HU = 30
     self.UB_HU = 90
 
+
+    
         # Add margin to the sides
 
 
@@ -149,10 +149,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
     self.logic = ICH_SEGMENTER_V2Logic()
-
-
-    # Buttons
-    ### LLG CONNECTIONS
+    
+    ###################################################################
+    ####################    WIDGETS CONNECTIONS    ####################
+    ###################################################################
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.getDefaultDir.connect('clicked(bool)', self.getDefaultDir)
     self.ui.BrowseFolders.connect('clicked(bool)', self.onBrowseFoldersButton)
@@ -184,13 +184,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.SegmentWindowPushButton.connect('clicked(bool)', self.onSegmendEditorPushButton)
     self.ui.SegmentWindowPushButton.setStyleSheet("background-color : lightgray")
     # self.ui.radioButton_Edema.connect('clicked(bool)', self.onCheckEdema)
-    
-    
-    ### LLG CODE BELOW
+
     # Change color of lcd screen
     self.ui.lcdNumber.setStyleSheet("background-color : black")
     
-    # self.ui.LB_HU.connect('valueChanged(double)', self.onLB_HU)
+    # Change the value of the upper and lower bound of the HU
     self.ui.UB_HU.setValue(self.UB_HU)
     self.ui.LB_HU.setValue(self.LB_HU)
     self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
@@ -201,6 +199,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                         self.ui.ichtype6, self.ui.ichtype7, self.ui.ichtype8, self.ui.ichtype9]
     self.listichloc = [self.ui.ichloc1, self.ui.ichloc2, self.ui.ichloc3, self.ui.ichloc4, self.ui.ichloc5,
                        self.ui.ichloc6, self.ui.ichloc7, self.ui.ichloc8, self.ui.ichloc9, self.ui.ichloc10]
+
+
+
 
     
   def getDefaultDir(self):
@@ -305,7 +306,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.startTimer()
 
   
-  # Getter the seegmentation node name    - Not sure if this is really useful here. 
+  # Getter method to get the segmentation node name    - Not sure if this is really useful here. 
   @property
   def segmentationNodeName(self):
     return f'{self.currentCase}_segmentation'
