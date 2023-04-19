@@ -613,7 +613,7 @@
       <item row="3" column="1">
        <layout class="QVBoxLayout" name="verticalLayout_9">
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="pushButton_NewMask">
           <property name="font">
            <font>
             <weight>75</weight>
@@ -626,16 +626,16 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="IVHSegm">
+         <widget class="QPushButton" name="ICHSegm">
           <property name="text">
-           <string>IVH segm</string>
+           <string>ICH segm</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="ICHSegm">
+         <widget class="QPushButton" name="IVHSegm">
           <property name="text">
-           <string>ICH segm</string>
+           <string>IVH segm</string>
           </property>
          </widget>
         </item>

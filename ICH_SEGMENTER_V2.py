@@ -12,8 +12,8 @@ from glob import glob
 import re
 import pandas as pd
 import time
-# import slicerio # cannot install in slicer
-# import nrrd
+import slicerio # cannot install in slicer
+import nrrd
 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
@@ -111,7 +111,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # LLG CODE BELOW
     self.ICH_segm_name = None
     self.predictions_names= None
-    self.DefaultDir = '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2021_RSNA_ Kaggle_segmentation/2023 2023_03_07 RSNA SEGMENTATION 3 CLASSES/data'
+    self.DefaultDir = '/home/llg/Downloads/ANW-20230419T164611Z-001/ANW/'
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
@@ -170,6 +170,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
     self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
     self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
+    self.ui.pushButton_NewMask.connect('clicked(bool)', self.onPushButton_NewMask)
 
 
     ### ANW CONNECTIONS
@@ -203,6 +204,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.listEMs= [self.ui.EM_barras_density, self.ui.EM_barras_margins, self.ui.EM_black_hole, self.ui.EM_blend, 
                    self.ui.EM_comments, self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, 
                    self.ui.EM_swirl]
+    
+    
+    
     
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
@@ -304,6 +308,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Vol_displayNode.SetLevel(45)
       self.newSegments()
       self.startTimer()
+      self.timer_router()
 
   
   # Getter method to get the segmentation node name    - Not sure if this is really useful here. 
@@ -351,8 +356,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.timer2 = Timer(number=2)
       self.timer3 = Timer(number=3)
       
-
-      
+  def onPushButton_NewMask(self):
+      self.newSegments()
       
             
   def onPreviousButton(self):
@@ -829,8 +834,26 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       # self.prediction_name = 
 
+  def msg_warnig_delete_segm_node_clicked(self, msg_warnig_delete_segm_node_button):
+      if msg_warnig_delete_segm_node_button.text == 'OK':
+        srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+        slicer.mrmlScene.RemoveNode(srcNode)
+      else:
+          return
+      
   def onLoadPredictionButton(self): 
       # Get list of prediction names
+      msg_warnig_delete_segm_node =qt.QMessageBox() # Typo correction
+      msg_warnig_delete_segm_node.setText('This will delete the current segementation. Do you want to continue?')
+      msg_warnig_delete_segm_node.setIcon(qt.QMessageBox.Warning)
+      msg_warnig_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+      msg_warnig_delete_segm_node.buttonClicked.connect(self.msg_warnig_delete_segm_node_clicked)
+      msg_warnig_delete_segm_node.exec()
+      
+    #   msgnopredloaded.exec()
+    #   # Then load the browse folder thing for the user
+    #   self.onBrowseFolders_2Button()
+      
       try:
         self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_segmentation.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
         print(self.predictions_names)
@@ -891,10 +914,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
       self.updateCurrentSegmenationLabel()
       
-      ######################################### IMPORTANT #########################################
-      #### COPY LOADED MASK TO FIRST SEGMENTATION NODE AND OVERWRITE IT ###########################
-      ######################################### IMPORTANT #########################################
-      # See dedicate notebook and https://discourse.slicer.org/t/copy-segment-from-segmentation-failing/15912###
+      ######################################## IMPORTANT #########################################
+      ### COPY LOADED MASK TO FIRST SEGMENTATION NODE AND OVERWRITE IT ###########################
+      ######################################## IMPORTANT #########################################
+    #   See dedicate notebook and https://discourse.slicer.org/t/copy-segment-from-segmentation-failing/15912###
       
       # Get dst and src segment names
       dst_ICH_segment_name = shn.GetItemName(items.GetId(2))
@@ -946,44 +969,43 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         dstSegmentation.RemoveSegment(dst_IVH_segment_name)
         dstNode.GetSegmentation().CopySegmentFromSegmentation(srcSegmentation, srcSegmentId)
-    
+        
+        srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
+        slicer.mrmlScene.RemoveNode(srcNode)
       
-      # Then delete the second segmentation node
-      self.msg_mask_delete = qt.QMessageBox()
-      self.msg_mask_delete.setText("Do you want to delete the loaded mask?")
-      self.msg_mask_delete.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-      self.msg_mask_delete.buttonClicked.connect(self.onmsg_mask_delete)
-      self.msg_mask_delete.exec()
+        # Start timer
+        self.startTimer()
       
-  def onmsg_mask_delete(self):    
-      srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
-      slicer.mrmlScene.RemoveNode(srcNode)
+    #   # Then delete the second segmentation node
+    #   self.msg_mask_delete = qt.QMessageBox()
+    #   self.msg_mask_delete.setText("Do you want to delete the loaded mask?")
+    #   self.msg_mask_delete.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+    #   self.msg_mask_delete.buttonClicked.connect(self.onmsg_mask_delete)
+    #   self.msg_mask_delete.exec()
       
-      
-      
-      # Start timer
-      self.startTimer()
-      
-      # # Set to erase then paint (so you can use the space bar)
-      # segmentEditorWidget.setActiveEffectByName("Erase")
-      # segmentEditorWidget.setActiveEffectByName("Paint")
-      # effect = segmentEditorWidget.activeEffect()
-      # effect.setParameter('BrushSphere', 1)
+#   def onmsg_mask_delete(self):    
 
-      # ### MASK
-      # #Set mask mode
-      # segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentEditorNode.PaintAllowedEverywhere)
-      # #Set if using Editable intensity range (the range is defined below using object.setParameter)
-      # segmentEditorNode.SetMasterVolumeIntensityMask(True)
-      # segmentEditorNode.SetMasterVolumeIntensityMaskRange(35, 90)
-      # #Set overwrite options
-      # segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
+      
+#       # # Set to erase then paint (so you can use the space bar)
+#       # segmentEditorWidget.setActiveEffectByName("Erase")
+#       # segmentEditorWidget.setActiveEffectByName("Paint")
+#       # effect = segmentEditorWidget.activeEffect()
+#       # effect.setParameter('BrushSphere', 1)
+
+#       # ### MASK
+#       # #Set mask mode
+#       # segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentEditorNode.PaintAllowedEverywhere)
+#       # #Set if using Editable intensity range (the range is defined below using object.setParameter)
+#       # segmentEditorNode.SetMasterVolumeIntensityMask(True)
+#       # segmentEditorNode.SetMasterVolumeIntensityMaskRange(35, 90)
+#       # #Set overwrite options
+#       # segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
 
 
-  # def setVolumeandSegmentationNodes(self):
-  #     self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-  #     self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-  #     self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+#   # def setVolumeandSegmentationNodes(self):
+#   #     self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+#   #     self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+#   #     self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
   #     self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
   #     # Set reference geometry
   #     self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
