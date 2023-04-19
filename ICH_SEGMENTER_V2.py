@@ -137,7 +137,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Load widget from .ui file (created by Qt Designer).
     # Additional widgets can be instantiated manually and added to self.layout.
-    uiWidget = slicer.util.loadUI(self.resourcePath('UI/ICH_SEGMENTER_V2.ui'))
+    uiWidget = slicer.util.loadUI(self.resourcePath('UI/ICH_SEGMENTER_V3.ui'))
     self.layout.addWidget(uiWidget)
     self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -200,9 +200,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.listichloc = [self.ui.ichloc1, self.ui.ichloc2, self.ui.ichloc3, self.ui.ichloc4, self.ui.ichloc5,
                        self.ui.ichloc6, self.ui.ichloc7, self.ui.ichloc8, self.ui.ichloc9, self.ui.ichloc10]
 
-
-
-
+    self.listEMs= [self.ui.EM_barras_density, self.ui.EM_barras_margins, self.ui.EM_black_hole, self.ui.EM_blend, 
+                   self.ui.EM_comments, self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, 
+                   self.ui.EM_swirl]
     
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
@@ -315,29 +315,36 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def newSegments(self):
     #   pass
     #   Generate 3 classes of segmentations automatically
+      # Create segment names 
       self.ICH_segment_name = "{}_ICH".format(self.currentCase)
       self.IVH_segment_name = "{}_IVH".format(self.currentCase)
       self.PHE_segment_name = "{}_PHE".format(self.currentCase)
       print(f'Segmentation name:: {self.ICH_segment_name}')
+      # Create segment editor widget and node
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
+      # Create segmentation node
       self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
-      # Next time use a setter method @property
+      # Set segmentation node name
       self.segmentationNode.SetName(self.segmentationNodeName)
+      # Set segmentation node to segment editor
       self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+      # Set master volume node to segment editor
       self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
-      # set refenrence geometry to Volume node
+      # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
       self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
+      #below will add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name (for each of the 3 classes)
       self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segment_name)
       self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.IVH_segment_name)
       self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.PHE_segment_name)
       
-      # Get the shn thing to retrieve the segment names <enums for the segment names>
-      self.shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-      self.items = vtk.vtkIdList()
-      self.sc = self.shn.GetSceneItemID()
-      self.shn.GetItemChildren(self.sc, self.items, True)
+      
+    #   # Get the shn thing to retrieve the segment names <enums for the segment names>
+    #   self.shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    #   self.items = vtk.vtkIdList()
+    #   self.sc = self.shn.GetSceneItemID()
+    #   self.shn.GetItemChildren(self.sc, self.items, True)
+      
       
       #Initialize timers (unique to each patients)
       self.timer1 = Timer(number=1)
