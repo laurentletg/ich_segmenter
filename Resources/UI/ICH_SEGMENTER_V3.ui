@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1363</width>
+    <width>883</width>
     <height>1320</height>
    </rect>
   </property>
@@ -20,6 +20,407 @@
       <string>Configuration</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
+      <item row="0" column="0" colspan="2">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Set default directory</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="getDefaultDir">
+          <property name="text">
+           <string>Get default directory</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="BrowseFolders">
+          <property name="text">
+           <string>Browse volume folder</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="CurrentFolder">
+          <property name="text">
+           <string>Current Folder:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_2">
+            <item>
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Annotator's name</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="Annotator_name"/>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QLabel" name="label_4">
+              <property name="text">
+               <string>Degree</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="AnnotatorDegree">
+              <item>
+               <property name="text">
+                <string/>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Medical Student</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Resident</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Radiologist</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Supervisor</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Research Team</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <item>
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Revision step</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="RevisionStep">
+              <item>
+               <property name="text">
+                <string/>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>0 - First</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>1 - Revision</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>2 - Final</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QPushButton" name="Previous">
+            <property name="text">
+             <string>&lt;&lt;  Previous</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="Next">
+            <property name="text">
+             <string>Next  &gt;&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="FileIndex">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="CurrentPatient">
+          <property name="text">
+           <string>Current Patient:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="CurrentSegmenationLabel">
+          <property name="text">
+           <string>Current Segmentation Label:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="BrowseFolders_2">
+          <property name="text">
+           <string>Browse mask folder</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="0" rowspan="2">
+       <widget class="QScrollArea" name="scrollArea">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>692</width>
+           <height>496</height>
+          </rect>
+         </property>
+         <widget class="QListWidget" name="SlicerDirectoryListView">
+          <property name="geometry">
+           <rect>
+            <x>180</x>
+            <y>0</y>
+            <width>301</width>
+            <height>201</height>
+           </rect>
+          </property>
+          <property name="selectionRectVisible">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </widget>
+       </widget>
+      </item>
+      <item row="13" column="0" colspan="2">
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
+          <property name="text">
+           <string>Tools</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="1" column="0">
+            <widget class="QPushButton" name="SegmentWindowPushButton">
+             <property name="text">
+              <string>Dock Segment Editor</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="3" column="1">
+              <widget class="QSpinBox" name="UB_HU"/>
+             </item>
+             <item row="2" column="2">
+              <widget class="QPushButton" name="PushButton_segmeditor">
+               <property name="text">
+                <string>Segm Editor</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="2">
+              <widget class="QPushButton" name="pushButton_Smooth">
+               <property name="text">
+                <string>Smooth margins</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QSpinBox" name="LB_HU">
+               <property name="toolTip">
+                <string extracomment="testtool tip coment"/>
+               </property>
+               <property name="minimum">
+                <number>-3000</number>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QPushButton" name="pushButton_Small_holes">
+               <property name="text">
+                <string>Remove small holes</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QPushButton" name="pushButton_Erase">
+               <property name="text">
+                <string>Erase mode</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QPushButton" name="pushButton_Paint">
+               <property name="text">
+                <string>Paint with mask</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="2">
+              <widget class="QPushButton" name="pushButton_ToggleFill">
+               <property name="text">
+                <string>Fill OFF</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QPushButton" name="pushButton_ICH_select">
+               <property name="text">
+                <string>ICH</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QPushButton" name="pushButton_IVH_select">
+               <property name="text">
+                <string>IVH</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="2">
+              <widget class="QPushButton" name="pushButton_PHE_select">
+               <property name="text">
+                <string>PHE</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="4" column="1">
+       <layout class="QVBoxLayout" name="verticalLayout_8">
+        <item>
+         <widget class="QPushButton" name="SaveSegmentationButton">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="statusTip">
+           <string>Saving segmentation</string>
+          </property>
+          <property name="text">
+           <string>Save segmentation</string>
+          </property>
+          <property name="shortcut">
+           <string>Ctrl+S</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLCDNumber" name="lcdNumber"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="PauseTimerButton">
+          <property name="text">
+           <string>Pause</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="1">
+       <layout class="QVBoxLayout" name="verticalLayout_9">
+        <item>
+         <widget class="QPushButton" name="ICHSegm">
+          <property name="text">
+           <string>New ICH segm</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="IVHSegm">
+          <property name="text">
+           <string> New IVH segm</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="PHESegm">
+          <property name="text">
+           <string>New PHE segm</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="LoadPrediction">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="statusTip">
+           <string>Timer started</string>
+          </property>
+          <property name="text">
+           <string>Load mask</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
       <item row="12" column="0" colspan="2">
        <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton">
         <property name="text">
@@ -303,399 +704,6 @@
             </item>
            </layout>
           </widget>
-         </widget>
-        </widget>
-       </widget>
-      </item>
-      <item row="0" column="0" colspan="2">
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Set default directory</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="getDefaultDir">
-          <property name="text">
-           <string>Get default directory</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="BrowseFolders">
-          <property name="text">
-           <string>Browse volume folder</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="CurrentFolder">
-          <property name="text">
-           <string>Current Folder:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_2">
-            <item>
-             <widget class="QLabel" name="label_2">
-              <property name="text">
-               <string>Annotator's name</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="Annotator_name"/>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_3">
-            <item>
-             <widget class="QLabel" name="label_4">
-              <property name="text">
-               <string>Degree</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="AnnotatorDegree">
-              <item>
-               <property name="text">
-                <string/>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Medical Student</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Resident</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Radiologist</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Supervisor</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Research Team</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
-            <item>
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>Revision step</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="RevisionStep">
-              <item>
-               <property name="text">
-                <string/>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>0 - First</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>1 - Revision</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>2 - Final</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QPushButton" name="Previous">
-            <property name="text">
-             <string>&lt;&lt;  Previous</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="Next">
-            <property name="text">
-             <string>Next  &gt;&gt;</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="FileIndex">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QLabel" name="CurrentPatient">
-          <property name="text">
-           <string>Current Patient:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="CurrentSegmenationLabel">
-          <property name="text">
-           <string>Current Segmentation Label:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="BrowseFolders_2">
-          <property name="text">
-           <string>Browse mask folder</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="13" column="0" colspan="2">
-       <layout class="QVBoxLayout" name="verticalLayout_5">
-        <item>
-         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
-          <property name="text">
-           <string>Tools</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_6">
-           <item row="1" column="0">
-            <widget class="QPushButton" name="SegmentWindowPushButton">
-             <property name="text">
-              <string>Dock Segment Editor</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <layout class="QGridLayout" name="gridLayout">
-             <item row="2" column="1">
-              <widget class="QSpinBox" name="UB_HU"/>
-             </item>
-             <item row="2" column="0">
-              <widget class="QSpinBox" name="LB_HU">
-               <property name="toolTip">
-                <string extracomment="testtool tip coment"/>
-               </property>
-               <property name="minimum">
-                <number>-3000</number>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QPushButton" name="pushButton_Small_holes">
-               <property name="text">
-                <string>Remove small holes</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="2">
-              <widget class="QPushButton" name="pushButton_ToggleFill">
-               <property name="text">
-                <string>Fill OFF</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QPushButton" name="pushButton_Smooth">
-               <property name="text">
-                <string>Smooth margins</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QPushButton" name="pushButton_Paint">
-               <property name="text">
-                <string>Paint with mask</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QPushButton" name="pushButton_Erase">
-               <property name="text">
-                <string>Erase mode</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="2">
-              <widget class="QPushButton" name="PushButton_segmeditor">
-               <property name="text">
-                <string>Segm Editor</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="4" column="1">
-       <layout class="QVBoxLayout" name="verticalLayout_8">
-        <item>
-         <widget class="QPushButton" name="SaveSegmentationButton">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="statusTip">
-           <string>Saving segmentation</string>
-          </property>
-          <property name="text">
-           <string>Save segmentation</string>
-          </property>
-          <property name="shortcut">
-           <string>Ctrl+S</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLCDNumber" name="lcdNumber"/>
-        </item>
-        <item>
-         <widget class="QPushButton" name="PauseTimerButton">
-          <property name="text">
-           <string>Pause</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="3" column="1">
-       <layout class="QVBoxLayout" name="verticalLayout_9">
-        <item>
-         <widget class="QPushButton" name="pushButton_NewMask">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>New mask</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="ICHSegm">
-          <property name="text">
-           <string>ICH segm</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="IVHSegm">
-          <property name="text">
-           <string>IVH segm</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="PHESegm">
-          <property name="text">
-           <string>PHE segm</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="LoadPrediction">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="statusTip">
-           <string>Timer started</string>
-          </property>
-          <property name="text">
-           <string>Load mask</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="3" column="0" rowspan="2">
-       <widget class="QScrollArea" name="scrollArea">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="widgetResizable">
-         <bool>true</bool>
-        </property>
-        <widget class="QWidget" name="scrollAreaWidgetContents">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>1172</width>
-           <height>496</height>
-          </rect>
-         </property>
-         <widget class="QListWidget" name="SlicerDirectoryListView">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>301</width>
-            <height>201</height>
-           </rect>
-          </property>
-          <property name="selectionRectVisible">
-           <bool>false</bool>
-          </property>
          </widget>
         </widget>
        </widget>

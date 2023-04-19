@@ -119,7 +119,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     self.LB_HU = 30
     self.UB_HU = 90
-
+    #   #Initialize timers (unique to each patients)
+    self.timer1 = Timer(number=1)
+    self.timer2 = Timer(number=2)
+    self.timer3 = Timer(number=3)
+    
 
     
         # Add margin to the sides
@@ -137,7 +141,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Load widget from .ui file (created by Qt Designer).
     # Additional widgets can be instantiated manually and added to self.layout.
-    uiWidget = slicer.util.loadUI(self.resourcePath('UI/ICH_SEGMENTER_V3.ui'))
+    uiWidget = slicer.util.loadUI(self.resourcePath('UI/ICH_SEGMENTER_V4.ui'))
     self.layout.addWidget(uiWidget)
     self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -170,7 +174,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
     self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
     self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
-    self.ui.pushButton_NewMask.connect('clicked(bool)', self.onPushButton_NewMask)
 
 
     ### ANW CONNECTIONS
@@ -306,10 +309,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Vol_displayNode.AutoWindowLevelOff()
       Vol_displayNode.SetWindow(85)
       Vol_displayNode.SetLevel(45)
-      self.newSegments()
-      self.startTimer()
-      self.timer_router()
-
+      self.newSegmentation()
+      self.onICHSegm()
+    #   self.startTimer()
+    #   self.timer_router()
+    #   
+# 
   
   # Getter method to get the segmentation node name    - Not sure if this is really useful here. 
   @property
@@ -318,43 +323,43 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   
       
   def newSegments(self):
-    #   pass
-    #   Generate 3 classes of segmentations automatically
-      # Create segment names 
-      self.ICH_segment_name = "{}_ICH".format(self.currentCase)
-      self.IVH_segment_name = "{}_IVH".format(self.currentCase)
-      self.PHE_segment_name = "{}_PHE".format(self.currentCase)
-      print(f'Segmentation name:: {self.ICH_segment_name}')
-      # Create segment editor widget and node
-      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
-      # Create segmentation node
-      self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
-      # Set segmentation node name
-      self.segmentationNode.SetName(self.segmentationNodeName)
-      # Set segmentation node to segment editor
-      self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      # Set master volume node to segment editor
-      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
-      # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
-      self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      #below will add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name (for each of the 3 classes)
-      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segment_name)
-      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.IVH_segment_name)
-      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.PHE_segment_name)
+      pass
+    # #   Generate 3 classes of segmentations automatically
+    #   # Create segment names 
+    #   self.ICH_segment_name = "{}_ICH".format(self.currentCase)
+    #   self.IVH_segment_name = "{}_IVH".format(self.currentCase)
+    #   self.PHE_segment_name = "{}_PHE".format(self.currentCase)
+    #   print(f'Segmentation name:: {self.ICH_segment_name}')
+    #   # Create segment editor widget and node
+    #   self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+    #   self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
+    #   # Create segmentation node
+    #   self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
+    #   # Set segmentation node name
+    #   self.segmentationNode.SetName(self.segmentationNodeName)
+    #   # Set segmentation node to segment editor
+    #   self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+    #   # Set master volume node to segment editor
+    #   self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+    #   # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
+    #   self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+    #   #below will add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name (for each of the 3 classes)
+    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segment_name)
+    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.IVH_segment_name)
+    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.PHE_segment_name)
       
       
-    #   # Get the shn thing to retrieve the segment names <enums for the segment names>
-    #   self.shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-    #   self.items = vtk.vtkIdList()
-    #   self.sc = self.shn.GetSceneItemID()
-    #   self.shn.GetItemChildren(self.sc, self.items, True)
+    # #   # Get the shn thing to retrieve the segment names <enums for the segment names>
+    # #   self.shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    # #   self.items = vtk.vtkIdList()
+    # #   self.sc = self.shn.GetSceneItemID()
+    # #   self.shn.GetItemChildren(self.sc, self.items, True)
       
       
-      #Initialize timers (unique to each patients)
-      self.timer1 = Timer(number=1)
-      self.timer2 = Timer(number=2)
-      self.timer3 = Timer(number=3)
+    #   #Initialize timers (unique to each patients)
+    #   self.timer1 = Timer(number=1)
+    #   self.timer2 = Timer(number=2)
+    #   self.timer3 = Timer(number=3)
       
   def onPushButton_NewMask(self):
       self.newSegments()
@@ -388,14 +393,74 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # ----- ANW Addition ----- : Reset timer when change case
       self.resetTimer()
 
+
+  def newSegmentation(self):
+       #   Generate 3 classes of segmentations automatically
+    #   # Create segment names 
+
+      # Create segment editor widget and node
+      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+      self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
+      # Create segmentation node (keep it local since we add a new segmentation node)
+      # Not for reference in other methods
+      segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
+      # Set segmentation node name
+      segmentationNode.SetName(self.segmentationNodeName)
+      # Set segmentation node to segment editor
+      self.segmentEditorWidget.setSegmentationNode(segmentationNode)
+      # Set master volume node to segment editor
+      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+      # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
+      segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+
+  def newSegment(self, segment_name=None):
+    
+      self.segment_name = f"{self.currentCase}_{segment_name}"
+      print(f'Current segment name is {self.segment_name}')
+    #   if self.segment_name == 'ICH':
+    #       self.ICH_segment_name = "{}_ICH".format(self.segment_name)
+    #   elif self.segment_name == 'IVH':
+    #       self.IVH_segment_name = "{}_IVH".format(self.segment_name)
+    #   elif self.segment_name == 'PHE':
+    #       self.PHE_segment_name = "{}_PHE.format(self.segment_name)
+    #   else: 
+    #       print('No valid segmentation provided')
+      # Check if the current segment exists:
+      #Get the SOURCE segmentationNode
+      srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      # Get the 'Segmentation'
+      srcSegmentation = srcNode.GetSegmentation()
+      
+      for i in srcSegmentation.GetSegmentIDs():
+          if re.search(f'{self.segment_name}'):
+              print('Segmentation already exists !')
+          if not i:
+              print(f'Creating new segmentation {self.segment_name}')
+              self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+              self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+
+    #   self.ICH_segment_name = "{}_ICH".format(self.segment_name)
+    #   self.IVH_segment_name = "{}_IVH".format(self.currentCase)
+    #   self.PHE_segment_name = "{}_PHE".format(self.currentCase)
+    #   print(f'Segmentation name:: {self.ICH_segment_name}')
+  
+  
+    #   #below will add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name (for each of the 3 classes)
+    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segment_name)
+    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.IVH_segment_name)
+    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.PHE_segment_name)
+      return self.segment_name
+
   def onICHSegm(self):
 
     #   slicer.util.selectModule("SegmentEditor")
       # below is the code to select the segment in the segment editor (from the segmentation node))
-      ICH_segment_name = f'{self.currentCase}_ICH'
+      self.ICH_segment_name = self.newSegment('ICH')
+      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
-      SegmentID = Segmentation.GetSegmentIdBySegmentName(ICH_segment_name)
-    #   self.segment_name2 =self.shn.GetItemName(self.items.GetId(2))
+      SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
+      print(f'this is the segment ID {SegmentID}')
+      
       self.segmentEditorNode.SetSelectedSegmentID(SegmentID)
       self.updateCurrentSegmenationLabel()
       # Toggle paint brush right away.
@@ -403,6 +468,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.UB_HU = 90
       self.onPushButton_Paint()
       self.number=1
+      self.timer1 = Timer(number=1)
       self.timer_router()
 
 
