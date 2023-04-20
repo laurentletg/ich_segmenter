@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1137</width>
-    <height>1320</height>
+    <height>1191</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -214,6 +214,12 @@
       </item>
       <item row="1" column="0" rowspan="7">
        <widget class="QScrollArea" name="scrollArea">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="widgetResizable">
          <bool>true</bool>
         </property>
@@ -222,8 +228,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>948</width>
-           <height>195</height>
+           <width>550</width>
+           <height>183</height>
           </rect>
          </property>
          <widget class="QListWidget" name="SlicerDirectoryListView">
