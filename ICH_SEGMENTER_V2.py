@@ -164,7 +164,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.PHESegm.connect('clicked(bool)', self.onPHESegm)
     self.ui.SaveSegmentationButton.connect('clicked(bool)', self.onSaveSegmentationButton)
     self.ui.BrowseFolders_2.connect('clicked(bool)', self.onBrowseFolders_2Button)
-    self.ui.LoadPrediction.connect('clicked(bool)', self.onLoadPredictionButton)
+    self.ui.LoadPrediction.connect('clicked(bool)', self.load_mask_v2)
     self.ui.Previous.connect('clicked(bool)', self.onPreviousButton)
     self.ui.Next.connect('clicked(bool)', self.onNextButton)
     self.ui.pushButton_Paint.connect('clicked(bool)', self.onPushButton_Paint)
@@ -412,6 +412,14 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
       segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+      # self.new3Segments()
+      
+  
+  # # Load all segments at once    
+  # def new3Segments(self):
+  #       self.onICHSegm()
+  #       self.onIVHSegm()
+  #       self.onPHESegm()
 
   def newSegment(self, segment_name=None):
     
@@ -419,9 +427,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(f'Current segment name is {self.segment_name}')
       srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       srcSegmentation = srcNode.GetSegmentation()
-      print(f'src Segmnatation IDs :: {srcSegmentation.GetSegmentIDs()}')
+      print(f'src Segmentation IDs :: {srcSegmentation.GetSegmentIDs()}')
       print(f'segment name :: {segment_name}')
       
+      
+      #Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
       if not srcSegmentation.GetSegmentIDs(): 
         print(f'Creating new segment {self.segment_name}')
         self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
@@ -435,7 +445,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               print('segment already exists')
   
       
-        
+
       # if srcSegmentation.GetSegmentIDs(): # if there are already segments in the segmentation node
       #       if [re.search(segment_name, i) for i in srcSegmentation.GetSegmentIDs()][0][0]: # if the segment name is already in the segmentation node
       #             print('segment already exists')
@@ -443,10 +453,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       #             print(f'Creating new segment {self.segment_name}')
       #             self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       #             self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
-      
-    
-
-
 
       return self.segment_name
 
@@ -460,7 +466,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(f'this is the segment ID {self.SegmentID}')
       self.onPushButton_select_ICH()
 
-  
 
   def onIVHSegm(self):
       # slicer.util.selectModule("SegmentEditor")
@@ -539,7 +544,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
       self.updateCurrentSegmenationLabel()
       self.LB_HU = 0
-      self.UB_HU = 10
+      self.UB_HU = 24
       self.onPushButton_Paint()
   
       self.number=3
@@ -1111,6 +1116,146 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #     print('ICH segment name::: {}'.format(self.ICH_segment_name))
   #     self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
       #Set mask mode (DOES NOT WORK ???????)
+      
+      
+      
+      
+  def load_mask_v2(self):
+      # Get list of prediction names
+      msg_warnig_delete_segm_node =qt.QMessageBox() # Typo correction
+      msg_warnig_delete_segm_node.setText('This will delete the current segementation. Do you want to continue?')
+      msg_warnig_delete_segm_node.setIcon(qt.QMessageBox.Warning)
+      msg_warnig_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+      msg_warnig_delete_segm_node.buttonClicked.connect(self.msg_warnig_delete_segm_node_clicked)
+      msg_warnig_delete_segm_node.exec() # calls remove node if ok is clicked
+      
+    #   msgnopredloaded.exec()
+    #   # Then load the browse folder thing for the user
+    #   self.onBrowseFolders_2Button()
+      
+      try:
+        self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_segmentation.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
+        print(self.predictions_names)
+        self.called = False # restart timer
+      except AttributeError as e:
+            msgnopredloaded=qt.QMessageBox() # Typo correction
+            msgnopredloaded.setText('Please select the prediction directory!')
+            msgnopredloaded.exec()
+            # Then load the browse folder thing for the user
+            self.onBrowseFolders_2Button()
+      # Match the prediction names that corresponds to the loaded segmentatiion
+      # self.currentPrediction_Index, self.currentPrediction_ID = [(i,j) for i,j in enumerate(self.predictions_names) if j == self.currentCase][0]
+      
+      self.currentPrediction_Index, self.currentPrediction_ID = [(i, self.predictions_names[i]) for i in range(len(self.predictions_names)) if i == self.currentCase_index][0] # return a list of tuples
+      print(f'Current case :: {self.currentCase}')
+      print(f'Current prediction ID :: {self.currentPrediction_ID }')
+      print(f'Current case index :: {self.currentCase_index}')
+      print(f'Current prediction index :: {self.currentPrediction_Index}')
+      
+      self.currentPredictionPath = self.predictions_paths[self.currentCase_index]
+      print(self.currentPrediction_ID)
+      print(self.currentPrediction_Index)
+      print(f'Current prediction path :: {self.currentPredictionPath}')
+      
+      slicer.util.loadSegmentation(self.currentPredictionPath)
+    #   self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
+      # 'ACTIVATE' segmentation node in Slicer
+      # slicer.util.loadSegmentation(self.currentCasePath)
+      self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+      self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
+      self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+      # set refenrence geometry to Volume node
+      self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+      # self.segmentationNode= slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLSegmentationNode")
+      # if self.segmentationNode:
+      #       self._parameterNode.SetNodeReferenceID("InputVolume", self.segmentationNode.GetID())
+      nn = self.segmentationNode.GetDisplayNode()
+      # set Segmentation visible:
+      nn.SetAllSegmentsVisibility(True)
+      
+      # Update the segmentation name (needed for saving the segmentation)
+      self.ICH_segm_name = self.segmentationNode.GetName()
+      
+      #  self.segmentationNode.
+      # self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+      # self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+      # self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+      
+      #below will add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
+      #Select Segment (else you need to click on it yourself)
+      # shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      # items = vtk.vtkIdList()
+      # sc = shn.GetSceneItemID()
+      # shn.GetItemChildren(sc, items, True)
+      # self.ICH_segment_name = shn.GetItemName(items.GetId(2))
+      # print(f'Segment name :: {self.ICH_segment_name}')
+      # self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
+      # self.updateCurrentSegmenationLabel()
+      
+      ######################################## IMPORTANT #########################################
+    #   ### COPY LOADED MASK TO FIRST SEGMENTATION NODE AND OVERWRITE IT ###########################
+    #   ######################################## IMPORTANT #########################################
+    # #   See dedicate notebook and https://discourse.slicer.org/t/copy-segment-from-segmentation-failing/15912###
+      
+    #   # Get dst and src segment names
+    #   dst_ICH_segment_name = shn.GetItemName(items.GetId(2))
+    #   print(f'Segment name :: {dst_ICH_segment_name}')
+    #   src_ICH_segment_name= shn.GetItemName(items.GetId(6))
+    #   print(f'Segment name :: {src_ICH_segment_name}')
+      
+    #   # Prevent overwriting the initial segment if mask is empty
+    #   if src_ICH_segment_name:
+    #     srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
+    #     srcSegmentation = srcNode.GetSegmentation()
+    #     srcname = srcNode.GetName()
+    #     srcSegmentId = srcSegmentation.GetSegmentIdBySegmentName(src_ICH_segment_name)
+
+
+    #     dstNode =slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+    #     dstSegmentation = dstNode.GetSegmentation()
+    #     dstname = dstNode.GetName()
+        
+    #     # Proceed with detele and copy
+    #     dstSegmentation.RemoveSegment(dst_ICH_segment_name)
+    #     dstNode.GetSegmentation().CopySegmentFromSegmentation(srcSegmentation, srcSegmentId)
+        
+      
+    #   # Same thing for IVH 
+      
+    #   dst_IVH_segment_name = shn.GetItemName(items.GetId(3))
+    #   print(f'Segment name :: {dst_IVH_segment_name}')
+      
+    #   try:
+    #       src_IVH_segment_name = shn.GetItemName(items.GetId(7))
+    #   except ValueError as e:
+    #       print(e)
+    #       print('No IVH segment found')
+    #       src_IVH_segment_name = None
+      
+      
+    #   if src_IVH_segment_name:
+    #     srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
+    #     srcSegmentation = srcNode.GetSegmentation()
+    #     srcname = srcNode.GetName()
+    #     print(srcname)
+    #     srcSegmentId = srcSegmentation.GetSegmentIdBySegmentName(src_IVH_segment_name)
+
+    #     dstNode =slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+    #     dstSegmentation = dstNode.GetSegmentation()
+    #     dstname = dstNode.GetName()
+    #     print(dstname)
+
+    #     dstSegmentation.RemoveSegment(dst_IVH_segment_name)
+    #     dstNode.GetSegmentation().CopySegmentFromSegmentation(srcSegmentation, srcSegmentId)
+        
+    #     srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
+    #     slicer.mrmlScene.RemoveNode(srcNode)
+      
+        # Start timer
+        self.startTimer()
+        
 
   def onSegmendEditorPushButton(self):
 
