@@ -154,9 +154,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # in batch mode, without a graphical user interface.
     self.logic = ICH_SEGMENTER_V2Logic()
     
-    ###################################################################
-    ####################    WIDGETS CONNECTIONS    ####################
-    ###################################################################
+  
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.getDefaultDir.connect('clicked(bool)', self.getDefaultDir)
     self.ui.BrowseFolders.connect('clicked(bool)', self.onBrowseFoldersButton)
@@ -174,6 +172,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
     self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
     self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
+    self.ui.pushButton_ICH_select.connect('clicked(bool)', self.onPushButton_select_ICH)
+    self.ui.pushButton_IVH_select.connect('clicked(bool)', self.onPushButton_select_IVH)
+    self.ui.pushButton_PHE_select.connect('clicked(bool)', self.onPushButton_select_PHE)
 
 
     ### ANW CONNECTIONS
@@ -418,27 +419,36 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(f'Current segment name is {self.segment_name}')
       srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       srcSegmentation = srcNode.GetSegmentation()
-      # for i in srcSegmentation.GetSegmentIDs():
-      #     if re.search(f'{self.segment_name}'):
-      #         print('Segmentation already exists !')
-      #     if not i:
-      print(f'Creating new segment {self.segment_name}')
-      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+      print(f'src Segmnatation IDs :: {srcSegmentation.GetSegmentIDs()}')
+      print(f'segment name :: {segment_name}')
+      
+      if not srcSegmentation.GetSegmentIDs(): 
+        print(f'Creating new segment {self.segment_name}')
+        self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+        self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+      else:
+        if not [re.findall(segment_name, i) for i in srcSegmentation.GetSegmentIDs()][0]:
+              print(f'Creating new segment {self.segment_name}')
+              self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+              self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+        else:
+              print('segment already exists')
+  
+      
+        
+      # if srcSegmentation.GetSegmentIDs(): # if there are already segments in the segmentation node
+      #       if [re.search(segment_name, i) for i in srcSegmentation.GetSegmentIDs()][0][0]: # if the segment name is already in the segmentation node
+      #             print('segment already exists')
+      #       else:
+      #             print(f'Creating new segment {self.segment_name}')
+      #             self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      #             self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+      
+    
 
-    #   self.ICH_segment_name = "{}_ICH".format(self.segment_name)
-    #   self.IVH_segment_name = "{}_IVH".format(self.currentCase)
-    #   self.PHE_segment_name = "{}_PHE".format(self.currentCase)
-    #   print(f'Segmentation name:: {self.ICH_segment_name}')
-  
-  
-    #   #below will add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name (for each of the 3 classes)
-    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segment_name)
-    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.IVH_segment_name)
-    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.PHE_segment_name)
+
+
       return self.segment_name
-
-  
 
   def onICHSegm(self):
       self.ICH_segment_name = self.newSegment('ICH')  
@@ -447,43 +457,19 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
-      print(f'this is the segment ID {SegmentID}')
-      
-      
-      self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
-      self.updateCurrentSegmenationLabel()
-      # Toggle paint brush right away.
-      self.LB_HU = 30
-      self.UB_HU = 90
-      self.onPushButton_Paint()
-      # below is the code to start the timer
-      self.number=1
-      self.timer1 = Timer(number=1)
-      self.timer_router()
+      print(f'this is the segment ID {self.SegmentID}')
+      self.onPushButton_select_ICH()
 
-
-      # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
-    #   self.called = False
-    #   self.segment_category = 'ICH'
   
 
   def onIVHSegm(self):
       # slicer.util.selectModule("SegmentEditor")
       self.IVH_segment_name = self.newSegment('IVH') 
-      
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.IVH_segment_name)
     #   self.segment_name3 = self.shn.GetItemName(self.items.GetId(3))
-      self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
-      self.updateCurrentSegmenationLabel()
-      self.LB_HU = 30
-      self.UB_HU = 90
-      self.onPushButton_Paint()
-      
-      self.number=2
-      self.timer2 = Timer(number=2)
-      self.timer_router()
+      self.onPushButton_select_IVH()
 
     #   self.startTimer()
     #   self.called = False    
@@ -491,21 +477,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
   def onPHESegm(self):
       self.PHE_segment_name = self.newSegment('PHE') 
-      
+    
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
     #   self.segment_name4 = self.shn.GetItemName(self.items.GetId(4))
-      self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
-      self.updateCurrentSegmenationLabel()
-      self.LB_HU = 0
-      self.UB_HU = 10
-      # Toggle paint brush right away.
-      self.onPushButton_Paint()
-      
-      self.number=3
-      self.timer3 = Timer(number=3)
-      self.timer_router()
+      self.onPushButton_select_PHE()
+
 
     #   self.startTimer()
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
@@ -524,8 +502,51 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print('selecting ICH segment')
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
-      SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
-      print(f'this is the current active segment {SegmentID}')
+      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
+      self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
+      self.updateCurrentSegmenationLabel()
+      self.LB_HU = 30
+      self.UB_HU = 90
+      self.onPushButton_Paint()
+  
+      self.number=1
+      self.timer1 = Timer(number=1)
+      self.timer_router()
+      print(f'this is the current active segment {self.SegmentID}')
+      
+  def onPushButton_select_IVH(self):
+      print('selecting IVH segment')
+      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      Segmentation = self.segmentationNode.GetSegmentation()
+      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.IVH_segment_name)
+      self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
+      self.updateCurrentSegmenationLabel()
+      self.LB_HU = 30
+      self.UB_HU = 90
+      self.onPushButton_Paint()
+  
+      self.number=2
+      self.timer2 = Timer(number=2)
+      self.timer_router()
+      print(f'this is the current active segment {self.SegmentID}')
+      
+      
+  def onPushButton_select_PHE(self):
+      print('selecting PHE segment')
+      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      Segmentation = self.segmentationNode.GetSegmentation()
+      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
+      self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
+      self.updateCurrentSegmenationLabel()
+      self.LB_HU = 0
+      self.UB_HU = 10
+      self.onPushButton_Paint()
+  
+      self.number=3
+      self.timer3 = Timer(number=3)
+      self.timer_router()
+      print(f'this is the current active segment {self.SegmentID}')
+      
  
  #### TIMER BLOCK ####
       
@@ -830,7 +851,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   f'The file {self.currentCase}.nii.gz already exists \n Do you want to replace the existing file?')
               msg4.setIcon(qt.QMessageBox.Warning)
               msg4.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-              msg4.buttonClicked.connect(self.msg2_clicked)
+              msg4.buttonClicked.connect(self.msg4_clicked)
               msg4.exec()
 
       # If annotator_name empty or timer not started.

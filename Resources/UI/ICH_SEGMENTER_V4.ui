@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>883</width>
-    <height>1320</height>
+    <height>1067</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -432,7 +432,7 @@
           <attribute name="title">
            <string>Hemorrhage Type</string>
           </attribute>
-          <widget class="QWidget" name="">
+          <widget class="QWidget" name="layoutWidget">
            <property name="geometry">
             <rect>
              <x>0</x>
@@ -522,7 +522,7 @@
           <attribute name="title">
            <string>Location</string>
           </attribute>
-          <widget class="QWidget" name="">
+          <widget class="QWidget" name="layoutWidget">
            <property name="geometry">
             <rect>
              <x>0</x>
