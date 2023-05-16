@@ -421,6 +421,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.onICHSegm()
         self.onIVHSegm()
         self.onPHESegm()
+        self.onPushButton_select_ICH() # select ICH segment by default
 
   def newSegment(self, segment_name=None):
     
