@@ -430,19 +430,37 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(f'src Segmentation IDs :: {srcSegmentation.GetSegmentIDs()}')
       print(f'segment name :: {segment_name}')
       
-      
+
       #Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
-      if not srcSegmentation.GetSegmentIDs(): 
+      if not srcSegmentation.GetSegmentIDs(): # if there are no segments in the segmentation node
         print(f'Creating new segment {self.segment_name}')
         self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
         self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+      
+      # if there are segments in the segmentation node, check if the segment name is already in the segmentation node
+      
+      if any([self.segment_name in i for i in srcSegmentation.GetSegmentIDs()]):
+            print('segment already exists, not creating a new one')
       else:
-        if not [re.findall(segment_name, i) for i in srcSegmentation.GetSegmentIDs()][0]:
-              print(f'Creating new segment {self.segment_name}')
-              self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-              self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
-        else:
-              print('segment already exists')
+            print(f'Creatin a new segment {self.segment_name}')
+            self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+            self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+
+    
+      # try:
+      #   regex_check = [re.findall(segment_name, i)[0] for i in srcSegmentation.GetSegmentIDs()][0]
+      # except IndexError:
+      #   pass
+      
+      # if not 
+      
+      # regex_check: # if the segment name is not in the segmentation node
+      #       print(f'Creating new segment {self.segment_name}')
+      #       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      #       self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+      # else: 
+      #       print(f'regex check :: {regex_check}')
+      #       print('segment already exists')
   
       
 
@@ -1254,7 +1272,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     #     slicer.mrmlScene.RemoveNode(srcNode)
       
         # Start timer
-        self.startTimer()
+        # self.startTimer()
         
 
   def onSegmendEditorPushButton(self):

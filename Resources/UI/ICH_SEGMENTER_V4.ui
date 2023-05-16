@@ -69,21 +69,21 @@
           <item>
            <widget class="QPushButton" name="ICHSegm">
             <property name="text">
-             <string>New ICH segm</string>
+             <string>ICH segm</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="IVHSegm">
             <property name="text">
-             <string> New IVH segm</string>
+             <string> IVH segm</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="PHESegm">
             <property name="text">
-             <string>New PHE segm</string>
+             <string>PHE segm</string>
             </property>
            </widget>
           </item>
