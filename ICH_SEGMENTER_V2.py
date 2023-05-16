@@ -311,6 +311,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Vol_displayNode.SetWindow(85)
       Vol_displayNode.SetLevel(45)
       self.newSegmentation()
+
     #   self.startTimer()
     #   self.timer_router()
     #   
@@ -412,14 +413,14 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
       segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      # self.new3Segments()
+      self.new3Segments() # generate 3 segments at load time
       
   
-  # # Load all segments at once    
-  # def new3Segments(self):
-  #       self.onICHSegm()
-  #       self.onIVHSegm()
-  #       self.onPHESegm()
+  # Load all segments at once    
+  def new3Segments(self):
+        self.onICHSegm()
+        self.onIVHSegm()
+        self.onPHESegm()
 
   def newSegment(self, segment_name=None):
     
@@ -446,32 +447,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
             self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
 
-    
-      # try:
-      #   regex_check = [re.findall(segment_name, i)[0] for i in srcSegmentation.GetSegmentIDs()][0]
-      # except IndexError:
-      #   pass
-      
-      # if not 
-      
-      # regex_check: # if the segment name is not in the segmentation node
-      #       print(f'Creating new segment {self.segment_name}')
-      #       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      #       self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
-      # else: 
-      #       print(f'regex check :: {regex_check}')
-      #       print('segment already exists')
-  
-      
-
-      # if srcSegmentation.GetSegmentIDs(): # if there are already segments in the segmentation node
-      #       if [re.search(segment_name, i) for i in srcSegmentation.GetSegmentIDs()][0][0]: # if the segment name is already in the segmentation node
-      #             print('segment already exists')
-      #       else:
-      #             print(f'Creating new segment {self.segment_name}')
-      #             self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      #             self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
-
       return self.segment_name
 
   def onICHSegm(self):
@@ -482,7 +457,15 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
       print(f'this is the segment ID {self.SegmentID}')
+      segmentICH = Segmentation.GetSegment(self.ICH_segment_name)
+      segmentICH.SetColor(255/255,10/255,10/255) # set color to red
       self.onPushButton_select_ICH()
+      
+      # import vtkSegmentationCorePython as vtkSegmentationCore
+      # segmentationNode = getNode('Segmentation')
+      # segmentation = segmentationNode.GetSegmentation()
+      # segment = segmentation.GetSegment(segmentation.GetNthSegmentID(0))
+      # segment.SetColor(0,0,1)
 
 
   def onIVHSegm(self):
@@ -492,6 +475,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.IVH_segment_name)
     #   self.segment_name3 = self.shn.GetItemName(self.items.GetId(3))
+      segmentIVH = Segmentation.GetSegment(self.IVH_segment_name)
+      segmentIVH.SetColor(230/255,230/255,70/255) #set color to yellow
       self.onPushButton_select_IVH()
 
     #   self.startTimer()
@@ -505,6 +490,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
     #   self.segment_name4 = self.shn.GetItemName(self.items.GetId(4))
+      segmentPHE = Segmentation.GetSegment(self.PHE_segment_name)
+      segmentPHE.SetColor(11/255,80/255,255/255) #set color to blue
       self.onPushButton_select_PHE()
 
 
@@ -1196,83 +1183,14 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Update the segmentation name (needed for saving the segmentation)
       self.ICH_segm_name = self.segmentationNode.GetName()
       
-      #  self.segmentationNode.
-      # self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      # self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
-      # self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       
-      #below will add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
-      #Select Segment (else you need to click on it yourself)
-      # shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-      # items = vtk.vtkIdList()
-      # sc = shn.GetSceneItemID()
-      # shn.GetItemChildren(sc, items, True)
-      # self.ICH_segment_name = shn.GetItemName(items.GetId(2))
-      # print(f'Segment name :: {self.ICH_segment_name}')
-      # self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
-      # self.updateCurrentSegmenationLabel()
-      
-      ######################################## IMPORTANT #########################################
-    #   ### COPY LOADED MASK TO FIRST SEGMENTATION NODE AND OVERWRITE IT ###########################
-    #   ######################################## IMPORTANT #########################################
-    # #   See dedicate notebook and https://discourse.slicer.org/t/copy-segment-from-segmentation-failing/15912###
-      
-    #   # Get dst and src segment names
-    #   dst_ICH_segment_name = shn.GetItemName(items.GetId(2))
-    #   print(f'Segment name :: {dst_ICH_segment_name}')
-    #   src_ICH_segment_name= shn.GetItemName(items.GetId(6))
-    #   print(f'Segment name :: {src_ICH_segment_name}')
-      
-    #   # Prevent overwriting the initial segment if mask is empty
-    #   if src_ICH_segment_name:
-    #     srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
-    #     srcSegmentation = srcNode.GetSegmentation()
-    #     srcname = srcNode.GetName()
-    #     srcSegmentId = srcSegmentation.GetSegmentIdBySegmentName(src_ICH_segment_name)
+      #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
+      self.onICHSegm()
+      self.onIVHSegm()
+      self.onPHESegm()
 
-
-    #     dstNode =slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-    #     dstSegmentation = dstNode.GetSegmentation()
-    #     dstname = dstNode.GetName()
-        
-    #     # Proceed with detele and copy
-    #     dstSegmentation.RemoveSegment(dst_ICH_segment_name)
-    #     dstNode.GetSegmentation().CopySegmentFromSegmentation(srcSegmentation, srcSegmentId)
-        
-      
-    #   # Same thing for IVH 
-      
-    #   dst_IVH_segment_name = shn.GetItemName(items.GetId(3))
-    #   print(f'Segment name :: {dst_IVH_segment_name}')
-      
-    #   try:
-    #       src_IVH_segment_name = shn.GetItemName(items.GetId(7))
-    #   except ValueError as e:
-    #       print(e)
-    #       print('No IVH segment found')
-    #       src_IVH_segment_name = None
-      
-      
-    #   if src_IVH_segment_name:
-    #     srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
-    #     srcSegmentation = srcNode.GetSegmentation()
-    #     srcname = srcNode.GetName()
-    #     print(srcname)
-    #     srcSegmentId = srcSegmentation.GetSegmentIdBySegmentName(src_IVH_segment_name)
-
-    #     dstNode =slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-    #     dstSegmentation = dstNode.GetSegmentation()
-    #     dstname = dstNode.GetName()
-    #     print(dstname)
-
-    #     dstSegmentation.RemoveSegment(dst_IVH_segment_name)
-    #     dstNode.GetSegmentation().CopySegmentFromSegmentation(srcSegmentation, srcSegmentId)
-        
-    #     srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
-    #     slicer.mrmlScene.RemoveNode(srcNode)
-      
-        # Start timer
-        # self.startTimer()
+      # Start timer
+      self.startTimer()
         
 
   def onSegmendEditorPushButton(self):
@@ -1365,29 +1283,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.setParameter("KernelSizeMm", 3)
       effect.self().onApply()
 
-  # def onPushButton_7(self):
-  #     # pass
-  #     #Set mask mode
-  #     self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-  #     self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
-  #     self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-  #     #Set if using Editable intensity range (the range is defined below using object.setParameter)
-  #     self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-  #     self.segmentEditorNode.SetMasterVolumeIntensityMaskRange(40, 90)
-  #     #Set overwrite options
-  #     self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
 
-  # def onPushButton_8(self):
-  #     # pass
-  #     # REMOVE MASK
-  #     # Set mask mode
-  #     segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-  #     segmentEditorNode = segmentEditorWidget.mrmlSegmentEditorNode()
-  #     segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-  #     #Set if using Editable intensity range (the range is defined below using object.setParameter)
-  #     segmentEditorNode.SetMasterVolumeIntensityMask(False)
-  #     #Set overwrite options
-  #     segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
       
   def onPushButton_Small_holes(self):
       # pass
