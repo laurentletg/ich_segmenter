@@ -1,11 +1,8 @@
 # To install a package in slicer python environment, use the following command:
 # pip install --user package_name
-from genericpath import exists
 import os
-from ssl import _create_unverified_context
-import unittest
 import logging
-import vtk, qt, ctk, slicer
+import qt, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 from glob import glob
@@ -18,6 +15,7 @@ import nrrd
 
 VOLUME_FILE_TYPE = '*.nrrd' 
 SEGM_FILE_TYPE = '*.seg.nrrd'
+DEFAULT_VOLUMES_DIRECTORY = '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2021_RSNA_ Kaggle_segmentation/2023 2023_03_07 RSNA SEGMENTATION 3 CLASSES/data'
 
 #
 # ICH_SEGMENTER_V2
@@ -111,7 +109,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # LLG CODE BELOW
     self.ICH_segm_name = None
     self.predictions_names= None
-    self.DefaultDir = '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2021_RSNA_ Kaggle_segmentation/2023 2023_03_07 RSNA SEGMENTATION 3 CLASSES/data'
+    self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
@@ -176,11 +174,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_IVH_select.connect('clicked(bool)', self.onPushButton_select_IVH)
     self.ui.pushButton_PHE_select.connect('clicked(bool)', self.onPushButton_select_PHE)
 
+    self.ui.StartTimerButton.connect('clicked(bool)', self.toggleStartTimerButton)
+    self.enableStartTimerButton()
 
     ### ANW CONNECTIONS
     # Pause button
     self.ui.PauseTimerButton.connect('clicked(bool)', self.togglePauseTimerButton)
-    self.ui.PauseTimerButton.setStyleSheet("background-color : indianred")
+
+    # disable pause, segment, and paint buttons before "start" 
+    self.disablePauseTimerButton()
+    self.disableSegmentAndPaintButtons()
 
     # Toggle on of fill button
     self.ui.pushButton_ToggleFill.connect('clicked(bool)', self.toggleFillButton)
@@ -209,8 +212,21 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                    self.ui.EM_comments, self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, 
                    self.ui.EM_swirl]
     
-    
-    
+  def enableSegmentAndPaintButtons(self):
+    self.ui.ICHSegm.setEnabled(True)
+    self.ui.IVHSegm.setEnabled(True)
+    self.ui.PHESegm.setEnabled(True)
+    self.ui.pushButton_ICH_select.setEnabled(True)
+    self.ui.pushButton_IVH_select.setEnabled(True)
+    self.ui.pushButton_PHE_select.setEnabled(True)
+
+  def disableSegmentAndPaintButtons(self):
+    self.ui.ICHSegm.setEnabled(False)
+    self.ui.IVHSegm.setEnabled(False)
+    self.ui.PHESegm.setEnabled(False)
+    self.ui.pushButton_ICH_select.setEnabled(False)
+    self.ui.pushButton_IVH_select.setEnabled(False)
+    self.ui.pushButton_PHE_select.setEnabled(False)
     
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
@@ -280,7 +296,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # self.updateCurrentFolder()
       # self.loadPatient()
 
-      # ----- ANW Addition ----- : Reset timer when change case
+      # ----- ANW Addition ----- : Reset timer when change case, also reset button status
       self.resetTimer()
 
   def updateCaseIndex(self, index):
@@ -312,7 +328,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Vol_displayNode.SetLevel(45)
       self.newSegmentation()
 
-    #   self.startTimer()
+    #  self.startTimer()
     #   self.timer_router()
     #   
 # 
@@ -610,7 +626,26 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # making flag to false : stops the timer
       self.flag = False # For case after the first one the timer stops until the user clicks on the 
       self.counter = 0
+      self.ui.lcdNumber.display(0)
+
+      # reset button status
+      self.enableStartTimerButton()
+      self.disablePauseTimerButton()
+      self.ui.PauseTimerButton.setText('Pause')
+      if (self.ui.PauseTimerButton.isChecked()):
+          self.ui.PauseTimerButton.toggle()
       
+      self.disableSegmentAndPaintButtons() 
+
+  def enableStartTimerButton(self):
+    self.ui.StartTimerButton.setEnabled(True)
+    self.ui.StartTimerButton.setStyleSheet("background-color : yellowgreen")
+    if (self.ui.StartTimerButton.isChecked()):
+        self.ui.StartTimerButton.toggle()  
+
+  def disablePauseTimerButton(self):
+    self.ui.PauseTimerButton.setStyleSheet("background-color : silver")
+    self.ui.PauseTimerButton.setEnabled(False)
 
   # def togglePauseTimerButton(self):
   #     # if button is checked
@@ -628,6 +663,20 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #         self.ui.PauseTimerButton.setText('Pause')
   #         self.timer.start(1000)
 
+  def toggleStartTimerButton(self):
+      if (self.ui.SlicerDirectoryListView.count > 0):
+        if self.ui.StartTimerButton.isChecked():
+            self.startTimer()
+
+            self.ui.StartTimerButton.setEnabled(False)
+            self.ui.StartTimerButton.setStyleSheet("background-color : silver")
+
+            self.ui.PauseTimerButton.setEnabled(True)
+            self.ui.PauseTimerButton.setStyleSheet("background-color : indianred")
+            
+            self.enableSegmentAndPaintButtons()
+      else:
+        self.ui.StartTimerButton.toggle()
 
   def togglePauseTimerButton(self):
       # if button is checked - Time paused
@@ -636,7 +685,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.PauseTimerButton.setStyleSheet("background-color : lightblue")
           self.ui.PauseTimerButton.setText('Restart')
           self.timer.stop()
+          self.timer1.stop()
+          self.timer2.stop()
+          self.timer3.stop()
           self.flag = False
+
+          self.disableSegmentAndPaintButtons()
+          self.onPushButton_Erase()
 
       # if it is unchecked
       else:
@@ -645,6 +700,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.PauseTimerButton.setText('Pause')
           self.timer.start(100)
           self.flag = True
+
+          self.enableSegmentAndPaintButtons()
 
   # for the timer Class not the LCD one
   def timer_router(self):
@@ -1010,7 +1067,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.onPHESegm()
 
       # Start timer
-      self.startTimer()
+      #self.startTimer()
         
 
   def onSegmendEditorPushButton(self):

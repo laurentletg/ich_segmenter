@@ -30,7 +30,7 @@
           <rect>
            <x>10</x>
            <y>30</y>
-           <width>401</width>
+           <width>201</width>
            <height>201</height>
           </rect>
          </property>
@@ -43,9 +43,9 @@
         <widget class="QWidget" name="verticalLayoutWidget_2">
          <property name="geometry">
           <rect>
-           <x>419</x>
+           <x>202</x>
            <y>29</y>
-           <width>411</width>
+           <width>201</width>
            <height>199</height>
           </rect>
          </property>
@@ -63,6 +63,16 @@
             </property>
             <property name="text">
              <string>Load mask</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="StartTimerButton">
+            <property name="text">
+             <string>Start</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -88,6 +98,19 @@
            </widget>
           </item>
           <item>
+           <widget class="QLCDNumber" name="lcdNumber"/>
+          </item>
+          <item>
+           <widget class="QPushButton" name="PauseTimerButton">
+            <property name="text">
+             <string>Pause</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="SaveSegmentationButton">
             <property name="font">
              <font>
@@ -103,19 +126,6 @@
             </property>
             <property name="shortcut">
              <string>Ctrl+S</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLCDNumber" name="lcdNumber"/>
-          </item>
-          <item>
-           <widget class="QPushButton" name="PauseTimerButton">
-            <property name="text">
-             <string>Pause</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -306,6 +316,9 @@
           <property name="text">
            <string>Tools</string>
           </property>
+          <property name="collapsed">
+           <bool>true</bool>
+          </property>
           <layout class="QGridLayout" name="gridLayout_6">
            <item row="1" column="0">
             <widget class="QPushButton" name="SegmentWindowPushButton">
@@ -386,21 +399,21 @@
              <item row="1" column="0">
               <widget class="QPushButton" name="pushButton_ICH_select">
                <property name="text">
-                <string>ICH</string>
+                <string>Paint ICH</string>
                </property>
               </widget>
              </item>
              <item row="1" column="1">
               <widget class="QPushButton" name="pushButton_IVH_select">
                <property name="text">
-                <string>IVH</string>
+                <string>Paint IVH</string>
                </property>
               </widget>
              </item>
              <item row="1" column="2">
               <widget class="QPushButton" name="pushButton_PHE_select">
                <property name="text">
-                <string>PHE</string>
+                <string>Paint PHE</string>
                </property>
               </widget>
              </item>
@@ -415,6 +428,9 @@
        <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton">
         <property name="text">
          <string>CRFs</string>
+        </property>
+        <property name="collapsed">
+         <bool>true</bool>
         </property>
         <widget class="QTabWidget" name="tabWidget">
          <property name="geometry">
