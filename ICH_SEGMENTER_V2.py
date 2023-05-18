@@ -121,7 +121,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.timer1 = Timer(number=1)
     self.timer2 = Timer(number=2)
     self.timer3 = Timer(number=3)
-    
+    self.MostRecentPausedCasePath = ""
 
     
         # Add margin to the sides
@@ -537,7 +537,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.onPushButton_Paint()
   
       self.number=1
-      self.timer1 = Timer(number=1)
+      if (self.MostRecentPausedCasePath != self.currentCasePath):
+        self.timer1 = Timer(number=1) # new path, new timer
+      else:
+        self.timer1.start() # same path, restart same timer 
+
       self.timer_router()
       print(f'this is the current active segment {self.SegmentID}')
       
@@ -553,7 +557,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.onPushButton_Paint()
   
       self.number=2
-      self.timer2 = Timer(number=2)
+      if (self.MostRecentPausedCasePath != self.currentCasePath):
+        self.timer2 = Timer(number=2) # new path, new timer
+      else:
+        self.timer2.start() # same path, restart same timer 
       self.timer_router()
       print(f'this is the current active segment {self.SegmentID}')
       
@@ -570,7 +577,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.onPushButton_Paint()
   
       self.number=3
-      self.timer3 = Timer(number=3)
+      if (self.MostRecentPausedCasePath != self.currentCasePath):
+        self.timer3 = Timer(number=3) # new path, new timer
+      else:
+        self.timer3.start() # same path, restart same timer 
       self.timer_router()
       print(f'this is the current active segment {self.SegmentID}')
       
@@ -689,6 +699,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.timer2.stop()
           self.timer3.stop()
           self.flag = False
+
+          self.MostRecentPausedCasePath = self.currentCasePath
 
           self.disableSegmentAndPaintButtons()
           self.onPushButton_Erase()
