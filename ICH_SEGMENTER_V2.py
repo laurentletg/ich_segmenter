@@ -857,15 +857,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           if not os.path.isfile(self.outputTimeFile):
               self.df.to_csv(self.outputTimeFile)
           else:
-              print('This time file already exists')
-              msg1 = qt.QMessageBox()
-              msg1.setWindowTitle('Save As')
-              msg1.setText(
-                  f'The file {self.annotator_name}_Case_{self.currentCase}_time_{self.revision_step[0]}.csv already exists \n Do you want to replace the existing file?')
-              msg1.setIcon(qt.QMessageBox.Warning)
-              msg1.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-              msg1.buttonClicked.connect(self.msg1_clicked)
-              msg1.exec()
+              print('This time file already exists, appending new line to file!')
+              self.df.to_csv(self.outputTimeFile, mode='a', header=False)
 
           # Save .seg.nrrd file
           
@@ -962,15 +955,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # #delete instances of class timer (regenerated when  new case loaded)
       # del self.timer1, self.timer2, self.timer3
       # self.time = 0
-      
-
-
-  # ----- ANW Addition ----- : Actions for pop-up message box buttons
-  def msg1_clicked(self, msg1_button):
-      if msg1_button.text == 'OK':
-          self.df.to_csv(self.outputTimeFile)
-      else:
-          return
 
   def msg2_clicked(self, msg2_button):
       if msg2_button.text == 'OK':
