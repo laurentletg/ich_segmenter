@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>883</width>
-    <height>1067</height>
+    <height>1278</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,108 +20,117 @@
       <string>Configuration</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="1" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3">
-        <property name="text">
-         <string>Case list</string>
-        </property>
-        <widget class="QWidget" name="verticalLayoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>30</y>
-           <width>401</width>
-           <height>201</height>
-          </rect>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_6">
-          <item>
-           <widget class="QListWidget" name="SlicerDirectoryListView"/>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="verticalLayoutWidget_2">
-         <property name="geometry">
-          <rect>
-           <x>419</x>
-           <y>29</y>
-           <width>411</width>
-           <height>199</height>
-          </rect>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_7">
-          <item>
-           <widget class="QPushButton" name="LoadPrediction">
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="statusTip">
-             <string>Timer started</string>
-            </property>
-            <property name="text">
-             <string>Load mask</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="ICHSegm">
-            <property name="text">
-             <string>ICH segm</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="IVHSegm">
-            <property name="text">
-             <string> IVH segm</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="PHESegm">
-            <property name="text">
-             <string>PHE segm</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="SaveSegmentationButton">
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="statusTip">
-             <string>Saving segmentation</string>
-            </property>
-            <property name="text">
-             <string>Save segmentation</string>
-            </property>
-            <property name="shortcut">
-             <string>Ctrl+S</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLCDNumber" name="lcdNumber"/>
-          </item>
-          <item>
-           <widget class="QPushButton" name="PauseTimerButton">
-            <property name="text">
-             <string>Pause</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </widget>
+      <item row="11" column="0" colspan="2">
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
+          <property name="text">
+           <string>Tools</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="1" column="0">
+            <widget class="QPushButton" name="SegmentWindowPushButton">
+             <property name="text">
+              <string>Dock Segment Editor</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="3" column="1">
+              <widget class="QSpinBox" name="UB_HU"/>
+             </item>
+             <item row="2" column="2">
+              <widget class="QPushButton" name="PushButton_segmeditor">
+               <property name="text">
+                <string>Segm Editor</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="2">
+              <widget class="QPushButton" name="pushButton_Smooth">
+               <property name="text">
+                <string>Smooth margins</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QSpinBox" name="LB_HU">
+               <property name="toolTip">
+                <string extracomment="testtool tip coment"/>
+               </property>
+               <property name="minimum">
+                <number>-3000</number>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QPushButton" name="pushButton_Small_holes">
+               <property name="text">
+                <string>Remove small holes</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QPushButton" name="pushButton_Erase">
+               <property name="text">
+                <string>Erase mode</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QPushButton" name="pushButton_Paint">
+               <property name="text">
+                <string>Paint with mask</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="2">
+              <widget class="QPushButton" name="pushButton_ToggleFill">
+               <property name="text">
+                <string>Fill OFF</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QPushButton" name="pushButton_ICH_select">
+               <property name="text">
+                <string>ICH</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QPushButton" name="pushButton_IVH_select">
+               <property name="text">
+                <string>IVH</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="2">
+              <widget class="QPushButton" name="pushButton_PHE_select">
+               <property name="text">
+                <string>PHE</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item row="0" column="0" colspan="2">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -299,403 +308,391 @@
         </item>
        </layout>
       </item>
-      <item row="11" column="0" colspan="2">
-       <layout class="QVBoxLayout" name="verticalLayout_5">
-        <item>
-         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
-          <property name="text">
-           <string>Tools</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_6">
-           <item row="1" column="0">
-            <widget class="QPushButton" name="SegmentWindowPushButton">
+      <item row="1" column="0" colspan="2">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3">
+        <property name="text">
+         <string>Case list</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_9">
+         <item row="0" column="0">
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <widget class="QListWidget" name="SlicerDirectoryListView"/>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="1">
+          <layout class="QVBoxLayout" name="verticalLayout_7">
+           <item>
+            <widget class="QPushButton" name="LoadPrediction">
+             <property name="font">
+              <font>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="statusTip">
+              <string>Timer started</string>
+             </property>
              <property name="text">
-              <string>Dock Segment Editor</string>
+              <string>Load mask</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="ICHSegm">
+             <property name="text">
+              <string>ICH segm</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="IVHSegm">
+             <property name="text">
+              <string> IVH segm</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="PHESegm">
+             <property name="text">
+              <string>PHE segm</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="SaveSegmentationButton">
+             <property name="font">
+              <font>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="statusTip">
+              <string>Saving segmentation</string>
+             </property>
+             <property name="text">
+              <string>Save segmentation</string>
+             </property>
+             <property name="shortcut">
+              <string>Ctrl+S</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLCDNumber" name="lcdNumber"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="PauseTimerButton">
+             <property name="text">
+              <string>Pause</string>
              </property>
              <property name="checkable">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <layout class="QGridLayout" name="gridLayout">
-             <item row="3" column="1">
-              <widget class="QSpinBox" name="UB_HU"/>
-             </item>
-             <item row="2" column="2">
-              <widget class="QPushButton" name="PushButton_segmeditor">
-               <property name="text">
-                <string>Segm Editor</string>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="2">
-              <widget class="QPushButton" name="pushButton_Smooth">
-               <property name="text">
-                <string>Smooth margins</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QSpinBox" name="LB_HU">
-               <property name="toolTip">
-                <string extracomment="testtool tip coment"/>
-               </property>
-               <property name="minimum">
-                <number>-3000</number>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="1">
-              <widget class="QPushButton" name="pushButton_Small_holes">
-               <property name="text">
-                <string>Remove small holes</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QPushButton" name="pushButton_Erase">
-               <property name="text">
-                <string>Erase mode</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QPushButton" name="pushButton_Paint">
-               <property name="text">
-                <string>Paint with mask</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QPushButton" name="pushButton_ToggleFill">
-               <property name="text">
-                <string>Fill OFF</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QPushButton" name="pushButton_ICH_select">
-               <property name="text">
-                <string>ICH</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QPushButton" name="pushButton_IVH_select">
-               <property name="text">
-                <string>IVH</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="2">
-              <widget class="QPushButton" name="pushButton_PHE_select">
-               <property name="text">
-                <string>PHE</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
           </layout>
-         </widget>
-        </item>
-       </layout>
+         </item>
+        </layout>
+       </widget>
       </item>
       <item row="10" column="0" colspan="2">
        <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>175</height>
+         </size>
+        </property>
         <property name="text">
          <string>CRFs</string>
         </property>
-        <widget class="QTabWidget" name="tabWidget">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>20</y>
-           <width>1091</width>
-           <height>161</height>
-          </rect>
-         </property>
-         <property name="currentIndex">
-          <number>2</number>
-         </property>
-         <widget class="QWidget" name="tab_5">
-          <attribute name="title">
-           <string>Hemorrhage Type</string>
-          </attribute>
-          <widget class="QWidget" name="layoutWidget">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>1077</width>
-             <height>119</height>
-            </rect>
+        <layout class="QVBoxLayout" name="verticalLayout_8">
+         <item>
+          <widget class="QTabWidget" name="tabWidget">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
            </property>
-           <layout class="QGridLayout" name="gridLayout_2">
-            <item row="1" column="0">
-             <widget class="QCheckBox" name="ichtype2">
-              <property name="text">
-               <string>Spontaneous</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QCheckBox" name="ichtype8">
-              <property name="text">
-               <string>Neoplasm</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QCheckBox" name="ichtype9">
-              <property name="text">
-               <string>Vascular malformation</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QCheckBox" name="ichtype3">
-              <property name="text">
-               <string>Infarct</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QCheckBox" name="ichtype7">
-              <property name="text">
-               <string>Craniotomy</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QCheckBox" name="ichtype4">
-              <property name="text">
-               <string>Metal artifacts</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="ichtype1">
-              <property name="text">
-               <string>Trauma</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QCheckBox" name="ichtype6">
-              <property name="text">
-               <string>Ventricular drain</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QCheckBox" name="ichtype5">
-              <property name="text">
-               <string>Surgical changes</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1" colspan="2">
-             <widget class="QLineEdit" name="ichtype_other"/>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label">
-              <property name="text">
-               <string>Other</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-         <widget class="QWidget" name="tab_6">
-          <attribute name="title">
-           <string>Location</string>
-          </attribute>
-          <widget class="QWidget" name="layoutWidget">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>1077</width>
-             <height>131</height>
-            </rect>
+           <property name="currentIndex">
+            <number>0</number>
            </property>
-           <layout class="QGridLayout" name="gridLayout_5">
-            <item row="3" column="1">
-             <widget class="QCheckBox" name="ichloc8">
-              <property name="text">
-               <string>Deep - External capsule</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QCheckBox" name="ichloc6">
-              <property name="text">
-               <string>Deep - Thalamus</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QCheckBox" name="ichloc7">
-              <property name="text">
-               <string>Deep - Internal capsule</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QCheckBox" name="ichloc5">
-              <property name="text">
-               <string>Deep - Basal ganglia</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QCheckBox" name="ichloc4">
-              <property name="text">
-               <string>Lobar - Temporal</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QCheckBox" name="ichloc10">
-              <property name="text">
-               <string>Cerebellum - Lobar</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QCheckBox" name="ichloc9">
-              <property name="text">
-               <string>Cerebellum - Deep</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QCheckBox" name="ichloc2">
-              <property name="text">
-               <string>Lobar - Parietal</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QCheckBox" name="ichloc3">
-              <property name="text">
-               <string>Lobar - Occipital</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="ichloc1">
-              <property name="text">
-               <string>Lobar - Frontal</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QWidget" name="tab_5">
+            <attribute name="title">
+             <string>Hemorrhage Type</string>
+            </attribute>
+            <layout class="QGridLayout" name="gridLayout_8">
+             <item row="0" column="0">
+              <layout class="QGridLayout" name="gridLayout_2">
+               <item row="1" column="0">
+                <widget class="QCheckBox" name="ichtype2">
+                 <property name="text">
+                  <string>Spontaneous</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QCheckBox" name="ichtype8">
+                 <property name="text">
+                  <string>Neoplasm</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="QCheckBox" name="ichtype9">
+                 <property name="text">
+                  <string>Vascular malformation</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QCheckBox" name="ichtype3">
+                 <property name="text">
+                  <string>Infarct</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QCheckBox" name="ichtype7">
+                 <property name="text">
+                  <string>Craniotomy</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QCheckBox" name="ichtype4">
+                 <property name="text">
+                  <string>Metal artifacts</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QCheckBox" name="ichtype1">
+                 <property name="text">
+                  <string>Trauma</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QCheckBox" name="ichtype6">
+                 <property name="text">
+                  <string>Ventricular drain</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QCheckBox" name="ichtype5">
+                 <property name="text">
+                  <string>Surgical changes</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1" colspan="2">
+                <widget class="QLineEdit" name="ichtype_other"/>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="label">
+                 <property name="text">
+                  <string>Other</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QWidget" name="tab_6">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <attribute name="title">
+             <string>Location</string>
+            </attribute>
+            <layout class="QGridLayout" name="gridLayout_11">
+             <item row="0" column="0">
+              <layout class="QGridLayout" name="gridLayout_5">
+               <item row="1" column="0">
+                <widget class="QCheckBox" name="ichloc2">
+                 <property name="text">
+                  <string>Lobar - Parietal</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
+                <widget class="QCheckBox" name="ichloc4">
+                 <property name="text">
+                  <string>Lobar - Temporal</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QCheckBox" name="ichloc1">
+                 <property name="text">
+                  <string>Lobar - Frontal</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QCheckBox" name="ichloc3">
+                 <property name="text">
+                  <string>Lobar - Occipital</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QCheckBox" name="ichloc7">
+                 <property name="text">
+                  <string>Deep - Internal capsule</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QCheckBox" name="ichloc8">
+                 <property name="text">
+                  <string>Deep - External capsule</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QCheckBox" name="ichloc6">
+                 <property name="text">
+                  <string>Deep - Thalamus</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QCheckBox" name="ichloc5">
+                 <property name="text">
+                  <string>Deep - Basal ganglia</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QCheckBox" name="ichloc9">
+                 <property name="text">
+                  <string>Cerebellum - Deep</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QCheckBox" name="ichloc10">
+                 <property name="text">
+                  <string>Cerebellum - Lobar</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QWidget" name="tab">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <attribute name="title">
+             <string>Expansion markers</string>
+            </attribute>
+            <layout class="QGridLayout" name="gridLayout_10">
+             <item row="0" column="0">
+              <layout class="QGridLayout" name="gridLayout_7">
+               <item row="0" column="1">
+                <widget class="QCheckBox" name="EM_swirl">
+                 <property name="text">
+                  <string>Swirl</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="QCheckBox" name="EM_fl_level">
+                 <property name="text">
+                  <string>Fluid Level</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QCheckBox" name="EM_hypodensity">
+                 <property name="text">
+                  <string>Hypdensity</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QCheckBox" name="EM_satellite">
+                 <property name="text">
+                  <string>Satellite</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QCheckBox" name="EM_barras_margins">
+                 <property name="text">
+                  <string>Barras margins</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QCheckBox" name="EM_blend">
+                 <property name="text">
+                  <string>Blend </string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QCheckBox" name="EM_black_hole">
+                 <property name="text">
+                  <string>Black Hole</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QCheckBox" name="EM_barras_density">
+                 <property name="text">
+                  <string>Barras Density </string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QCheckBox" name="EM_island">
+                 <property name="text">
+                  <string>Island</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="label_6">
+                 <property name="text">
+                  <string>Comments</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1" colspan="2">
+                <widget class="QLineEdit" name="EM_comments"/>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
           </widget>
-         </widget>
-         <widget class="QWidget" name="tab">
-          <attribute name="title">
-           <string>Expansion markers</string>
-          </attribute>
-          <widget class="QWidget" name="gridLayoutWidget">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>1081</width>
-             <height>121</height>
-            </rect>
-           </property>
-           <layout class="QGridLayout" name="gridLayout_7">
-            <item row="0" column="1">
-             <widget class="QCheckBox" name="EM_swirl">
-              <property name="text">
-               <string>Swirl</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QCheckBox" name="EM_fl_level">
-              <property name="text">
-               <string>Fluid Level</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QCheckBox" name="EM_hypodensity">
-              <property name="text">
-               <string>Hypdensity</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QCheckBox" name="EM_satellite">
-              <property name="text">
-               <string>Satellite</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QCheckBox" name="EM_barras_margins">
-              <property name="text">
-               <string>Barras margins</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QCheckBox" name="EM_blend">
-              <property name="text">
-               <string>Blend </string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QCheckBox" name="EM_black_hole">
-              <property name="text">
-               <string>Black Hole</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="EM_barras_density">
-              <property name="text">
-               <string>Barras Density </string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QCheckBox" name="EM_island">
-              <property name="text">
-               <string>Island</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_6">
-              <property name="text">
-               <string>Comments</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1" colspan="2">
-             <widget class="QLineEdit" name="EM_comments"/>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-        </widget>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
