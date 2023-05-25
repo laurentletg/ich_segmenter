@@ -208,9 +208,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.listichloc = [self.ui.ichloc1, self.ui.ichloc2, self.ui.ichloc3, self.ui.ichloc4, self.ui.ichloc5,
                        self.ui.ichloc6, self.ui.ichloc7, self.ui.ichloc8, self.ui.ichloc9, self.ui.ichloc10]
 
-    self.listEMs= [self.ui.EM_barras_density, self.ui.EM_barras_margins, self.ui.EM_black_hole, self.ui.EM_blend, 
-                   self.ui.EM_comments, self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, 
-                   self.ui.EM_swirl]
+    self.listEMs = [self.ui.EM_barras_density, self.ui.EM_barras_margins, self.ui.EM_black_hole, self.ui.EM_blend,
+                    self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, self.ui.EM_swirl]
     
   def enableSegmentAndPaintButtons(self):
     self.ui.ICHSegm.setEnabled(True)
@@ -276,6 +275,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       
   def getCurrentTableItem(self):
+      # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
+      self.resetTimer()
+      self.uncheckAllBoxes()
+      self.clearTexts()
+
       # When an item in SlicerDirectroyListView is selected the case number is printed
       #below we update the case index and we need to pass one parameter to the methods since it takes 2 (1 in addition to self)
       self.updateCaseIndex(self.ui.SlicerDirectoryListView.currentRow) # Index starts at 0
@@ -383,6 +387,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
             
   def onPreviousButton(self):
+      # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
+      self.resetTimer()
+      self.uncheckAllBoxes()
+      self.clearTexts()
+
       #Code below avoid getting in negative values. 
       self.currentCase_index = max(0, self.currentCase_index-1)
       print('Previous clicked', self.currentCase_index)
@@ -390,11 +399,15 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCaseAll()
       self.loadPatient()
 
-      # ----- ANW Addition ----- : Reset timer when change case
-      self.resetTimer()
+
   
 
   def onNextButton(self):
+      # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
+      self.resetTimer()
+      self.uncheckAllBoxes()
+      self.clearTexts()
+
       print('Clicked Next Button', self.DefaultDir)
       # ----- ANW Modification ----- : Since index starts at 0, we need to do len(cases)-1 (instead of len(cases)+1).
       # Ex. if we have 10 cases, then len(case)=10 and index goes from 0-9,
@@ -407,8 +420,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print('*'*50)
       print('Next clicked, current caseCase_index :::', self.currentCase_index)
 
-      # ----- ANW Addition ----- : Reset timer when change case
-      self.resetTimer()
+
 
 
   def newSegmentation(self):
@@ -438,6 +450,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.onIVHSegm()
         self.onPHESegm()
         self.onPushButton_select_ICH() # select ICH segment by default
+
+        # self.startTimer()
 
   def newSegment(self, segment_name=None):
     
@@ -499,6 +513,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     #   self.startTimer()
     #   self.called = False    
     #   self.segment_category = 'IVH'
+
     
   def onPHESegm(self):
       self.PHE_segment_name = self.newSegment('PHE') 
@@ -512,10 +527,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.onPushButton_select_PHE()
 
 
-    #   self.startTimer()
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
     #   self.called = False
     #   self.segment_category = 'PHE'
+
    
 #   def time_allocation(self):
 #       if self.segment_category == 'ICH':
@@ -591,7 +606,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print('ICH segment name::: {}'.format(self.ICH_segment_name))
       self.counter = 0
       # Add flag to avoid counting time when user clicks on save segm button
-      self.flag = True
+      self.flag2 = True
       print("STARTING TIMER !!!!")
 
       # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
@@ -607,7 +622,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def updatelcdNumber(self):
       # Get the time
-      if self.flag: # add flag to avoid counting time when user clicks on save segm button
+      if self.flag2: # add flag to avoid counting time when user clicks on save segm button
             # the timer sends a signal every second (1000 ms). 
           self.counter += 1  # the self.timer.timeout.connect(self.updatelcdNumber) function is called every second and updates the counter
 
@@ -624,7 +639,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               self.total_time = self.counter/10
               self.timer.stop()
               print(f"Total segmentation time: {self.total_time} seconds")
-              self.flag = False  # Flag is for the timer to stop counting
+              self.flag2 = False  # Flag is for the timer to stop counting
               self.called = True
             #   self.time_allocation()
               return self.total_time
@@ -634,7 +649,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def resetTimer(self):
       # making flag to false : stops the timer
-      self.flag = False # For case after the first one the timer stops until the user clicks on the 
+      self.flag2 = False # For case after the first one the timer stops until the user clicks on the
       self.counter = 0
       self.ui.lcdNumber.display(0)
 
@@ -773,9 +788,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msgboxtime.exec()
 
 
+
   def checkboxChanged(self):
       self.checked_ichtype = []
       self.checked_ichloc = []
+      self.checked_ems = []
       for i in self.listichtype:
           if i.isChecked():
               ichtype = i.text
@@ -784,28 +801,42 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           if j.isChecked():
               ichloc = j.text
               self.checked_ichloc.append(ichloc)
+      for k in self.listEMs :
+          if k.isChecked():
+              em = k.text
+              self.checked_ems.append(em)
       self.checked_ichtype = ','.join(self.checked_ichtype)
       self.checked_ichloc = ','.join(self.checked_ichloc)
-      return self.checked_ichtype, self.checked_ichloc
+      self.checked_ems = ','.join(self.checked_ems)
+      return self.checked_ichtype, self.checked_ichloc, self.checked_ems
+
+  def uncheckAllBoxes(self):
+      self.allcheckboxes = self.listichtype + self.listichloc + self.listEMs
+      for i in self.allcheckboxes:
+          i.setChecked(False)
+
+  def clearTexts(self):
+      self.ui.ichtype_other.clear()
+      self.ui.EM_comments.clear()
 
 
-  def rearrangeNRRDSegments(self):
-      # Ideally, we would implement this: https://github.com/Slicer/Slicer/issues/5044 but I don't know how...
-      # open the tmp file, rearrange, save new rearranged file and remove tmp file.
-      # I tried to overwrite the original file without using tmp file but it doesn't work...
-      self.srcFile = self.tmp
-      self.dstFile = os.path.join(self.output_dir_labels,
-                                  "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name,
-                                                             self.revision_step[0]))
-
-      segment_names_to_labels = [(self.ICH_segment_name, 1), (self.IVH_segment_name, 2), (self.PHE_segment_name, 3)]
-
-      segmentation_info = slicerio.read_segmentation_info(self.srcFile)
-      voxels, header = nrrd.read(self.srcFile)
-      extracted_voxels, extracted_header = slicerio.extract_segments(voxels, header, segmentation_info,
-                                                                     segment_names_to_labels)
-      nrrd.write(self.dstFile, extracted_voxels, extracted_header)
-      os.remove(self.tmp)
+  # def rearrangeNRRDSegments(self):
+  #     # Ideally, we would implement this: https://github.com/Slicer/Slicer/issues/5044 but I don't know how...
+  #     # open the tmp file, rearrange, save new rearranged file and remove tmp file.
+  #     # I tried to overwrite the original file without using tmp file but it doesn't work...
+  #     self.srcFile = self.tmp
+  #     self.dstFile = os.path.join(self.output_dir_labels,
+  #                                 "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name,
+  #                                                            self.revision_step[0]))
+  #
+  #     segment_names_to_labels = [(self.ICH_segment_name, 1), (self.IVH_segment_name, 2), (self.PHE_segment_name, 3)]
+  #
+  #     segmentation_info = slicerio.read_segmentation_info(self.srcFile)
+  #     voxels, header = nrrd.read(self.srcFile)
+  #     extracted_voxels, extracted_header = slicerio.extract_segments(voxels, header, segmentation_info,
+  #                                                                    segment_names_to_labels)
+  #     nrrd.write(self.dstFile, extracted_voxels, extracted_header)
+  #     os.remove(self.tmp)
 
 
 
@@ -822,8 +853,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
 
       # get ICH types and locations
-      self.checked_ichtype, self.checked_ichloc = self.checkboxChanged()
+      self.checked_ichtype, self.checked_ichloc, self.checked_ems = self.checkboxChanged()
       self.ichtype_other = self.ui.ichtype_other.text
+      self.em_comments = self.ui.EM_comments.text
 
       
       # Create folders if not exist
@@ -851,7 +883,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                'Time PHE':[self.timer3.total_time], 
                'ICH type': self.checked_ichtype,
                'ICH location': self.checked_ichloc,
-               'Other': [self.ichtype_other]})
+               'Expansion markers': self.checked_ems,
+               'Other ICH type': [self.ichtype_other],
+               'Other expansion markers': [self.em_comments]})
           self.outputTimeFile = os.path.join(self.output_dir_time,
                                              '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
           if not os.path.isfile(self.outputTimeFile):
@@ -865,10 +899,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.outputSegmFile = os.path.join(self.output_dir_labels,
                                                  "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name, self.revision_step[0]))
 
+          # self.tmp = os.path.join(self.output_dir_labels,
+          #                         "{}_{}_{}_tmp.seg.nrrd".format(self.currentCase, self.annotator_name,
+          #                                                        self.revision_step[0]))
+
           if not os.path.isfile(self.outputSegmFile):
-              self.tmp = os.path.join(self.output_dir_labels,
-                                                 "{}_{}_{}_tmp.seg.nrrd".format(self.currentCase, self.annotator_name, self.revision_step[0]))
-              slicer.util.saveNode(self.segmentationNode, self.tmp)
+              slicer.util.saveNode(self.segmentationNode, self.outputSegmFile )
+              # slicer.util.saveNode(self.segmentationNode, self.tmp)
 
           else:
               print('This .nrrd file already exists')
@@ -881,7 +918,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg2.buttonClicked.connect(self.msg2_clicked)
               msg2.exec()
 
-          self.rearrangeNRRDSegments()
+          # self.rearrangeNRRDSegments()
 
           # Save alternative nitfi segmentation
           # Export segmentation to a labelmap volume
@@ -958,7 +995,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def msg2_clicked(self, msg2_button):
       if msg2_button.text == 'OK':
-          slicer.util.saveNode(self.segmentationNode, self.tmp)
+          slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
+          # slicer.util.saveNode(self.segmentationNode, self.tmp)
       else:
           return
 
@@ -1055,16 +1093,14 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       # Update the segmentation name (needed for saving the segmentation)
       self.ICH_segm_name = self.segmentationNode.GetName()
-      
+
+      # Start timer
+      # self.startTimer()
       
       #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
       self.onICHSegm()
       self.onIVHSegm()
       self.onPHESegm()
-
-      # Start timer
-      #self.startTimer()
-        
 
   def onSegmendEditorPushButton(self):
 
