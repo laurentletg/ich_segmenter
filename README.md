@@ -17,6 +17,9 @@
         `from slicer.util import pip_install`
         `pip_install("XYZ")` où on remplace `XYZ` par la librairie voulue
 
+### Autres extensions à installer
+* SlicerJupyter 
+
 ### Autres ressources
 * Formation 3D Slicer : https://www.youtube.com/watch?v=QTEti9aY0vs&list=PLeaIM0zUlEqswa6Pskg9uMq15LiWWYP39 
 * Documentation 3D Slicer : https://www.slicer.org/wiki/Documentation/Nightly/Training
