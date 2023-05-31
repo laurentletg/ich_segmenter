@@ -177,6 +177,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.StartTimerButton.connect('clicked(bool)', self.toggleStartTimerButton)
     self.enableStartTimerButton()
 
+    self.ui.ThresholdLabel.setStyleSheet("font-weight: bold")
+    self.ui.UB_HU.setMinimum(-32000)
+    self.ui.LB_HU.setMinimum(-32000)
+    self.ui.UB_HU.setMaximum(29000)
+    self.ui.LB_HU.setMaximum(29000)
+
     ### ANW CONNECTIONS
     # Pause button
     self.ui.PauseTimerButton.connect('clicked(bool)', self.togglePauseTimerButton)
@@ -210,7 +216,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.listEMs = [self.ui.EM_barras_density, self.ui.EM_barras_margins, self.ui.EM_black_hole, self.ui.EM_blend,
                     self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, self.ui.EM_swirl]
-    
+  
+  def setUpperAndLowerBoundHU(self, inputLB_HU, inputUB_HU):
+      self.LB_HU = inputLB_HU
+      self.UB_HU = inputUB_HU
+      self.ui.UB_HU.setValue(self.UB_HU)
+      self.ui.LB_HU.setValue(self.LB_HU)
+  
   def enableSegmentAndPaintButtons(self):
     self.ui.ICHSegm.setEnabled(True)
     self.ui.IVHSegm.setEnabled(True)
@@ -548,8 +560,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
       self.updateCurrentSegmenationLabel()
-      self.LB_HU = 30
-      self.UB_HU = 90
+      self.setUpperAndLowerBoundHU(30, 90)
       self.onPushButton_Paint()
   
       self.number=1
@@ -568,8 +579,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.IVH_segment_name)
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
       self.updateCurrentSegmenationLabel()
-      self.LB_HU = 30
-      self.UB_HU = 90
+      self.setUpperAndLowerBoundHU(30, 90)
       self.onPushButton_Paint()
   
       self.number=2
@@ -588,8 +598,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
       self.updateCurrentSegmenationLabel()
-      self.LB_HU = 0
-      self.UB_HU = 24
+      self.setUpperAndLowerBoundHU(0, 24)
       self.onPushButton_Paint()
   
       self.number=3
@@ -1136,7 +1145,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
           #Set if using Editable intensity range (the range is defined below using object.setParameter)
           self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-          self.segmentEditorNode.SetMasterVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+          self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
           self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
       else:
           self.ui.pushButton_Paint.setStyleSheet("background-color : indianred")
@@ -1207,10 +1216,15 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onLB_HU(self):
       self.LB_HU=self.ui.LB_HU.value
-      print(self.ui.LB_HU.value)
+
+      self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+      self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
   
   def onUB_HU(self):
       self.UB_HU=self.ui.UB_HU.value
+
+      self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+      self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
 
 #ICH_SEGMENTER_V2Logic
 #
