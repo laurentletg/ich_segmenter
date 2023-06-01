@@ -52,9 +52,10 @@ class SemiAutoPheToolThresholdWindow(qt.QWidget):
 
       self.continueButton = qt.QPushButton('Continue')
       self.continueButton.clicked.connect(self.pushContinue)
+      layout.addWidget(self.continueButton)
+
       self.cancelButton = qt.QPushButton('Cancel')
       self.cancelButton.clicked.connect(self.pushCancel)
-      layout.addWidget(self.continueButton)
       layout.addWidget(self.cancelButton)
 
       self.setLayout(layout)
@@ -69,8 +70,44 @@ class SemiAutoPheToolThresholdWindow(qt.QWidget):
 
    def pushContinue(self):
        self.segmenter.setUpperAndLowerBoundHU(self.LB_HU_value, self.UB_HU_value)
+       
+       self.instructionsWindow = SemiAutoPheToolInstructionsWindow(self.segmenter)
+       self.instructionsWindow.show()
+       
+       self.close()
+
+   def pushCancel(self):
+       self.close()
+
+class SemiAutoPheToolInstructionsWindow(qt.QWidget):
+   def __init__(self, segmenter, parent = None):
+      super(SemiAutoPheToolInstructionsWindow, self).__init__(parent)
+      
+      self.segmenter = segmenter
+
+      layout = qt.QVBoxLayout()
+      self.textLabel = qt.QLabel("Instructions:")
+      self.textLabel.setStyleSheet("font-weight: bold")
+      layout.addWidget(self.textLabel)
+
+      self.minimumLabel = qt.QLabel("Click \'Continue\' and draw a generous boundary of the ICH and PHE complex.")
+      layout.addWidget(self.minimumLabel)
+
+      self.continueButton = qt.QPushButton('Continue')
+      self.continueButton.clicked.connect(self.pushContinue)
+      layout.addWidget(self.continueButton)
+
+      self.cancelButton = qt.QPushButton('Cancel')
+      self.cancelButton.clicked.connect(self.pushCancel)
+      layout.addWidget(self.cancelButton)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Semi-automatic PHE Tool")
+      self.resize(400, 150)
+
+   def pushContinue(self):
        # DelphTODO : call method in segmenter to apply threshold to PHE and hide segment (call PHE button first?)
-       # DelphTODO : open next window for lasso select instructions, then close window and show lasso tool
+       # DelphTODO : then close window and show lasso tool
        # DelphTODO : add button to apply ? or can it be automatic? 
        # DelphTODO : call method in segmenter to apply lasso exclusion and show segment 
        self.close()
@@ -671,7 +708,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(f'this is the current active segment {self.SegmentID}')
 
   def onPushButton_SemiAutomaticPHE(self):
-      print("Pushed Semi-automatic PHE button :)")
       toolWindow = SemiAutoPheToolThresholdWindow(self)
       toolWindow.show()
  
