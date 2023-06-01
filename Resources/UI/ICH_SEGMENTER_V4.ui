@@ -150,6 +150,13 @@
              </item>
             </layout>
            </item>
+           <item row="4" column="0">
+           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE">
+               <property name="text">
+                <string>Semi-automatic PHE</string>
+               </property>
+              </widget>
+           </item>
           </layout>
          </widget>
         </item>

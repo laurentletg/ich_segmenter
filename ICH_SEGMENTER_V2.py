@@ -17,6 +17,66 @@ VOLUME_FILE_TYPE = '*.nrrd'
 SEGM_FILE_TYPE = '*.seg.nrrd'
 DEFAULT_VOLUMES_DIRECTORY = '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2021_RSNA_ Kaggle_segmentation/2023 2023_03_07 RSNA SEGMENTATION 3 CLASSES/data'
 
+class SemiAutoPheToolThresholdWindow(qt.QWidget):
+   def __init__(self, segmenter, parent = None):
+      super(SemiAutoPheToolThresholdWindow, self).__init__(parent)
+      
+      self.segmenter = segmenter
+      self.LB_HU_value = segmenter.LB_HU
+      self.UB_HU_value = segmenter.UB_HU
+
+      layout = qt.QVBoxLayout()
+      self.textLabel = qt.QLabel("Threshold bounds: ")
+      self.textLabel.setStyleSheet("font-weight: bold")
+      layout.addWidget(self.textLabel)
+
+      self.minimumLabel = qt.QLabel("Minimum")
+      layout.addWidget(self.minimumLabel)
+      
+      self.semiAutoPHE_LB_HU_spinbox = qt.QSpinBox()
+      self.semiAutoPHE_LB_HU_spinbox.valueChanged.connect(self.LB_HU_valueChanged)
+      layout.addWidget(self.semiAutoPHE_LB_HU_spinbox)
+      self.semiAutoPHE_LB_HU_spinbox.setMinimum(-32000)
+      self.semiAutoPHE_LB_HU_spinbox.setMaximum(29000)
+      self.semiAutoPHE_LB_HU_spinbox.setValue(self.LB_HU_value)
+
+      self.maximumLabel = qt.QLabel("Maximum")
+      layout.addWidget(self.maximumLabel)
+      
+      self.semiAutoPHE_UB_HU_spinbox = qt.QSpinBox()
+      self.semiAutoPHE_UB_HU_spinbox.valueChanged.connect(self.UB_HU_valueChanged)
+      layout.addWidget(self.semiAutoPHE_UB_HU_spinbox)
+      self.semiAutoPHE_UB_HU_spinbox.setMinimum(-32000)
+      self.semiAutoPHE_UB_HU_spinbox.setMaximum(29000)
+      self.semiAutoPHE_UB_HU_spinbox.setValue(self.UB_HU_value)
+
+      self.continueButton = qt.QPushButton('Continue')
+      self.continueButton.clicked.connect(self.pushContinue)
+      self.cancelButton = qt.QPushButton('Cancel')
+      self.cancelButton.clicked.connect(self.pushCancel)
+      layout.addWidget(self.continueButton)
+      layout.addWidget(self.cancelButton)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Semi-automatic PHE Tool")
+      self.resize(400, 150)
+
+   def UB_HU_valueChanged(self):
+      self.UB_HU_value = self.semiAutoPHE_UB_HU_spinbox.value
+
+   def LB_HU_valueChanged(self):
+      self.LB_HU_value = self.semiAutoPHE_LB_HU_spinbox.value
+
+   def pushContinue(self):
+       self.segmenter.setUpperAndLowerBoundHU(self.LB_HU_value, self.UB_HU_value)
+       # DelphTODO : call method in segmenter to apply threshold to PHE and hide segment (call PHE button first?)
+       # DelphTODO : open next window for lasso select instructions, then close window and show lasso tool
+       # DelphTODO : add button to apply ? or can it be automatic? 
+       # DelphTODO : call method in segmenter to apply lasso exclusion and show segment 
+       self.close()
+
+   def pushCancel(self):
+       self.close()
 #
 # ICH_SEGMENTER_V2
 #
@@ -173,6 +233,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_ICH_select.connect('clicked(bool)', self.onPushButton_select_ICH)
     self.ui.pushButton_IVH_select.connect('clicked(bool)', self.onPushButton_select_IVH)
     self.ui.pushButton_PHE_select.connect('clicked(bool)', self.onPushButton_select_PHE)
+    self.ui.pushButton_SemiAutomaticPHE.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE)
 
     self.ui.StartTimerButton.connect('clicked(bool)', self.toggleStartTimerButton)
     self.enableStartTimerButton()
@@ -598,7 +659,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
       self.updateCurrentSegmenationLabel()
-      self.setUpperAndLowerBoundHU(0, 24)
+      self.setUpperAndLowerBoundHU(5, 33)
       self.onPushButton_Paint()
   
       self.number=3
@@ -608,7 +669,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.timer3.start() # same path, restart same timer 
       self.timer_router()
       print(f'this is the current active segment {self.SegmentID}')
-      
+
+  def onPushButton_SemiAutomaticPHE(self):
+      print("Pushed Semi-automatic PHE button :)")
+      toolWindow = SemiAutoPheToolThresholdWindow(self)
+      toolWindow.show()
  
  #### TIMER BLOCK ####
       
