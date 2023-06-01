@@ -151,9 +151,23 @@
             </layout>
            </item>
            <item row="4" column="0">
+           <widget class="QLabel"  name="SemiAutomaticPHELabel">
+             <property name="text">
+                <string>Semi-automatic PHE Tool</string>
+               </property>
+             </widget>
+           </item>
+           <item row="5" column="0">
            <widget class="QPushButton" name="pushButton_SemiAutomaticPHE">
                <property name="text">
-                <string>Semi-automatic PHE</string>
+                <string>Start</string>
+               </property>
+              </widget>
+           </item>
+           <item row="6" column="0">
+           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_ApplyBoundary">
+               <property name="text">
+                <string>Apply Boundary</string>
                </property>
               </widget>
            </item>

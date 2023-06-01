@@ -90,7 +90,8 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
       self.textLabel.setStyleSheet("font-weight: bold")
       layout.addWidget(self.textLabel)
 
-      self.minimumLabel = qt.QLabel("Click \'Continue\' and draw a generous boundary of the ICH and PHE complex.")
+      self.minimumLabel = qt.QLabel("Click <b>Continue</b> and draw a generous boundary of the ICH and PHE complex. When you are finished drawing the boundary, click on <b>Apply Boundary</b> in the main extension menu. ")
+      self.minimumLabel.setWordWrap(True)
       layout.addWidget(self.minimumLabel)
 
       self.continueButton = qt.QPushButton('Continue')
@@ -106,10 +107,8 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
       self.resize(400, 150)
 
    def pushContinue(self):
-       # DelphTODO : call method in segmenter to apply threshold to PHE and hide segment (call PHE button first?)
-       # DelphTODO : then close window and show lasso tool
-       # DelphTODO : add button to apply ? or can it be automatic? 
-       # DelphTODO : call method in segmenter to apply lasso exclusion and show segment 
+       self.segmenter.ApplySemiAutomaticThresholdAlgorithm()
+       # DelphTODO : add Volbers et al. method for lasso select
        self.close()
 
    def pushCancel(self):
@@ -271,11 +270,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_IVH_select.connect('clicked(bool)', self.onPushButton_select_IVH)
     self.ui.pushButton_PHE_select.connect('clicked(bool)', self.onPushButton_select_PHE)
     self.ui.pushButton_SemiAutomaticPHE.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE)
+    self.ui.pushButton_SemiAutomaticPHE_ApplyBoundary.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE_ApplyBoundary)
+
+    self.ui.pushButton_SemiAutomaticPHE_ApplyBoundary.setEnabled(False)
 
     self.ui.StartTimerButton.connect('clicked(bool)', self.toggleStartTimerButton)
     self.enableStartTimerButton()
 
     self.ui.ThresholdLabel.setStyleSheet("font-weight: bold")
+    self.ui.SemiAutomaticPHELabel.setStyleSheet("font-weight: bold")
+
     self.ui.UB_HU.setMinimum(-32000)
     self.ui.LB_HU.setMinimum(-32000)
     self.ui.UB_HU.setMaximum(29000)
@@ -336,6 +340,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_ICH_select.setEnabled(False)
     self.ui.pushButton_IVH_select.setEnabled(False)
     self.ui.pushButton_PHE_select.setEnabled(False)
+    self.ui.pushButton_SemiAutomaticPHE_ApplyBoundary.setEnabled(False)
     
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
@@ -710,6 +715,24 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onPushButton_SemiAutomaticPHE(self):
       toolWindow = SemiAutoPheToolThresholdWindow(self)
       toolWindow.show()
+  
+  def onPushButton_SemiAutomaticPHE_ApplyBoundary(self):
+      print(f"Clicked apply boundary. ")
+      self.ui.pushButton_SemiAutomaticPHE_ApplyBoundary.setEnabled(False)
+
+      # DelphTODO : apply scissors
+      # DelphTODO : display segment
+      # DelphTODO : close scissors tool? 
+
+  def ApplySemiAutomaticThresholdAlgorithm(self):
+      self.ui.pushButton_SemiAutomaticPHE_ApplyBoundary.setEnabled(True)
+      
+      # DelphTODO : (call PHE button first?)
+      # DelphTODO : apply threshold to PHE to entire scan
+      # DelphTODO : hide segment (before?)
+      # DelphTODO : open scissors tool
+
+      print(f"Applied the algorithm. ")
  
  #### TIMER BLOCK ####
       
