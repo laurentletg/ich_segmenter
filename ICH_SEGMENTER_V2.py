@@ -703,6 +703,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCurrentSegmenationLabel()
       self.setUpperAndLowerBoundHU(5, 33)
       self.onPushButton_Paint()
+
+      self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedOutsideAllSegments)
   
       self.number=3
       if (self.MostRecentPausedCasePath != self.currentCasePath):
