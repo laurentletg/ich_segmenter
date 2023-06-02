@@ -158,16 +158,16 @@
              </widget>
            </item>
            <item row="5" column="0">
-           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE">
+           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_Launch">
                <property name="text">
-                <string>Start</string>
+                <string>Launch</string>
                </property>
               </widget>
            </item>
            <item row="6" column="0">
-           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_ApplyBoundary">
+           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_ShowResult">
                <property name="text">
-                <string>Apply Boundary</string>
+                <string>Show Result</string>
                </property>
               </widget>
            </item>
