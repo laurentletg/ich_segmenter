@@ -91,7 +91,8 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
       layout.addWidget(self.textLabel)
 
       self.minimumLabel = qt.QLabel("Click <b>Continue</b> and draw a generous boundary of the ICH and PHE complex. Note that the boundary may be drawn in multiple views. When you are finished drawing the boundary, click on <b>Show Result</b> in the main extension menu. "
-                                    + "The HU thresholds and manual fine-tuning of included voxels is left to the annotator\'s discretion. ")
+                                    + "The HU thresholds and manual fine-tuning of included voxels are left to the annotator\'s discretion. "
+                                    + "\n(If a popup message about visibility shows up, click <b>No</b>.)")
       self.minimumLabel.setWordWrap(True)
       layout.addWidget(self.minimumLabel)
 
@@ -109,8 +110,6 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
 
    def pushContinue(self):
        self.segmenter.ApplySemiAutomaticThresholdAlgorithm()
-       # DelphTODO : add Volbers et al. method for lasso select
-       # DelphTODO : check if popup message about visibility is an issue
        self.close()
 
    def pushCancel(self):
