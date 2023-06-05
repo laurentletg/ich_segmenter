@@ -64,9 +64,11 @@ class SemiAutoPheToolThresholdWindow(qt.QWidget):
 
    def UB_HU_valueChanged(self):
       self.UB_HU_value = self.semiAutoPHE_UB_HU_spinbox.value
+      self.segmenter.ApplyThresholdPHE(self.LB_HU_value, self.UB_HU_value)
 
    def LB_HU_valueChanged(self):
       self.LB_HU_value = self.semiAutoPHE_LB_HU_spinbox.value
+      self.segmenter.ApplyThresholdPHE(self.LB_HU_value, self.UB_HU_value)
 
    def pushContinue(self):
        self.segmenter.setUpperAndLowerBoundHU(self.LB_HU_value, self.UB_HU_value)
@@ -724,6 +726,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentationNode.GetDisplayNode().SetVisibility(True)
       self.onPushButton_Erase()
       self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
+
+  def ApplyThresholdPHE(self, inLB_HU, inUB_HU):
+      self.segmentEditorWidget.setActiveEffectByName("Threshold")
+      effect = self.segmentEditorWidget.activeEffect()
+      effect.setParameter("MinimumThreshold",f"{inLB_HU}")
+      effect.setParameter("MaximumThreshold",f"{inUB_HU}")
+      effect.self().onApply()
 
   def ApplySemiAutomaticThresholdAlgorithm(self):
       self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(True)
