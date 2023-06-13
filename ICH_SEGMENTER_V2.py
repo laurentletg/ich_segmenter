@@ -607,7 +607,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
       print(f'this is the segment ID {self.SegmentID}')
-      segmentICH = Segmentation.GetSegment(self.ICH_segment_name)
+      segmentICH = Segmentation.GetSegment(self.SegmentID)
       segmentICH.SetColor(255/255,10/255,10/255) # set color to red
       self.onPushButton_select_ICH()
       
@@ -625,7 +625,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.IVH_segment_name)
     #   self.segment_name3 = self.shn.GetItemName(self.items.GetId(3))
-      segmentIVH = Segmentation.GetSegment(self.IVH_segment_name)
+      segmentIVH = Segmentation.GetSegment(self.SegmentID)
       segmentIVH.SetColor(230/255,230/255,70/255) #set color to yellow
       self.onPushButton_select_IVH()
 
@@ -641,7 +641,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
     #   self.segment_name4 = self.shn.GetItemName(self.items.GetId(4))
-      segmentPHE = Segmentation.GetSegment(self.PHE_segment_name)
+      segmentPHE = Segmentation.GetSegment(self.SegmentID)
       segmentPHE.SetColor(11/255,80/255,255/255) #set color to blue
       self.onPushButton_select_PHE()
 
@@ -1231,7 +1231,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
       self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+      self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node
       self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       # self.segmentationNode= slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLSegmentationNode")
