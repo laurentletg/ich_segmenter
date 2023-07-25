@@ -1168,16 +1168,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.predictions_paths = sorted(glob(os.path.join(self.predictionFolder, f'{SEGM_FILE_TYPE}')))
       print(self.predictions_paths)
 
-      try:
-        assert len(self.CasesPaths) == (len(self.predictions_paths) or len(self.predictions_paths_NIFTI))
-      except AssertionError as e:
-        print('Not the same number of Volumes and predictions !')
-        msgboxpred = qt.QMessageBox()
-        msgboxpred.setText("Not the same number of Volumes and predictions !")
-        msgboxpred.exec()
-      
-      # self.prediction_name = 
-
   def msg_warnig_delete_segm_node_clicked(self, msg_warnig_delete_segm_node_button):
       if msg_warnig_delete_segm_node_button.text == 'OK':
         srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
@@ -1200,57 +1190,60 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     #   self.onBrowseFolders_2Button()
       
       try:
-        self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_segmentation.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
-        print(self.predictions_names)
-        self.called = False # restart timer
+            self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_segmentation.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
+            print(self.predictions_names)
+            self.called = False # restart timer
       except AttributeError as e:
             msgnopredloaded=qt.QMessageBox() # Typo correction
             msgnopredloaded.setText('Please select the prediction directory!')
             msgnopredloaded.exec()
             # Then load the browse folder thing for the user
             self.onBrowseFolders_2Button()
-      # Match the prediction names that corresponds to the loaded segmentatiion
-      # self.currentPrediction_Index, self.currentPrediction_ID = [(i,j) for i,j in enumerate(self.predictions_names) if j == self.currentCase][0]
       
-      self.currentPrediction_Index, self.currentPrediction_ID = [(i, self.predictions_names[i]) for i in range(len(self.predictions_names)) if i == self.currentCase_index][0] # return a list of tuples
-      print(f'Current case :: {self.currentCase}')
-      print(f'Current prediction ID :: {self.currentPrediction_ID }')
-      print(f'Current case index :: {self.currentCase_index}')
-      print(f'Current prediction index :: {self.currentPrediction_Index}')
+      print(f"self.predictions_paths = {self.predictions_paths}")
+      print(f"self.currentCase = {self.currentCase}")
+      self.currentPredictionPath = ""
+      for p in self.predictions_paths:
+          if self.currentCase in p:
+              self.currentPredictionPath = p
+              break
       
-      self.currentPredictionPath = self.predictions_paths[self.currentCase_index]
-      print(self.currentPrediction_ID)
-      print(self.currentPrediction_Index)
-      print(f'Current prediction path :: {self.currentPredictionPath}')
-      
-      slicer.util.loadSegmentation(self.currentPredictionPath)
-    #   self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
-      # 'ACTIVATE' segmentation node in Slicer
-      # slicer.util.loadSegmentation(self.currentCasePath)
-      self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
-      self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
-      # set refenrence geometry to Volume node
-      self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      # self.segmentationNode= slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLSegmentationNode")
-      # if self.segmentationNode:
-      #       self._parameterNode.SetNodeReferenceID("InputVolume", self.segmentationNode.GetID())
-      nn = self.segmentationNode.GetDisplayNode()
-      # set Segmentation visible:
-      nn.SetAllSegmentsVisibility(True)
-      
-      # Update the segmentation name (needed for saving the segmentation)
-      self.ICH_segm_name = self.segmentationNode.GetName()
+      if self.currentPredictionPath != "":
+          print(f'Current case :: {self.currentCase}')
+          print(f'Current prediction path :: {self.currentPredictionPath}')
 
-      # Start timer
-      # self.startTimer()
-      
-      #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
-      self.onICHSegm()
-      self.onIVHSegm()
-      self.onPHESegm()
+          slicer.util.loadSegmentation(self.currentPredictionPath)
+          # self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
+          # 'ACTIVATE' segmentation node in Slicer
+          # slicer.util.loadSegmentation(self.currentCasePath)
+          self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+          self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+          self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
+          self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+          self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+          # set refenrence geometry to Volume node
+          self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+          # self.segmentationNode= slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLSegmentationNode")
+          # if self.segmentationNode:
+          #       self._parameterNode.SetNodeReferenceID("InputVolume", self.segmentationNode.GetID())
+          nn = self.segmentationNode.GetDisplayNode()
+          # set Segmentation visible:
+          nn.SetAllSegmentsVisibility(True)
+          
+          # Update the segmentation name (needed for saving the segmentation)
+          self.ICH_segm_name = self.segmentationNode.GetName()
+
+          # Start timer
+          # self.startTimer()
+          
+          #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
+          self.onICHSegm()
+          self.onIVHSegm()
+          self.onPHESegm()
+      else:
+          msg_no_such_case = qt.QMessageBox()
+          msg_no_such_case.setText('There are no predictions for this case in the directory that you chose!')
+          msg_no_such_case.exec()
 
   def onSegmendEditorPushButton(self):
 
