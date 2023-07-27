@@ -17,7 +17,7 @@ The videos are much less blurry if the mp4 files are downloaded to your computer
 
 <img src="img/module.png" width="550" height="425">
 
-4. With the buttons "Get default directory" and "Browse volume folder", choose the folder containing your `.nrrd` files. You should see your files appear in the window as follows. 
+4. With the buttons "Get default directory" and "Browse volume folder", choose the folder containing your `.nrrd` files. These files should follow the nomenclature `Volume_ID_XYZ.nrrd` where `XYZ` is replaced by an alphanumerical identifier. You should see your files appear in the window as follows. 
 
 <img src="img/case-list.png" width="450" height="400">
 
