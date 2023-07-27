@@ -2,7 +2,9 @@
 
 ## Video Tutorial
 
-Here is a [tutorial](https://drive.google.com/drive/folders/1GQJi9Qqy5FyzHR690quK81nSt4WMXBbd) on how to use this extension as of May 2023. The tutorial is only available in French. 
+The videos are much less blurry if the mp4 files are downloaded to your computer. There is one done in French (May 2023) and one done in English (July 2023). 
+
+[Videos](https://drive.google.com/drive/folders/1GQJi9Qqy5FyzHR690quK81nSt4WMXBbd)
 
 ## Step by step instructions
 
