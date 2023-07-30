@@ -116,9 +116,6 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
 
    def pushCancel(self):
        self.close()
-#
-# ICH_SEGMENTER_V2
-#
 
 class ICH_SEGMENTER_V2(ScriptedLoadableModule):
   """Uses ScriptedLoadableModule base class, available at:
@@ -142,8 +139,6 @@ This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc
 and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
 """
 
-### Timer class -custom class
-#Class below could be at some point moved to a separate file
 class Timer():
     def __init__(self, number=None):
         self.number = number
@@ -189,8 +184,6 @@ class Timer():
         self.total_time = 0
 
 
-#
-# ICH_SEGMENTER_V2Widget
 class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -216,16 +209,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     self.LB_HU = 30
     self.UB_HU = 90
-    #   #Initialize timers (unique to each patients)
+    # Initialize timers (unique to each patients)
     self.timer1 = Timer(number=1)
     self.timer2 = Timer(number=2)
     self.timer3 = Timer(number=3)
     self.MostRecentPausedCasePath = ""
-
-    
-        # Add margin to the sides
-
-
 
   def setup(self):
     """
@@ -351,47 +339,27 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onBrowseFoldersButton(self):
       print('Clicked Browse Button')
-    #   print(f'Current path {self.DefaultDir}')
       # LLG get dialog window to ask for directory
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
-    #   print('Current Folder')
-    #   print(self.CurrentFolder)
       self.updateCurrentFolder()
       # LLG GET A LIST OF cases WITHIN CURRENT FOLDERS (SUBDIRECTORIES). List comp to get only the case
-    #   print(f'{self.CurrentFolder}{os.sep}{VOLUME_FILE_TYPE}')
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{VOLUME_FILE_TYPE}'))
-    #   print('Case paths::::')
-    #   print(self.CasesPaths)
       self.Cases = sorted([re.findall(r'Volume_(ID_[a-zA-Z\d]+)',os.path.split(i)[-1])[0] for i in self.CasesPaths])
-    #   print('Case numbers::::')
-    #   print(self.Cases)
       self.ui.SlicerDirectoryListView.clear()
       # Populate the SlicerDirectoryListView
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
       # List view s
-    #   self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
-      # # SET CURRENT INDEX AT 0 === THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
-      self.currentCase_index = 0
+      self.currentCase_index = 0 # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
       self.updateCaseAll()
       self.loadPatient()
-
-
-      """_summary_
-      2 ways to update self.currentCase_index:
-      1. When the user clicks on the list view
-      2. When the user clicks on the next or previous button
-      """
 
   def updateCaseAll(self):
       # All below is dependent on self.currentCase_index updates, 
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
-    #   self.updateCaseIndexQLineEdit(self.currentCase_index)
       self.updateCurrentPatient()
       # Highlight the current case in the list view (when pressing on next o)
       self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
-    #   self.ui.SlicerDirectoryListView.updateCaseIndexQLineEdit(self.currentCase_index)
-
       
   def getCurrentTableItem(self):
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
@@ -400,7 +368,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.clearTexts()
 
       # When an item in SlicerDirectroyListView is selected the case number is printed
-      #below we update the case index and we need to pass one parameter to the methods since it takes 2 (1 in addition to self)
+      # below we update the case index and we need to pass one parameter to the methods since it takes 2 (1 in addition to self)
       self.updateCaseIndex(self.ui.SlicerDirectoryListView.currentRow) # Index starts at 0
       # Update the case index
       self.currentCase_index = self.ui.SlicerDirectoryListView.currentRow
@@ -416,9 +384,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(f'Current row in  SlicerDirectroyListView ::: {self.ui.SlicerDirectoryListView.currentRow}')
       print('Current caseCase_index :::', self.currentCase_index)
 
-      # self.updateCurrentFolder()
-      # self.loadPatient()
-
       # ----- ANW Addition ----- : Reset timer when change case, also reset button status
       self.resetTimer()
 
@@ -427,7 +392,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.FileIndex.setText('{} / {}'.format(index+1, len(self.Cases)))
 
   def updateCurrentFolder(self):
-      # self.ui.CurrecntFolder.setText(os.path.join(self.CurrentFolder,self.currentCase))
       self.ui.CurrentFolder.setText('Current folder : \n...{}'.format(self.CurrentFolder[-80:]))
       
   def updateCurrentPatient(self):
@@ -450,11 +414,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Vol_displayNode.SetWindow(85)
       Vol_displayNode.SetLevel(45)
       self.newSegmentation()
-
-    #  self.startTimer()
-    #   self.timer_router()
-    #   
-# 
   
   # Getter method to get the segmentation node name    - Not sure if this is really useful here. 
   @property
@@ -464,42 +423,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   def newSegments(self):
       pass
-    # #   Generate 3 classes of segmentations automatically
-    #   # Create segment names 
-    #   self.ICH_segment_name = "{}_ICH".format(self.currentCase)
-    #   self.IVH_segment_name = "{}_IVH".format(self.currentCase)
-    #   self.PHE_segment_name = "{}_PHE".format(self.currentCase)
-    #   print(f'Segmentation name:: {self.ICH_segment_name}')
-    #   # Create segment editor widget and node
-    #   self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-    #   self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
-    #   # Create segmentation node
-    #   self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
-    #   # Set segmentation node name
-    #   self.segmentationNode.SetName(self.segmentationNodeName)
-    #   # Set segmentation node to segment editor
-    #   self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-    #   # Set master volume node to segment editor
-    #   self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
-    #   # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
-    #   self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-    #   #below will add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name (for each of the 3 classes)
-    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segment_name)
-    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.IVH_segment_name)
-    #   self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.PHE_segment_name)
-      
-      
-    # #   # Get the shn thing to retrieve the segment names <enums for the segment names>
-    # #   self.shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-    # #   self.items = vtk.vtkIdList()
-    # #   self.sc = self.shn.GetSceneItemID()
-    # #   self.shn.GetItemChildren(self.sc, self.items, True)
-      
-      
-    #   #Initialize timers (unique to each patients)
-    #   self.timer1 = Timer(number=1)
-    #   self.timer2 = Timer(number=2)
-    #   self.timer3 = Timer(number=3)
       
   def onPushButton_NewMask(self):
       self.newSegments()
@@ -514,7 +437,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       #Code below avoid getting in negative values. 
       self.currentCase_index = max(0, self.currentCase_index-1)
       print('Previous clicked', self.currentCase_index)
-      # self.updateCaseAll()
       self.updateCaseAll()
       self.loadPatient()
 
@@ -532,9 +454,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Ex. if we have 10 cases, then len(case)=10 and index goes from 0-9,
       # so we have to take the minimum between len(self.Cases)-1 and the currentCase_index (which is incremented by 1 everytime we click the button)
       self.currentCase_index = min(len(self.Cases)-1, self.currentCase_index+1)
-      # self.updateCaseAll()
       self.updateCaseAll()
-      # self.currentCase = os.path.join(self.CurrentFolder,self.Cases[self.currentCase_index])
       self.loadPatient()
       print('*'*50)
       print('Next clicked, current caseCase_index :::', self.currentCase_index)
@@ -543,8 +463,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def newSegmentation(self):
-       #   Generate 3 classes of segmentations automatically
-    #   # Create segment names 
+       # Generate 3 classes of segmentations automatically
 
       # Create segment editor widget and node
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -562,15 +481,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       self.new3Segments() # generate 3 segments at load time
       
-  
   # Load all segments at once    
   def new3Segments(self):
         self.onICHSegm()
         self.onIVHSegm()
         self.onPHESegm()
         self.onPushButton_select_ICH() # select ICH segment by default
-
-        # self.startTimer()
 
   def newSegment(self, segment_name=None):
     
@@ -582,7 +498,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(f'segment name :: {segment_name}')
       
 
-      #Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
+      # Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
       if not srcSegmentation.GetSegmentIDs(): # if there are no segments in the segmentation node
         print(f'Creating new segment {self.segment_name}')
         self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
@@ -601,7 +517,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onICHSegm(self):
       self.ICH_segment_name = self.newSegment('ICH')  
-    #   slicer.util.selectModule("SegmentEditor")
       # below is the code to select the segment in the segment editor (from the segmentation node))
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
@@ -610,28 +525,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       segmentICH = Segmentation.GetSegment(self.SegmentID)
       segmentICH.SetColor(255/255,10/255,10/255) # set color to red
       self.onPushButton_select_ICH()
-      
-      # import vtkSegmentationCorePython as vtkSegmentationCore
-      # segmentationNode = getNode('Segmentation')
-      # segmentation = segmentationNode.GetSegmentation()
-      # segment = segmentation.GetSegment(segmentation.GetNthSegmentID(0))
-      # segment.SetColor(0,0,1)
 
 
   def onIVHSegm(self):
-      # slicer.util.selectModule("SegmentEditor")
       self.IVH_segment_name = self.newSegment('IVH') 
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.IVH_segment_name)
-    #   self.segment_name3 = self.shn.GetItemName(self.items.GetId(3))
       segmentIVH = Segmentation.GetSegment(self.SegmentID)
       segmentIVH.SetColor(230/255,230/255,70/255) #set color to yellow
       self.onPushButton_select_IVH()
-
-    #   self.startTimer()
-    #   self.called = False    
-    #   self.segment_category = 'IVH'
 
     
   def onPHESegm(self):
@@ -640,24 +543,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
-    #   self.segment_name4 = self.shn.GetItemName(self.items.GetId(4))
       segmentPHE = Segmentation.GetSegment(self.SegmentID)
       segmentPHE.SetColor(11/255,80/255,255/255) #set color to blue
       self.onPushButton_select_PHE()
-
-
-      # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
-    #   self.called = False
-    #   self.segment_category = 'PHE'
-
-   
-#   def time_allocation(self):
-#       if self.segment_category == 'ICH':
-#           self.ICH_time += self.total_time
-#       if self.segment_category == 'IVH':
-#           self.IVH_time += self.total_time
-#       if self.segment_category == 'PHE':
-#           self.PHE_time += self.total_time 
    
   def onPushButton_select_ICH(self):  
       print('selecting ICH segment')
@@ -749,8 +637,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect = self.segmentEditorWidget.activeEffect()
       effect.setParameter("Operation","EraseOutside")
       effect.setParameter("Shape","FreeForm")
- 
- #### TIMER BLOCK ####
       
   def startTimer(self):
       print('ICH segment name::: {}'.format(self.ICH_segment_name))
@@ -822,22 +708,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.PauseTimerButton.setStyleSheet("background-color : silver")
     self.ui.PauseTimerButton.setEnabled(False)
 
-  # def togglePauseTimerButton(self):
-  #     # if button is checked
-  #     if self.ui.PauseTimerButton.isChecked():
-  #         # setting background color to light-blue
-  #         self.ui.PauseTimerButton.setStyleSheet("background-color : lightblue")
-  #         self.ui.PauseTimerButton.setText('Restart')
-  #         self.intermediate_time = round((time.perf_counter() - self.start_time), 2)
-  #         self.timer.stop()
-  #
-  #     # if it is unchecked
-  #     else:
-  #         # set background color back to light-grey
-  #         self.ui.PauseTimerButton.setStyleSheet("background-color : lightgrey")
-  #         self.ui.PauseTimerButton.setText('Pause')
-  #         self.timer.start(1000)
-
   def toggleStartTimerButton(self):
       if (self.ui.SlicerDirectoryListView.count > 0):
         if self.ui.StartTimerButton.isChecked():
@@ -901,20 +771,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       for key in self.dict_router:
           if key != self.number:
               self.dict_router.get(key).stop()  
-      
-      # Stop the other timers (not the one that was just started))
-      # Not the best way to do it but it works
-      # if self.number == 1:
-      #     self.timer2.stop()
-      #     self.timer3.stop()
-      # elif self.number == 2:
-      #     self.timer1.stop()
-      #     self.timer3.stop()
-      # elif self.number == 3:
-      #     self.timer1.stop()
-      #     self.timer2.stop()
-      # else:
-      #     print("No timer started")
             
   def createFolders(self):
       self.revision_step = self.ui.RevisionStep.currentText
@@ -936,8 +792,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msgboxtime = qt.QMessageBox()
           msgboxtime.setText("Segmentation not saved : revision step is not defined!  \n Please save again with revision step!")
           msgboxtime.exec()
-
-
 
   def checkboxChanged(self):
       self.checked_ichtype = []
@@ -969,34 +823,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.ichtype_other.clear()
       self.ui.EM_comments.clear()
 
-
-  # def rearrangeNRRDSegments(self):
-  #     # Ideally, we would implement this: https://github.com/Slicer/Slicer/issues/5044 but I don't know how...
-  #     # open the tmp file, rearrange, save new rearranged file and remove tmp file.
-  #     # I tried to overwrite the original file without using tmp file but it doesn't work...
-  #     self.srcFile = self.tmp
-  #     self.dstFile = os.path.join(self.output_dir_labels,
-  #                                 "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name,
-  #                                                            self.revision_step[0]))
-  #
-  #     segment_names_to_labels = [(self.ICH_segment_name, 1), (self.IVH_segment_name, 2), (self.PHE_segment_name, 3)]
-  #
-  #     segmentation_info = slicerio.read_segmentation_info(self.srcFile)
-  #     voxels, header = nrrd.read(self.srcFile)
-  #     extracted_voxels, extracted_header = slicerio.extract_segments(voxels, header, segmentation_info,
-  #                                                                    segment_names_to_labels)
-  #     nrrd.write(self.dstFile, extracted_voxels, extracted_header)
-  #     os.remove(self.tmp)
-
-
-
-
-  # ----- Modification -----
   def onSaveSegmentationButton(self):
-      #By default creates a new folder in the volume directory 
+      # By default creates a new folder in the volume directory 
       # Stop the timer when the button is pressed
       self.time = self.stopTimer()
-      #Stop timer of the Timer class
+      # Stop timer of the Timer class
       for v in self.dict_router.values():
             v.stop()
       self.annotator_name = self.ui.Annotator_name.text
@@ -1049,13 +880,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.outputSegmFile = os.path.join(self.output_dir_labels,
                                                  "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name, self.revision_step[0]))
 
-          # self.tmp = os.path.join(self.output_dir_labels,
-          #                         "{}_{}_{}_tmp.seg.nrrd".format(self.currentCase, self.annotator_name,
-          #                                                        self.revision_step[0]))
-
           if not os.path.isfile(self.outputSegmFile):
-              slicer.util.saveNode(self.segmentationNode, self.outputSegmFile )
-              # slicer.util.saveNode(self.segmentationNode, self.tmp)
+              slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
 
           else:
               print('This .nrrd file already exists')
@@ -1067,8 +893,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg2.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg2.buttonClicked.connect(self.msg2_clicked)
               msg2.exec()
-
-          # self.rearrangeNRRDSegments()
 
           # Save alternative nitfi segmentation
           # Export segmentation to a labelmap volume
@@ -1137,16 +961,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         print('Matched Volume number (sanity check)!')
       except AssertionError as e:
         print('Mismatch in case error :: {}'.format(str(e)))
-      
-      
-      # #delete instances of class timer (regenerated when  new case loaded)
-      # del self.timer1, self.timer2, self.timer3
-      # self.time = 0
 
   def msg2_clicked(self, msg2_button):
       if msg2_button.text == 'OK':
           slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
-          # slicer.util.saveNode(self.segmentationNode, self.tmp)
       else:
           return
 
@@ -1185,10 +1003,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       msg_warnig_delete_segm_node.buttonClicked.connect(self.msg_warnig_delete_segm_node_clicked)
       msg_warnig_delete_segm_node.exec() # calls remove node if ok is clicked
       
-    #   msgnopredloaded.exec()
-    #   # Then load the browse folder thing for the user
-    #   self.onBrowseFolders_2Button()
-      
       try:
             self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_segmentation.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
             print(self.predictions_names)
@@ -1213,9 +1027,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           print(f'Current prediction path :: {self.currentPredictionPath}')
 
           slicer.util.loadSegmentation(self.currentPredictionPath)
-          # self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[1]
-          # 'ACTIVATE' segmentation node in Slicer
-          # slicer.util.loadSegmentation(self.currentCasePath)
           self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
           self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
           self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
@@ -1223,18 +1034,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
           # set refenrence geometry to Volume node
           self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-          # self.segmentationNode= slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLSegmentationNode")
-          # if self.segmentationNode:
-          #       self._parameterNode.SetNodeReferenceID("InputVolume", self.segmentationNode.GetID())
           nn = self.segmentationNode.GetDisplayNode()
           # set Segmentation visible:
           nn.SetAllSegmentsVisibility(True)
           
           # Update the segmentation name (needed for saving the segmentation)
           self.ICH_segm_name = self.segmentationNode.GetName()
-
-          # Start timer
-          # self.startTimer()
           
           #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
           self.onICHSegm()
@@ -1259,10 +1064,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.SegmentWindowPushButton.setText('Dock Segment Editor')
           slicer.modules.segmenteditor.widgetRepresentation().setParent(slicer.util.mainWindow())
 
-
-      # self.ui.SegmentWindowPushButton.show()
-
-
   def onPushButton_Paint(self):
       if self.ui.pushButton_Paint.isChecked():
           self.ui.pushButton_Paint.setStyleSheet("background-color : lightgreen")
@@ -1273,7 +1074,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.effect = self.segmentEditorWidget.activeEffect()
           self.effect.activate()
           self.effect.setParameter('BrushSphere',1)
-          #Seems that you need to activate the effect to see it in Slicer
+          # Seems that you need to activate the effect to see it in Slicer
           # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
           self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
           #Set if using Editable intensity range (the range is defined below using object.setParameter)
@@ -1285,17 +1086,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.pushButton_Paint.setText('Paint Mask OFF')
           self.segmentEditorWidget.setActiveEffectByName("Paint")
           self.effect = self.segmentEditorWidget.activeEffect()
-          #Seems that you need to activate the effect to see it in Slicer
+          # Seems that you need to activate the effect to see it in Slicer
           self.effect.activate()
           # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
           self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-          #Set if using Editable intensity range (the range is defined below using object.setParameter)
+          # Set if using Editable intensity range (the range is defined below using object.setParameter)
           self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
           self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
             
 
   def toggleFillButton(self):
-    #   self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       if self.ui.pushButton_ToggleFill.isChecked():
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : lightgreen")
           self.ui.pushButton_ToggleFill.setText('Fill ON')
@@ -1321,7 +1121,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Note it seems that sometimes you need to activate the effect first with :
       # Assign effect to the segmentEditorWidget using the active effect
       self.effect = self.segmentEditorWidget.activeEffect()
-      #Seems that you need to activate the effect to see it in Slicer
+      # Seems that you need to activate the effect to see it in Slicer
       self.effect.activate()
       self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
 
@@ -1358,9 +1158,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
       self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-
-#ICH_SEGMENTER_V2Logic
-#
 
 class ICH_SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
@@ -1418,11 +1215,6 @@ class ICH_SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
 
     stopTime = time.time()
     logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
-
-
-#
-#ICH_SEGMENTER_V2Test
-
 
 class ICH_SEGMENTER_V2Test(ScriptedLoadableModuleTest):
   """
