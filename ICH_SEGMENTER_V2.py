@@ -152,39 +152,17 @@ class Timer():
 
 
     def start(self):
-        if self.flag == True:
-            print("Timer already started for number ", self.number)
         if self.flag == False:
-            print('*'*20,"STARTING TIME", '*'*20)
-            print("Timer started for number", self.number) 
             # start counting flag (to allow to pause the time if False)
             self.flag = True
             self.start_time = time.time()
             
             
     def stop(self):
-        # print("Timer stopped for number ", self.number)
-        if self.flag == False:
-            print("Timer already stopped for number ", self.number)
         if self.flag == True:
-            print("Timer stopped for number ", self.number)
             self.inter_time = time.time() - self.start_time
-            print('*'*20,"INTERMEDIATE TIME", '*'*20)
-            print("Intermediate time for number ", self.number, " is ", self.inter_time)
-            print('*'*20)
             self.total_time += self.inter_time
-            print('#'*20, "TOTAL TIME", '#'*20)
-            print("Total time for number ", self.number, " is ", self.total_time)
-            print('#'*20)           
             self.flag = False
-        
-    def reset(self):
-        print('Do you want to reset the timer?')
-        answer = input('y/n')
-        if answer == 'y':
-            self.total_time = 0
-            print("Timer reset")
-        self.total_time = 0
 
 
 class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
@@ -332,10 +310,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
-      print(f'This is the Default Directory : {self.DefaultDir}')
 
   def onBrowseFoldersButton(self):
-      print('Clicked Browse Button')
       # LLG get dialog window to ask for directory
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
       self.updateCurrentFolder()
@@ -375,12 +351,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
       self.updateCurrentPatient()
       self.loadPatient()
-      print('*'*50)
-      print(f'Current case in SlicerDirectroyListView ::: {self.ui.SlicerDirectoryListView.currentItem().text()}')
-      # Below gives the row number == index to be used to select elements in the list
-      print(f'Current row in  SlicerDirectroyListView ::: {self.ui.SlicerDirectoryListView.currentRow}')
-      print('Current caseCase_index :::', self.currentCase_index)
-
+      
       # ----- ANW Addition ----- : Reset timer when change case, also reset button status
       self.resetTimer()
 
@@ -436,7 +407,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       #Code below avoid getting in negative values. 
       self.currentCase_index = max(0, self.currentCase_index-1)
-      print('Previous clicked', self.currentCase_index)
       self.updateCaseAll()
       self.loadPatient()
 
@@ -449,15 +419,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.uncheckAllBoxes()
       self.clearTexts()
 
-      print('Clicked Next Button', self.DefaultDir)
       # ----- ANW Modification ----- : Since index starts at 0, we need to do len(cases)-1 (instead of len(cases)+1).
       # Ex. if we have 10 cases, then len(case)=10 and index goes from 0-9,
       # so we have to take the minimum between len(self.Cases)-1 and the currentCase_index (which is incremented by 1 everytime we click the button)
       self.currentCase_index = min(len(self.Cases)-1, self.currentCase_index+1)
       self.updateCaseAll()
       self.loadPatient()
-      print('*'*50)
-      print('Next clicked, current caseCase_index :::', self.currentCase_index)
 
 
 
@@ -479,7 +446,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
       segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      self.new3Segments() # generate 3 segments at load time
+      self.new3Segments() # generate 3 segments at load time # TODO DELPH
       
   # Load all segments at once    
   def new3Segments(self):
@@ -491,16 +458,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def newSegment(self, segment_name=None):
     
       self.segment_name = f"{self.currentCase}_{segment_name}"
-      print(f'Current segment name is {self.segment_name}')
       srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       srcSegmentation = srcNode.GetSegmentation()
-      print(f'src Segmentation IDs :: {srcSegmentation.GetSegmentIDs()}')
-      print(f'segment name :: {segment_name}')
       
 
       # Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
       if not srcSegmentation.GetSegmentIDs(): # if there are no segments in the segmentation node
-        print(f'Creating new segment {self.segment_name}')
         self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
         self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
       
@@ -521,7 +484,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
-      print(f'this is the segment ID {self.SegmentID}')
       segmentICH = Segmentation.GetSegment(self.SegmentID)
       segmentICH.SetColor(255/255,10/255,10/255) # set color to red
       self.onPushButton_select_ICH()
@@ -548,7 +510,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.onPushButton_select_PHE()
    
   def onPushButton_select_ICH(self):  
-      print('selecting ICH segment')
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
@@ -564,10 +525,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.timer1.start() # same path, restart same timer 
 
       self.timer_router()
-      print(f'this is the current active segment {self.SegmentID}')
       
   def onPushButton_select_IVH(self):
-      print('selecting IVH segment')
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.IVH_segment_name)
@@ -582,11 +541,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
         self.timer2.start() # same path, restart same timer 
       self.timer_router()
-      print(f'this is the current active segment {self.SegmentID}')
       
       
   def onPushButton_select_PHE(self):
-      print('selecting PHE segment')
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
@@ -603,7 +560,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
         self.timer3.start() # same path, restart same timer 
       self.timer_router()
-      print(f'this is the current active segment {self.SegmentID}')
 
   def onPushButton_SemiAutomaticPHE_Launch(self):
       self.onPushButton_select_PHE()
@@ -639,11 +595,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.setParameter("Shape","FreeForm")
       
   def startTimer(self):
-      print('ICH segment name::: {}'.format(self.ICH_segment_name))
       self.counter = 0
       # Add flag to avoid counting time when user clicks on save segm button
       self.flag2 = True
-      print("STARTING TIMER !!!!")
 
       # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
       # Create a timer
@@ -671,10 +625,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return self.total_time
       else:
           try:
-              print('STOPPING TIMER!')
               self.total_time = self.counter/10
               self.timer.stop()
-              print(f"Total segmentation time: {self.total_time} seconds")
               self.flag2 = False  # Flag is for the timer to stop counting
               self.called = True
             #   self.time_allocation()
@@ -788,7 +740,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           os.makedirs(self.output_dir_vol_nii, exist_ok=True)
           
       else:
-          print('Please select revision step !!!')
           msgboxtime = qt.QMessageBox()
           msgboxtime.setText("Segmentation not saved : revision step is not defined!  \n Please save again with revision step!")
           msgboxtime.exec()
@@ -847,11 +798,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
       # Save if annotator_name is not empty and timer started:
-      if self.annotator_name and self.time is not None:
-          print('Saving time')
-          print(f'total time for ICH:: {self.timer1.total_time:0.2f}')
-          print(f'total time for IVH:: {self.timer2.total_time:0.2f}')
-          print(f'total time for PHE:: {self.timer3.total_time:0.2f}')  
+      if self.annotator_name and self.time is not None: 
           # Save time to csv
           self.df = pd.DataFrame(
               {'Case number': [self.currentCase], 
@@ -872,7 +819,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           if not os.path.isfile(self.outputTimeFile):
               self.df.to_csv(self.outputTimeFile)
           else:
-              print('This time file already exists, appending new line to file!')
               self.df.to_csv(self.outputTimeFile, mode='a', header=False)
 
           # Save .seg.nrrd file
@@ -884,7 +830,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
 
           else:
-              print('This .nrrd file already exists')
               msg2 = qt.QMessageBox()
               msg2.setWindowTitle('Save As')
               msg2.setText(
@@ -908,7 +853,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           if not os.path.isfile(self.outputSegmFileNifti):
               slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
           else:
-              print('This .nii.gz file already exists')
               msg3 = qt.QMessageBox()
               msg3.setWindowTitle('Save As')
               msg3.setText(
@@ -919,7 +863,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg3.exec()
 
           # Saving messages
-          print((f'Saving case : {self.VolumeNode.GetName()}'))
           self.ui.CurrentSegmenationLabel.setText(f'Case {self.VolumeNode.GetName()} saved !')
           
           # Saving a nii.gz version of the volume
@@ -928,7 +871,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           if not os.path.isfile(self.outputVolfile):
               slicer.util.saveNode(self.VolumeNode, self.outputVolfile)
           else:
-              print('This .nii.gz file already exists')
               msg4 = qt.QMessageBox()
               msg4.setWindowTitle('Save As')
               msg4.setText(
@@ -941,12 +883,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # If annotator_name empty or timer not started.
       else:
           if not self.annotator_name:
-              print('Empty annotator name !!!')
               msgboxtime = qt.QMessageBox()
               msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
               msgboxtime.exec()
           elif self.time is None:
-              print('You did not start the timer !!!')
               msgboxtime = qt.QMessageBox()
               msgboxtime.setText(
                   "You did not start a timed segmentation. \n Please press the 'New ICH segm' button to start a timed segmentation")
@@ -955,10 +895,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       try:
         self.SlicerVolumeName = re.findall('Volume_(ID_[a-zA-Z\d]+)', self.VolumeNode.GetName())[0]
-        print(f'Volume Node accoding to slicer :: {self.SlicerVolumeName}')
-        print('Volume Name according to GUI: {}'.format(self.currentCase))
         assert self.currentCase == self.SlicerVolumeName
-        print('Matched Volume number (sanity check)!')
       except AssertionError as e:
         print('Mismatch in case error :: {}'.format(str(e)))
 
@@ -984,7 +921,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.predictionFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
       self.predictions_paths = sorted(glob(os.path.join(self.predictionFolder, f'{SEGM_FILE_TYPE}')))
-      print(self.predictions_paths)
 
   def msg_warnig_delete_segm_node_clicked(self, msg_warnig_delete_segm_node_button):
       if msg_warnig_delete_segm_node_button.text == 'OK':
@@ -1005,7 +941,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       try:
             self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_segmentation.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
-            print(self.predictions_names)
             self.called = False # restart timer
       except AttributeError as e:
             msgnopredloaded=qt.QMessageBox() # Typo correction
@@ -1014,8 +949,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # Then load the browse folder thing for the user
             self.onBrowseFolders_2Button()
       
-      print(f"self.predictions_paths = {self.predictions_paths}")
-      print(f"self.currentCase = {self.currentCase}")
       self.currentPredictionPath = ""
       for p in self.predictions_paths:
           if self.currentCase in p:
@@ -1023,8 +956,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               break
       
       if self.currentPredictionPath != "":
-          print(f'Current case :: {self.currentCase}')
-          print(f'Current prediction path :: {self.currentPredictionPath}')
 
           slicer.util.loadSegmentation(self.currentPredictionPath)
           self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
