@@ -398,6 +398,15 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onPushButton_ToggleVisibility(self):
       # TODO DELPH
       print("debug, pushed visibility button")
+
+      if self.ui.pushButton_ToggleVisibility.isChecked():
+          self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : lightgreen")
+          self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
+          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+      else:
+          self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : indianred")
+          self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
+          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
             
   def onPreviousButton(self):
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
@@ -1031,12 +1040,11 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def toggleFillButton(self):
       if self.ui.pushButton_ToggleFill.isChecked():
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : lightgreen")
-          self.ui.pushButton_ToggleFill.setText('Fill ON')
+          self.ui.pushButton_ToggleFill.setText('Fill: ON')
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
-      # if it is unchecked
       else:
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
-          self.ui.pushButton_ToggleFill.setText('Fill OFF')
+          self.ui.pushButton_ToggleFill.setText('Fill: OFF')
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
 
   def togglePaintMask(self):

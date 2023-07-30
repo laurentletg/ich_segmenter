@@ -51,30 +51,30 @@
               </widget>
              </item>
              <item row="3" column="1">
-              <widget class="QPushButton" name="pushButton_Smooth">
-               <property name="text">
-                <string>Smooth margins</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QPushButton" name="pushButton_Small_holes">
-               <property name="text">
-                <string>Remove small holes</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
               <widget class="QPushButton" name="pushButton_ToggleVisibility">
                <property name="text">
                 <string>Visibility</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
+             <item row="3" column="0">
               <widget class="QLabel" name="empty_label">
                <property name="text">
                 <string></string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QPushButton" name="pushButton_Smooth">
+               <property name="text">
+                <string>Smooth margins</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QPushButton" name="pushButton_Small_holes">
+               <property name="text">
+                <string>Remove small holes</string>
                </property>
               </widget>
              </item>
