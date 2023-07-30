@@ -11,11 +11,14 @@ import pandas as pd
 import time
 import slicerio # cannot install in slicer
 import nrrd
+import yaml
+from pathlib import Path
 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
 SEGM_FILE_TYPE = '*.seg.nrrd'
 DEFAULT_VOLUMES_DIRECTORY = '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2021_RSNA_ Kaggle_segmentation/2023 2023_03_07 RSNA SEGMENTATION 3 CLASSES/data'
+CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "label_config.yml")
 
 class SemiAutoPheToolThresholdWindow(qt.QWidget):
    def __init__(self, segmenter, parent = None):
@@ -214,6 +217,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.timer2 = Timer(number=2)
     self.timer3 = Timer(number=3)
     self.MostRecentPausedCasePath = ""
+  
+  def get_config_values(self):
+      with open(CONFIG_FILE_PATH, 'r') as file:
+        self.config_yaml = yaml.safe_load(file)
+        
+        print("DEBUG configuration values for labels.")
+        for label in self.config_yaml["labels"]:
+            print(20*"-")
+            print(label)
+        print(20*"-")
 
   def setup(self):
     """
@@ -238,34 +251,41 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
     self.logic = ICH_SEGMENTER_V2Logic()
+    self.get_config_values()
     
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.getDefaultDir.connect('clicked(bool)', self.getDefaultDir)
     self.ui.BrowseFolders.connect('clicked(bool)', self.onBrowseFoldersButton)
     self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
-    self.ui.ICHSegm.connect('clicked(bool)', self.onICHSegm)
-    self.ui.IVHSegm.connect('clicked(bool)', self.onIVHSegm)
-    self.ui.PHESegm.connect('clicked(bool)', self.onPHESegm)
     self.ui.SaveSegmentationButton.connect('clicked(bool)', self.onSaveSegmentationButton)
     self.ui.BrowseFolders_2.connect('clicked(bool)', self.onBrowseFolders_2Button)
     self.ui.LoadPrediction.connect('clicked(bool)', self.load_mask_v2)
     self.ui.Previous.connect('clicked(bool)', self.onPreviousButton)
     self.ui.Next.connect('clicked(bool)', self.onNextButton)
     self.ui.pushButton_Paint.connect('clicked(bool)', self.onPushButton_Paint)
+    self.ui.pushButton_ToggleVisibility.connect('clicked(bool)', self.onPushButton_ToggleVisibility)
     self.ui.PushButton_segmeditor.connect('clicked(bool)', self.onPushButton_segmeditor)  
     self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
     self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
     self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
-    self.ui.pushButton_ICH_select.connect('clicked(bool)', self.onPushButton_select_ICH)
-    self.ui.pushButton_IVH_select.connect('clicked(bool)', self.onPushButton_select_IVH)
-    self.ui.pushButton_PHE_select.connect('clicked(bool)', self.onPushButton_select_PHE)
     self.ui.pushButton_SemiAutomaticPHE_Launch.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE_Launch)
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE_ShowResult)
+    self.ui.dropDownButton_label_select.currentIndexChanged.connect(self.onDropDownButton_label_select)
+    self.ui.PauseTimerButton.connect('clicked(bool)', self.togglePauseTimerButton)
+    self.ui.StartTimerButton.connect('clicked(bool)', self.toggleStartTimerButton)
+    self.ui.pushButton_ToggleFill.connect('clicked(bool)', self.toggleFillButton)
+    self.ui.SegmentWindowPushButton.connect('clicked(bool)', self.onSegmendEditorPushButton)
+    self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
+    self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
+
+    for label in self.config_yaml["labels"]:
+        self.ui.dropDownButton_label_select.addItem(label["name"])
 
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
+    self.disablePauseTimerButton()
+    self.disableSegmentAndPaintButtons()
 
-    self.ui.StartTimerButton.connect('clicked(bool)', self.toggleStartTimerButton)
     self.enableStartTimerButton()
 
     self.ui.ThresholdLabel.setStyleSheet("font-weight: bold")
@@ -276,30 +296,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.UB_HU.setMaximum(29000)
     self.ui.LB_HU.setMaximum(29000)
 
-    ### ANW CONNECTIONS
-    # Pause button
-    self.ui.PauseTimerButton.connect('clicked(bool)', self.togglePauseTimerButton)
-
-    # disable pause, segment, and paint buttons before "start" 
-    self.disablePauseTimerButton()
-    self.disableSegmentAndPaintButtons()
-
-    # Toggle on of fill button
-    self.ui.pushButton_ToggleFill.connect('clicked(bool)', self.toggleFillButton)
     self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
-    # Toggle on of segmentation editor
-    self.ui.SegmentWindowPushButton.connect('clicked(bool)', self.onSegmendEditorPushButton)
     self.ui.SegmentWindowPushButton.setStyleSheet("background-color : lightgray")
-    # self.ui.radioButton_Edema.connect('clicked(bool)', self.onCheckEdema)
-
-    # Change color of lcd screen
     self.ui.lcdNumber.setStyleSheet("background-color : black")
     
     # Change the value of the upper and lower bound of the HU
     self.ui.UB_HU.setValue(self.UB_HU)
     self.ui.LB_HU.setValue(self.LB_HU)
-    self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
-    self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
 
     ### ANW ICH TYPE/LOCATION CONNECTIONS
     self.listichtype = [self.ui.ichtype1, self.ui.ichtype2, self.ui.ichtype3, self.ui.ichtype4, self.ui.ichtype5,
@@ -317,21 +320,15 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.LB_HU.setValue(self.LB_HU)
   
   def enableSegmentAndPaintButtons(self):
-    self.ui.ICHSegm.setEnabled(True)
-    self.ui.IVHSegm.setEnabled(True)
-    self.ui.PHESegm.setEnabled(True)
-    self.ui.pushButton_ICH_select.setEnabled(True)
-    self.ui.pushButton_IVH_select.setEnabled(True)
-    self.ui.pushButton_PHE_select.setEnabled(True)
+    self.ui.pushButton_Paint.setEnabled(True)
+    self.ui.pushButton_Erase.setEnabled(True)
+    self.ui.pushButton_SemiAutomaticPHE_Launch.setEnabled(True)
 
   def disableSegmentAndPaintButtons(self):
-    self.ui.ICHSegm.setEnabled(False)
-    self.ui.IVHSegm.setEnabled(False)
-    self.ui.PHESegm.setEnabled(False)
-    self.ui.pushButton_ICH_select.setEnabled(False)
-    self.ui.pushButton_IVH_select.setEnabled(False)
-    self.ui.pushButton_PHE_select.setEnabled(False)
+    self.ui.pushButton_Paint.setEnabled(False)
+    self.ui.pushButton_SemiAutomaticPHE_Launch.setEnabled(False)
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
+    self.ui.pushButton_Erase.setEnabled(False)
     
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
@@ -426,7 +423,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   def onPushButton_NewMask(self):
       self.newSegments()
-      
+  
+  def onPushButton_ToggleVisibility(self):
+      # TODO DELPH
+      print("debug, pushed visibility button")
             
   def onPreviousButton(self):
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
@@ -1064,10 +1064,14 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.SegmentWindowPushButton.setText('Dock Segment Editor')
           slicer.modules.segmenteditor.widgetRepresentation().setParent(slicer.util.mainWindow())
 
+  def onDropDownButton_label_select(self):
+      # TODO DELPH
+      print("debug, pushed label select")
+
   def onPushButton_Paint(self):
+      # TODO DELPH
+      print("debug, pushed paint")
       if self.ui.pushButton_Paint.isChecked():
-          self.ui.pushButton_Paint.setStyleSheet("background-color : lightgreen")
-          self.ui.pushButton_Paint.setText('Paint Mask ON')
           self.segmentEditorWidget.setActiveEffectByName("Paint")
           # Note it seems that sometimes you need to activate the effect first with :
           # Assign effect to the segmentEditorWidget using the active effect
@@ -1082,8 +1086,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
           self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
       else:
-          self.ui.pushButton_Paint.setStyleSheet("background-color : indianred")
-          self.ui.pushButton_Paint.setText('Paint Mask OFF')
           self.segmentEditorWidget.setActiveEffectByName("Paint")
           self.effect = self.segmentEditorWidget.activeEffect()
           # Seems that you need to activate the effect to see it in Slicer

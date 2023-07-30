@@ -65,22 +65,16 @@
               </widget>
              </item>
              <item row="2" column="1">
-              <widget class="QPushButton" name="pushButton_Erase">
+              <widget class="QPushButton" name="pushButton_ToggleVisibility">
                <property name="text">
-                <string>Erase mode</string>
+                <string>Visibility</string>
                </property>
               </widget>
              </item>
              <item row="2" column="0">
-              <widget class="QPushButton" name="pushButton_Paint">
+              <widget class="QLabel" name="empty_label">
                <property name="text">
-                <string>Paint with mask</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
+                <string></string>
                </property>
               </widget>
              </item>
@@ -95,23 +89,20 @@
               </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QPushButton" name="pushButton_ICH_select">
-               <property name="text">
-                <string>ICH</string>
-               </property>
+              <widget class="QComboBox" name="dropDownButton_label_select">
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QPushButton" name="pushButton_IVH_select">
+              <widget class="QPushButton" name="pushButton_Paint">
                <property name="text">
-                <string>IVH</string>
+                <string>Paint</string>
                </property>
               </widget>
              </item>
              <item row="1" column="2">
-              <widget class="QPushButton" name="pushButton_PHE_select">
+              <widget class="QPushButton" name="pushButton_Erase">
                <property name="text">
-                <string>PHE</string>
+                <string>Erase mode</string>
                </property>
               </widget>
              </item>
@@ -390,27 +381,6 @@
              </property>
              <property name="checkable">
               <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="ICHSegm">
-             <property name="text">
-              <string>ICH segm</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="IVHSegm">
-             <property name="text">
-              <string> IVH segm</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="PHESegm">
-             <property name="text">
-              <string>PHE segm</string>
              </property>
             </widget>
            </item>
