@@ -396,9 +396,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.newSegments()
   
   def onPushButton_ToggleVisibility(self):
-      # TODO DELPH
-      print("debug, pushed visibility button")
-
+      # TODO DELPH verify this behaviour
       if self.ui.pushButton_ToggleVisibility.isChecked():
           self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : lightgreen")
           self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
