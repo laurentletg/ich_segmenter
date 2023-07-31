@@ -188,8 +188,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.called = False
     self.called_onLoadPrediction = False
     
-    self.LB_HU = 30
-    self.UB_HU = 90
     # Initialize timers (unique to each patients)
     self.timer1 = Timer(number=1)
     self.timer2 = Timer(number=2)
@@ -230,6 +228,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # in batch mode, without a graphical user interface.
     self.logic = ICH_SEGMENTER_V2Logic()
     self.get_config_values()
+
+    self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
+    self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
     
   
     self.ui.PauseTimerButton.setText('Pause')
@@ -276,6 +277,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
     self.ui.SegmentWindowPushButton.setStyleSheet("background-color : lightgray")
+    self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : lightgreen")
     self.ui.lcdNumber.setStyleSheet("background-color : black")
     
     # Change the value of the upper and lower bound of the HU
@@ -394,17 +396,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   def onPushButton_NewMask(self):
       self.newSegments()
-  
-  def onPushButton_ToggleVisibility(self):
-      # TODO DELPH verify this behaviour
-      if self.ui.pushButton_ToggleVisibility.isChecked():
-          self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : lightgreen")
-          self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
-          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
-      else:
-          self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : indianred")
-          self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
-          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
             
   def onPreviousButton(self):
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
@@ -453,14 +444,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
       segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      self.new3Segments() # generate 3 segments at load time # TODO DELPH
+      self.createNewSegments() 
       
   # Load all segments at once    
-  def new3Segments(self):
-        self.onICHSegm()
-        self.onIVHSegm()
-        self.onPHESegm()
-        self.onPushButton_select_ICH() # select ICH segment by default
+  def createNewSegments(self):
+        for label in self.config_yaml["labels"]:
+            self.onNewLabelSegm(label["value"], label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
+        
+        first_label_name = self.config_yaml["labels"][0]["name"]
+        first_label_segment_name = f"{self.currentCase}_{first_label_name}"
+        self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
 
   def newSegment(self, segment_name=None):
     
@@ -468,14 +461,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       srcSegmentation = srcNode.GetSegmentation()
       
-
       # Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
       if not srcSegmentation.GetSegmentIDs(): # if there are no segments in the segmentation node
         self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
         self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
       
       # if there are segments in the segmentation node, check if the segment name is already in the segmentation node
-      
       if any([self.segment_name in i for i in srcSegmentation.GetSegmentIDs()]):
             print('segment already exists, not creating a new one')
       else:
@@ -484,6 +475,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
 
       return self.segment_name
+
+  def onNewLabelSegm(self, label_value, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
+      # TODO DELPH how to add label_value? by order of creation?
+      segment_name = self.newSegment(label_name)  
+      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      Segmentation = self.segmentationNode.GetSegmentation()
+      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
+      segmentICH = Segmentation.GetSegment(self.SegmentID)
+      segmentICH.SetColor(label_color_r/255,label_color_g/255,label_color_b/255) 
+      self.onPushButton_select_label(segment_name, label_LB_HU, label_UB_HU)
 
   def onICHSegm(self):
       self.ICH_segment_name = self.newSegment('ICH')  
@@ -516,13 +517,13 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       segmentPHE.SetColor(11/255,80/255,255/255) #set color to blue
       self.onPushButton_select_PHE()
    
-  def onPushButton_select_ICH(self):  
+  def onPushButton_select_label(self, segment_name, label_LB_HU, label_UP_HU):  
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
-      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
+      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
       self.updateCurrentSegmenationLabel()
-      self.setUpperAndLowerBoundHU(30, 90)
+      self.setUpperAndLowerBoundHU(label_LB_HU, label_UP_HU)
       self.onPushButton_Paint()
   
       self.number=1
@@ -1004,35 +1005,37 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onDropDownButton_label_select(self):
       # TODO DELPH
+      # change HU bounds
+      # change segment
       print("debug, pushed label select")
 
   def onPushButton_Paint(self):
-      # TODO DELPH
+      # TODO DELPH fix this
       print("debug, pushed paint")
-      if self.ui.pushButton_Paint.isChecked():
-          self.segmentEditorWidget.setActiveEffectByName("Paint")
-          # Note it seems that sometimes you need to activate the effect first with :
-          # Assign effect to the segmentEditorWidget using the active effect
-          self.effect = self.segmentEditorWidget.activeEffect()
-          self.effect.activate()
-          self.effect.setParameter('BrushSphere',1)
-          # Seems that you need to activate the effect to see it in Slicer
-          # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
-          self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-          #Set if using Editable intensity range (the range is defined below using object.setParameter)
-          self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-          self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-          self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
-      else:
-          self.segmentEditorWidget.setActiveEffectByName("Paint")
-          self.effect = self.segmentEditorWidget.activeEffect()
-          # Seems that you need to activate the effect to see it in Slicer
-          self.effect.activate()
-          # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
-          self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-          # Set if using Editable intensity range (the range is defined below using object.setParameter)
-          self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
-          self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
+    #   if self.ui.pushButton_Paint.isChecked():
+    #       self.segmentEditorWidget.setActiveEffectByName("Paint")
+    #       # Note it seems that sometimes you need to activate the effect first with :
+    #       # Assign effect to the segmentEditorWidget using the active effect
+    #       self.effect = self.segmentEditorWidget.activeEffect()
+    #       self.effect.activate()
+    #       self.effect.setParameter('BrushSphere',1)
+    #       # Seems that you need to activate the effect to see it in Slicer
+    #       # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
+    #       self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
+    #       #Set if using Editable intensity range (the range is defined below using object.setParameter)
+    #       self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+    #       self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+    #       self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
+    #   else:
+    #       self.segmentEditorWidget.setActiveEffectByName("Paint")
+    #       self.effect = self.segmentEditorWidget.activeEffect()
+    #       # Seems that you need to activate the effect to see it in Slicer
+    #       self.effect.activate()
+    #       # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
+    #       self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
+    #       # Set if using Editable intensity range (the range is defined below using object.setParameter)
+    #       self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
+    #       self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
             
 
   def toggleFillButton(self):
@@ -1044,6 +1047,16 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
           self.ui.pushButton_ToggleFill.setText('Fill: OFF')
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
+
+  def onPushButton_ToggleVisibility(self):
+      if self.ui.pushButton_ToggleVisibility.isChecked():
+          self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : indianred")
+          self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
+          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
+      else:
+          self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : lightgreen")
+          self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
+          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
 
   def togglePaintMask(self):
         if self.ui.pushButton_TogglePaintMask.isChecked():
