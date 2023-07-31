@@ -468,7 +468,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   # Load all segments at once    
   def createNewSegments(self):
         for label in self.config_yaml["labels"]:
-            self.onNewLabelSegm(label["value"], label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
+            self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
         
         first_label_name = self.config_yaml["labels"][0]["name"]
         first_label_segment_name = f"{self.currentCase}_{first_label_name}"
@@ -494,9 +494,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       return self.segment_name
 
-  def onNewLabelSegm(self, label_value, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
-      # TODO DELPH test with brain extraction
-      # TODO DELPH test with 5 labels
+  def onNewLabelSegm(self, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
       # TODO remove other error messages in output
       segment_name = self.newSegment(label_name)  
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
@@ -946,7 +944,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           
           #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
           for label in self.config_yaml["labels"]:
-            self.onNewLabelSegm(label["value"], label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
+            self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
       else:
           msg_no_such_case = qt.QMessageBox()
           msg_no_such_case.setText('There are no predictions for this case in the directory that you chose!')
@@ -967,7 +965,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           slicer.modules.segmenteditor.widgetRepresentation().setParent(slicer.util.mainWindow())
 
   def onDropDownButton_label_select(self, value):
-      # TODO DELPH remove ICH stuff in UI if ICH not in label names
       label = self.config_yaml["labels"][value]
       self.setUpperAndLowerBoundHU(label["lower_bound_HU"], label["upper_bound_HU"])
 
