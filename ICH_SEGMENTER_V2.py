@@ -14,7 +14,6 @@ import nrrd
 import yaml
 from pathlib import Path
 from threading import RLock
-# TODO DELPH = add shortcut to undo button (z)
 # TODO DELPH remove all ICH, IVH, PHE variables that do not belong
 # TODO DELPH adjust read me
 # TODO DELPH make a new video 
@@ -262,6 +261,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
     self.ui.pushDefaultMin.connect('clicked(bool)', self.onPushDefaultMin)
     self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
+    self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
 
     for label in self.config_yaml["labels"]:
         self.ui.dropDownButton_label_select.addItem(label["name"])
@@ -522,6 +522,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onNewLabelSegm(self, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
       segment_name = self.newSegment(label_name)  
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      self.segmentationNode.UndoEnabledOn()
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
       segmentICH = Segmentation.GetSegment(self.SegmentID)
@@ -1019,6 +1020,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         fresh_config = yaml.safe_load(file)
         self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]     
         self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+
+  def onPushButton_undo(self):
+      self.segmentEditorWidget.undo()
 
   def onDropDownButton_label_select(self, value):
       self.current_label_index = value

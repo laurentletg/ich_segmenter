@@ -61,9 +61,9 @@
               </widget>
              </item>
              <item row="3" column="0">
-              <widget class="QLabel" name="empty_label">
+              <widget class="QPushButton" name="pushButton_undo">
                <property name="text">
-                <string></string>
+                <string>Undo</string>
                </property>
               </widget>
              </item>
