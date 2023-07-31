@@ -13,10 +13,9 @@ import slicerio # cannot install in slicer
 import nrrd
 import yaml
 from pathlib import Path
-# TODO DELPH fix race condition of lcd timer (and other timers?)
+from threading import RLock
 # TODO DELPH = add shortcut to undo button (z)
 # TODO DELPH remove all ICH, IVH, PHE variables that do not belong
-# TODO DELPH remove all ICH mentions in method names and file names
 # TODO DELPH adjust read me
 # TODO DELPH make a new video 
 
@@ -24,6 +23,8 @@ VOLUME_FILE_TYPE = '*.nrrd'
 SEGM_FILE_TYPE = '*.seg.nrrd'
 DEFAULT_VOLUMES_DIRECTORY = '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2021_RSNA_ Kaggle_segmentation/2023 2023_03_07 RSNA SEGMENTATION 3 CLASSES/data'
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "label_config.yml")
+
+TIMER_MUTEX = RLock()
 
 class SemiAutoPheToolThresholdWindow(qt.QWidget):
    def __init__(self, segmenter, parent = None):
@@ -149,25 +150,28 @@ and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR0132
 
 class Timer():
     def __init__(self, number=None):
-        self.number = number
-        self.total_time = 0
-        self.inter_time = 0
-        # counting flag to allow to PAUSE the time
-        self.flag = False # False = not counting, True = counting (for pause button)
+        with TIMER_MUTEX:
+            self.number = number
+            self.total_time = 0
+            self.inter_time = 0
+            # counting flag to allow to PAUSE the time
+            self.flag = False # False = not counting, True = counting (for pause button)
 
 
     def start(self):
-        if self.flag == False:
-            # start counting flag (to allow to pause the time if False)
-            self.flag = True
-            self.start_time = time.time()
+        with TIMER_MUTEX:
+            if self.flag == False:
+                # start counting flag (to allow to pause the time if False)
+                self.flag = True
+                self.start_time = time.time()
             
             
     def stop(self):
-        if self.flag == True:
-            self.inter_time = time.time() - self.start_time
-            self.total_time += self.inter_time
-            self.flag = False
+        with TIMER_MUTEX:
+            if self.flag == True:
+                self.inter_time = time.time() - self.start_time
+                self.total_time += self.inter_time
+                self.flag = False
 
 
 class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
@@ -406,6 +410,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       # reset dropbox to index 0
       self.ui.dropDownButton_label_select.setCurrentIndex(0)
+      
+      # timer reset if we come back to same case
+      self.called = False
 
       slicer.mrmlScene.Clear()
       slicer.util.loadVolume(self.currentCasePath)
@@ -584,60 +591,66 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.setParameter("Shape","FreeForm")
       
   def startTimer(self):
-      self.counter = 0
-      # Add flag to avoid counting time when user clicks on save segm button
-      self.flag2 = True
+      with TIMER_MUTEX:
+        self.counter = 0
+        # Add flag to avoid counting time when user clicks on save segm button
+        self.flag2 = True
 
-      # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
-      # Create a timer
-      self.timer = qt.QTimer()
-      self.timer.timeout.connect(self.updatelcdNumber)
+        # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
+        # Create a timer
+        self.timer = qt.QTimer()
+        self.timer.timeout.connect(self.updatelcdNumber)
 
-      # Start the timer and update every second
-      self.timer.start(100) # 1000 ms = 1 second
+        # Start the timer and update every second
+        self.timer.start(100) # 1000 ms = 1 second
 
-      # Call the updatelcdNumber function
-      self.updatelcdNumber()
+        # Call the updatelcdNumber function
+        self.updatelcdNumber()
 
   def updatelcdNumber(self):
       # Get the time
-      if self.flag2: # add flag to avoid counting time when user clicks on save segm button
-            # the timer sends a signal every second (1000 ms). 
-          self.counter += 1  # the self.timer.timeout.connect(self.updatelcdNumber) function is called every second and updates the counter
+      with TIMER_MUTEX:
+        if self.flag2: # add flag to avoid counting time when user clicks on save segm button
+                # the timer sends a signal every second (1000 ms). 
+            self.counter += 1  # the self.timer.timeout.connect(self.updatelcdNumber) function is called every second and updates the counter
 
-      self.ui.lcdNumber.display(self.counter/10)
+        self.ui.lcdNumber.display(self.counter/10)
 
 
   def stopTimer(self):
-      # If already called once (i.e when user pressed save segm button but forgot to annotator name), simply return the time
-      if self.called:
-          return self.total_time
-      else:
-          try:
-              self.total_time = self.counter/10
-              self.timer.stop()
-              self.flag2 = False  # Flag is for the timer to stop counting
-              self.called = True
-            #   self.time_allocation()
-              return self.total_time
-          except AttributeError as e:
-              print(f'!!! YOU DID NOT START THE COUNTER !!! :: {e}')
-              return None
+      with TIMER_MUTEX:
+        # If already called once (i.e when user pressed save segm button but forgot to annotator name), simply return the time
+        if self.called:
+            print("passes here 1")
+            return self.total_time
+        else:
+            try:
+                print("passes here 2")
+                self.total_time = self.counter/10
+                self.timer.stop()
+                self.flag2 = False  # Flag is for the timer to stop counting
+                self.called = True
+                #   self.time_allocation()
+                return self.total_time
+            except AttributeError as e:
+                print(f'!!! YOU DID NOT START THE COUNTER !!! :: {e}')
+                return None
 
   def resetTimer(self):
-      # making flag to false : stops the timer
-      self.flag2 = False # For case after the first one the timer stops until the user clicks on the
-      self.counter = 0
-      self.ui.lcdNumber.display(0)
+      with TIMER_MUTEX:
+        # making flag to false : stops the timer
+        self.flag2 = False # For case after the first one the timer stops until the user clicks on the
+        self.counter = 0
+        self.ui.lcdNumber.display(0)
 
-      # reset button status
-      self.enableStartTimerButton()
-      self.disablePauseTimerButton()
-      self.ui.PauseTimerButton.setText('Pause')
-      if (self.ui.PauseTimerButton.isChecked()):
-          self.ui.PauseTimerButton.toggle()
-      
-      self.disableSegmentAndPaintButtons() 
+        # reset button status
+        self.enableStartTimerButton()
+        self.disablePauseTimerButton()
+        self.ui.PauseTimerButton.setText('Pause')
+        if (self.ui.PauseTimerButton.isChecked()):
+            self.ui.PauseTimerButton.toggle()
+        
+        self.disableSegmentAndPaintButtons() 
 
   def enableStartTimerButton(self):
     self.ui.StartTimerButton.setEnabled(True)
@@ -694,8 +707,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   # for the timer Class not the LCD one
   def timer_router(self):
-      print(f"timers = {self.timers}")
-      print(f"problematic index = {self.current_label_index}")
       self.timers[self.current_label_index].start()
       self.flag = True
       
