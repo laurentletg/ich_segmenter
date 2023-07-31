@@ -14,9 +14,6 @@ import nrrd
 import yaml
 from pathlib import Path
 from threading import RLock
-# TODO DELPH adjust read me
-# TODO DELPH quality assurance (brain segmentation, ICHIVHPHE)
-# TODO DELPH make a new video 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
 SEGM_FILE_TYPE = '*.seg.nrrd'
