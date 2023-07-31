@@ -14,13 +14,13 @@ import nrrd
 import yaml
 from pathlib import Path
 from threading import RLock
-# TODO DELPH remove all ICH, IVH, PHE variables that do not belong
 # TODO DELPH adjust read me
+# TODO DELPH quality assurance (brain segmentation, ICHIVHPHE)
 # TODO DELPH make a new video 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
 SEGM_FILE_TYPE = '*.seg.nrrd'
-DEFAULT_VOLUMES_DIRECTORY = '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2021_RSNA_ Kaggle_segmentation/2023 2023_03_07 RSNA SEGMENTATION 3 CLASSES/data'
+DEFAULT_VOLUMES_DIRECTORY = '' # adjust to your default volume directory
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "label_config.yml")
 
 TIMER_MUTEX = RLock()
@@ -125,21 +125,21 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
    def pushCancel(self):
        self.close()
 
-class ICH_SEGMENTER_V2(ScriptedLoadableModule):
+class SEGMENTER_V2(ScriptedLoadableModule):
   """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "ICH_SEGMENTER_V2"  # TODO: make this more human readable by adding spaces
+    self.parent.title = "SEGMENTER_V2"  # TODO: make this more human readable by adding spaces
     self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
     self.parent.dependencies = []  # TODO: add here list of module names that this module requires
     self.parent.contributors = ["John Doe (AnyWare Corp.)"]  # TODO: replace with "Firstname Lastname (Organization)"
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
 This is an example of scripted loadable module bundled in an extension.
-See more information in <a href="https://github.com/organization/projectname#ICH_SEGMENTER_V2">module documentation</a>.
+See more information in <a href="https://github.com/organization/projectname#SEGMENTER_V2">module documentation</a>.
 """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
@@ -173,7 +173,7 @@ class Timer():
                 self.flag = False
 
 
-class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
@@ -188,7 +188,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
     # LLG CODE BELOW
-    self.ICH_segm_name = None
     self.predictions_names= None
     self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
 
@@ -217,7 +216,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Load widget from .ui file (created by Qt Designer).
     # Additional widgets can be instantiated manually and added to self.layout.
-    uiWidget = slicer.util.loadUI(self.resourcePath('UI/ICH_SEGMENTER_V4.ui'))
+    uiWidget = slicer.util.loadUI(self.resourcePath('UI/SEGMENTER_V4.ui'))
     self.layout.addWidget(uiWidget)
     self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -228,7 +227,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
-    self.logic = ICH_SEGMENTER_V2Logic()
+    self.logic = SEGMENTER_V2Logic()
     self.get_config_values()
 
     self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
@@ -399,7 +398,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCaseIndex(self.currentCase_index)
   
   def updateCurrentSegmenationLabel(self):
-      self.ui.CurrentSegmenationLabel.setText('Current segment : {}'.format(self.ICH_segm_name))
+      self.ui.CurrentSegmenationLabel.setText('Current segment : {}'.format(self.segment_name))
       
   def loadPatient(self):
       timer_index = 0
@@ -525,8 +524,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentationNode.UndoEnabledOn()
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
-      segmentICH = Segmentation.GetSegment(self.SegmentID)
-      segmentICH.SetColor(label_color_r/255,label_color_g/255,label_color_b/255) 
+      segment = Segmentation.GetSegment(self.SegmentID)
+      segment.SetColor(label_color_r/255,label_color_g/255,label_color_b/255) 
       self.onPushButton_select_label(segment_name, label_LB_HU, label_UB_HU)
    
   def onPushButton_select_label(self, segment_name, label_LB_HU, label_UB_HU):  
@@ -792,7 +791,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None: 
-          # Save time to csv
+          # Save time to csv TODO DELPH refactor this
           if self.flag_ICH_in_labels:
                 tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time, " 
                 for label in self.config_yaml["labels"]:
@@ -902,10 +901,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
               msgboxtime.exec()
           elif self.time is None:
-              msgboxtime = qt.QMessageBox()
-              msgboxtime.setText(
-                  "You did not start a timed segmentation. \n Please press the 'New ICH segm' button to start a timed segmentation")
-              msgboxtime.exec()
+              print("Error: timer is not started for some unknown reason.")
 
 
       try:
@@ -983,9 +979,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           nn = self.segmentationNode.GetDisplayNode()
           # set Segmentation visible:
           nn.SetAllSegmentsVisibility(True)
-          
-          # Update the segmentation name (needed for saving the segmentation)
-          self.ICH_segm_name = self.segmentationNode.GetName()
           
           #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
           for label in self.config_yaml["labels"]:
@@ -1131,7 +1124,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       except:
         pass
       
-class ICH_SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
+class SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
   computation done by your module.  The interface
   should be such that other python code can import
@@ -1188,7 +1181,7 @@ class ICH_SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
     stopTime = time.time()
     logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
 
-class ICH_SEGMENTER_V2Test(ScriptedLoadableModuleTest):
+class SEGMENTER_V2Test(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
   Uses ScriptedLoadableModuleTest base class, available at:
@@ -1204,9 +1197,9 @@ class ICH_SEGMENTER_V2Test(ScriptedLoadableModuleTest):
     """Run as few or as many tests as needed here.
     """
     self.setUp()
-    self.test_ICH_SEGMENTER_V21()
+    self.test_SEGMENTER_V21()
 
-  def test_ICH_SEGMENTER_V21(self):
+  def test_SEGMENTER_V21(self):
     """ Ideally you should have several levels of tests.  At the lowest level
     tests should exercise the functionality of the logic with different inputs
     (both valid and invalid).  At higher levels your tests should emulate the
@@ -1224,7 +1217,7 @@ class ICH_SEGMENTER_V2Test(ScriptedLoadableModuleTest):
 
     import SampleData
     registerSampleData()
-    inputVolume = SampleData.downloadSample('ICH_SEGMENTER_V21')
+    inputVolume = SampleData.downloadSample('SEGMENTER_V21')
     self.delayDisplay('Loaded test data set')
 
     inputScalarRange = inputVolume.GetImageData().GetScalarRange()
@@ -1236,7 +1229,7 @@ class ICH_SEGMENTER_V2Test(ScriptedLoadableModuleTest):
 
     # Test the module logic
 
-    logic = ICH_SEGMENTER_V2Logic()
+    logic = SEGMENTER_V2Logic()
 
     # Test algorithm with non-inverted threshold
     logic.process(inputVolume, outputVolume, threshold, True)

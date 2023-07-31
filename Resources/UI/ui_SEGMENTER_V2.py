@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2023 ICH_SEGMENTER_V2/ICH_SEGMENTER_V2/ICH_SEGMENTER_V2/Resources/UI/ICH_SEGMENTER_V2.ui'
-#
 # Created by: PyQt5 UI code generator 5.15.7
 #
 # WARNING: Any manual changes made to this file will be lost when pyuic5 is
