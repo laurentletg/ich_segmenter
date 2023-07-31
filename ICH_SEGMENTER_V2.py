@@ -476,8 +476,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       return self.segment_name
 
   def onNewLabelSegm(self, label_value, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
-      # TODO DELPH how to add label_value? by order of creation?
-      # TODO DELPH fix PHE tool
       # TODO DELPH test with brain extraction
       # TODO DELPH test with 5 labels
       # TODO remove other error messages in output
@@ -928,9 +926,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ICH_segm_name = self.segmentationNode.GetName()
           
           #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
-          self.onICHSegm()
-          self.onIVHSegm()
-          self.onPHESegm()
+          for label in self.config_yaml["labels"]:
+            self.onNewLabelSegm(label["value"], label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
       else:
           msg_no_such_case = qt.QMessageBox()
           msg_no_such_case.setText('There are no predictions for this case in the directory that you chose!')
@@ -963,8 +960,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         pass 
       
   def onPushButton_Paint(self):
-        # TODO DELPH fix HU bounds
-
         self.segmentEditorWidget.setActiveEffectByName("Paint")
         # Note it seems that sometimes you need to activate the effect first with :
         # Assign effect to the segmentEditorWidget using the active effect
