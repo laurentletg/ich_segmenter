@@ -292,7 +292,26 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.listEMs = [self.ui.EM_barras_density, self.ui.EM_barras_margins, self.ui.EM_black_hole, self.ui.EM_blend,
                     self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, self.ui.EM_swirl]
+    
+    
+    flag_ICH_in_labels = False
+    flag_PHE_in_labels = False
+    for label in self.config_yaml["labels"]:
+        if "ICH" in label["name"].upper() or "HEMORRHAGE" in label["name"].upper() or "HÉMORRAGIE" in label["name"].upper() or "HEMORRAGIE" in label["name"].upper() or "HAEMORRHAGE" in label["name"].upper():
+            flag_ICH_in_labels = True 
+        if "PHE" in label["name"].upper() or "EDEMA" in label["name"].upper() or "OEDEME" in label["name"].upper() or "OEDÈME" in label["name"].upper():
+            flag_PHE_in_labels = True
+    
+    if not flag_ICH_in_labels:
+        self.ui.MRMLCollapsibleButton.setVisible(False)
+    if not flag_PHE_in_labels:
+        self.ui.SemiAutomaticPHELabel.setVisible(False)
+        self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
+        self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
   
+# TODO DELPH keep changed ranges in memory 
+# add button to return to default range 
+
   def setUpperAndLowerBoundHU(self, inputLB_HU, inputUB_HU):
       self.LB_HU = inputLB_HU
       self.UB_HU = inputUB_HU
