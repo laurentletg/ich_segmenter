@@ -257,6 +257,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.SegmentWindowPushButton.connect('clicked(bool)', self.onSegmendEditorPushButton)
     self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
     self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
+    self.ui.pushDefaultMin.connect('clicked(bool)', self.onPushDefaultMin)
+    self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
 
     for label in self.config_yaml["labels"]:
         self.ui.dropDownButton_label_select.addItem(label["name"])
@@ -308,9 +310,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.SemiAutomaticPHELabel.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
-  
-# TODO DELPH keep changed ranges in memory 
-# add button to return to default range 
 
   def setUpperAndLowerBoundHU(self, inputLB_HU, inputUB_HU):
       self.LB_HU = inputLB_HU
@@ -395,7 +394,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.loadVolume(self.currentCasePath)
       self.VolumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
       self.updateCaseAll()
-      self.ICH_segm_name = None
       self.ui.CurrentSegmenationLabel.setText('New patient loaded - No segmentation created!')
       # Adjust windowing (no need to use self. since this is used locally)
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
@@ -447,8 +445,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def newSegmentation(self):
-       # Generate 3 classes of segmentations automatically
-
       # Create segment editor widget and node
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
@@ -495,7 +491,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       return self.segment_name
 
   def onNewLabelSegm(self, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
-      # TODO remove other error messages in output
       segment_name = self.newSegment(label_name)  
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
@@ -504,13 +499,14 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       segmentICH.SetColor(label_color_r/255,label_color_g/255,label_color_b/255) 
       self.onPushButton_select_label(segment_name, label_LB_HU, label_UB_HU)
    
-  def onPushButton_select_label(self, segment_name, label_LB_HU, label_UP_HU):  
+  def onPushButton_select_label(self, segment_name, label_LB_HU, label_UB_HU):  
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
       self.updateCurrentSegmenationLabel()
-      self.setUpperAndLowerBoundHU(label_LB_HU, label_UP_HU)
+      self.LB_HU = label_LB_HU
+      self.UB_HU = label_UB_HU
       self.onPushButton_Paint()
   
       self.number=1
@@ -964,7 +960,20 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.SegmentWindowPushButton.setText('Dock Segment Editor')
           slicer.modules.segmenteditor.widgetRepresentation().setParent(slicer.util.mainWindow())
 
+  def onPushDefaultMin(self):
+      with open(CONFIG_FILE_PATH, 'r') as file:
+        fresh_config = yaml.safe_load(file)
+        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
+        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+
+  def onPushDefaultMax(self):
+      with open(CONFIG_FILE_PATH, 'r') as file:
+        fresh_config = yaml.safe_load(file)
+        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]     
+        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+
   def onDropDownButton_label_select(self, value):
+      self.current_label_index = value
       label = self.config_yaml["labels"][value]
       self.setUpperAndLowerBoundHU(label["lower_bound_HU"], label["upper_bound_HU"])
 
@@ -1055,20 +1064,21 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onLB_HU(self):
       try:
         self.LB_HU=self.ui.LB_HU.value
-      
         self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = self.LB_HU
       except:
         pass
       
   def onUB_HU(self):
       try:
         self.UB_HU=self.ui.UB_HU.value
-      
         self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
       except:
         pass
+      
 class ICH_SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
   computation done by your module.  The interface
