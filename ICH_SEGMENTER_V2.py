@@ -13,8 +13,7 @@ import slicerio # cannot install in slicer
 import nrrd
 import yaml
 from pathlib import Path
-# TODO DELPH fix timers and csv write for timers
-# TODO DELPH start the timers only when start button is pressed :)
+# TODO DELPH bug colors blue when tag is ICH - when new patient, set back dropbox
 # TODO DELPH = add shortcut to undo button (z)
 # TODO DELPH remove all ICH, IVH, PHE variables that do not belong
 # TODO DELPH remove all ICH mentions in method names and file names
@@ -193,12 +192,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadPrediction = False
-    
-    # Initialize timers (unique to each patients)
-    self.timer1 = Timer(number=1)
-    self.timer2 = Timer(number=2)
-    self.timer3 = Timer(number=3)
-    self.MostRecentPausedCasePath = ""
   
   def get_config_values(self):
       with open(CONFIG_FILE_PATH, 'r') as file:
@@ -310,6 +303,15 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if "PHE" in label["name"].upper() or "EDEMA" in label["name"].upper() or "OEDEME" in label["name"].upper() or "OEDÈME" in label["name"].upper():
             self.flag_PHE_in_labels = True
     
+    # Initialize timers
+    self.timers = []
+    timer_index = 0
+    for label in self.config_yaml["labels"]:
+        self.timers.append(Timer(number=timer_index))
+        timer_index = timer_index + 1
+    
+    self.MostRecentPausedCasePath = ""
+    
     if not self.flag_ICH_in_labels:
         self.ui.MRMLCollapsibleButton.setVisible(False)
     if not self.flag_PHE_in_labels:
@@ -396,6 +398,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.CurrentSegmenationLabel.setText('Current segment : {}'.format(self.ICH_segm_name))
       
   def loadPatient(self):
+      timer_index = 0
+      self.timers = []
+      for label in self.config_yaml["labels"]:
+          self.timers.append(Timer(number = timer_index))
+          timer_index = timer_index + 1
+
       slicer.mrmlScene.Clear()
       slicer.util.loadVolume(self.currentCasePath)
       self.VolumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
@@ -466,6 +474,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
       segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       self.createNewSegments() 
+
+      # restart the current timer 
+      self.timers[self.current_label_index] = Timer(number=self.current_label_index)
       
   # Load all segments at once    
   def createNewSegments(self):
@@ -515,11 +526,12 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.UB_HU = label_UB_HU
       self.onPushButton_Paint()
   
-      self.number=1
+      # TODO DELPH what is this
+      self.number=self.current_label_index
       if (self.MostRecentPausedCasePath != self.currentCasePath):
-        self.timer1 = Timer(number=1) # new path, new timer
+        self.timers[self.current_label_index] = Timer(number=self.current_label_index) # new path, new timer
       else:
-        self.timer1.start() # same path, restart same timer 
+        self.timer_router()
 
       self.timer_router()
 
@@ -636,6 +648,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if (self.ui.SlicerDirectoryListView.count > 0):
         if self.ui.StartTimerButton.isChecked():
             self.startTimer()
+            self.timer_router()
 
             self.ui.StartTimerButton.setEnabled(False)
             self.ui.StartTimerButton.setStyleSheet("background-color : silver")
@@ -654,9 +667,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.PauseTimerButton.setStyleSheet("background-color : lightblue")
           self.ui.PauseTimerButton.setText('Restart')
           self.timer.stop()
-          self.timer1.stop()
-          self.timer2.stop()
-          self.timer3.stop()
+          for indiv_timer in self.timers:
+              indiv_timer.stop()
           self.flag = False
 
           self.MostRecentPausedCasePath = self.currentCasePath
@@ -670,31 +682,23 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.PauseTimerButton.setStyleSheet("background-color : indianred")
           self.ui.PauseTimerButton.setText('Pause')
           self.timer.start(100)
+          self.timer_router()
           self.flag = True
 
           self.enableSegmentAndPaintButtons()
 
   # for the timer Class not the LCD one
   def timer_router(self):
-      # Create dictionary of timers methods to call based on the number
-      self.dict_router = {
-        1: self.timer1, 
-        2: self.timer2,
-        3: self.timer3
-        }
-    
-      # Excute the method
-      # using get method to avoid key error if the number is not in the dictionary (not instanciated)
-      # Stat the time with self.number flag (active label)
-      self.dict_router.get(self.number).start()
-      # Uncheck the pause button if it was paused (i.e. restart if we click on the segment)
+      print(f"timers = {self.timers}")
+      print(f"problematic index = {self.current_label_index}")
+      self.timers[self.current_label_index].start()
       self.flag = True
       
-      #Below is the most elegant way to do it 
-      # stop the other timers (not the one that was just started))
-      for key in self.dict_router:
-          if key != self.number:
-              self.dict_router.get(key).stop()  
+      timer_index = 0
+      for timer in self.timers:
+          if timer_index != self.current_label_index:
+              timer.stop()
+          timer_index = timer_index + 1
             
   def createFolders(self):
       self.revision_step = self.ui.RevisionStep.currentText
@@ -732,9 +736,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           if k.isChecked():
               em = k.text
               self.checked_ems.append(em)
-      self.checked_ichtype = ','.join(self.checked_ichtype)
-      self.checked_ichloc = ','.join(self.checked_ichloc)
-      self.checked_ems = ','.join(self.checked_ems)
+      self.checked_ichtype = ';'.join(self.checked_ichtype)
+      self.checked_ichloc = ';'.join(self.checked_ichloc)
+      self.checked_ems = ';'.join(self.checked_ems)
       return self.checked_ichtype, self.checked_ichloc, self.checked_ems
 
   def uncheckAllBoxes(self):
@@ -751,8 +755,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Stop the timer when the button is pressed
       self.time = self.stopTimer()
       # Stop timer of the Timer class
-      for v in self.dict_router.values():
-            v.stop()
+      for timer in self.timers:
+            timer.stop()
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
 
@@ -773,36 +777,47 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if self.annotator_name and self.time is not None: 
           # Save time to csv
           if self.flag_ICH_in_labels:
-                self.df = pd.DataFrame(
-                    {'Case number': [self.currentCase], 
-                    'Annotator Name': [self.annotator_name], 
-                    'Annotator degree': [self.annotator_degree],
-                    'Time': [self.ui.lcdNumber.value], 
-                    'Revision step': [self.revision_step[0]], 
-                    'Time ICH':[self.timer1.total_time], 
-                    'Time IVH':[self.timer2.total_time], 
-                    'Time PHE':[self.timer3.total_time], 
-                    'ICH type': self.checked_ichtype,
-                    'ICH location': self.checked_ichloc,
-                    'Expansion markers': self.checked_ems,
-                    'Other ICH type': [self.ichtype_other],
-                    'Other expansion markers': [self.em_comments]})
+                tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time, " 
+                for label in self.config_yaml["labels"]:
+                    tag_str = tag_str + label["name"] + " time, "
+                tag_str = tag_str + "ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
+                
+                data_str = self.currentCase 
+                data_str = data_str + ", " + self.annotator_name
+                data_str = data_str + ", " + self.annotator_degree
+                data_str = data_str + ", " + self.revision_step[0]
+                data_str = data_str + ", " + str(self.ui.lcdNumber.value)
+                for timer in self.timers:
+                    data_str = data_str + ", " + str(timer.total_time)
+                data_str = data_str + ", " + self.checked_ichtype
+                data_str = data_str + ", " + self.checked_ichloc
+                data_str = data_str + ", " + self.checked_ems
+                data_str = data_str + ", " + self.ichtype_other
+                data_str = data_str + ", " + self.em_comments
           else:
-                self.df = pd.DataFrame(
-                    {'Case number': [self.currentCase], 
-                    'Annotator Name': [self.annotator_name], 
-                    'Annotator degree': [self.annotator_degree],
-                    'Time': [self.ui.lcdNumber.value], 
-                    'Revision step': [self.revision_step[0]], 
-                    'Time ICH':[self.timer1.total_time], 
-                    'Time IVH':[self.timer2.total_time], 
-                    'Time PHE':[self.timer3.total_time]})
+                tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time, " 
+                for label in self.config_yaml["labels"]:
+                    tag_str = tag_str + label["name"] + " time, "
+                tag_str = tag_str + "ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
+                
+                data_str = self.currentCase 
+                data_str = data_str + ", " + self.annotator_name
+                data_str = data_str + ", " + self.annotator_degree
+                data_str = data_str + ", " + self.revision_step[0]
+                data_str = data_str + ", " + str(self.ui.lcdNumber.value)
+                for timer in self.timers:
+                    data_str = data_str + ", " + str(timer.total_time)
           self.outputTimeFile = os.path.join(self.output_dir_time,
                                              '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
           if not os.path.isfile(self.outputTimeFile):
-              self.df.to_csv(self.outputTimeFile)
+              with open(self.outputTimeFile, 'w') as f:
+                  f.write(tag_str)
+                  f.write("\n")
+                  f.write(data_str)
           else:
-              self.df.to_csv(self.outputTimeFile, mode='a', header=False)
+              with open(self.outputTimeFile, 'a') as f:
+                  f.write("\n")
+                  f.write(data_str)
 
           # Save .seg.nrrd file
           
