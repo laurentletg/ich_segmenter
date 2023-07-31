@@ -441,7 +441,7 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Set segmentation node to segment editor
       self.segmentEditorWidget.setSegmentationNode(segmentationNode)
       # Set master volume node to segment editor
-      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+      self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
       segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
       self.createNewSegments() 
@@ -468,9 +468,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       # if there are segments in the segmentation node, check if the segment name is already in the segmentation node
       if any([self.segment_name in i for i in srcSegmentation.GetSegmentIDs()]):
-            print('segment already exists, not creating a new one')
+            pass
       else:
-            print(f'Creatin a new segment {self.segment_name}')
             self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
             self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
 
@@ -478,6 +477,10 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onNewLabelSegm(self, label_value, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
       # TODO DELPH how to add label_value? by order of creation?
+      # TODO DELPH fix PHE tool
+      # TODO DELPH test with brain extraction
+      # TODO DELPH test with 5 labels
+      # TODO remove other error messages in output
       segment_name = self.newSegment(label_name)  
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
@@ -1003,40 +1006,35 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.SegmentWindowPushButton.setText('Dock Segment Editor')
           slicer.modules.segmenteditor.widgetRepresentation().setParent(slicer.util.mainWindow())
 
-  def onDropDownButton_label_select(self):
-      # TODO DELPH
-      # change HU bounds
-      # change segment
-      print("debug, pushed label select")
+  def onDropDownButton_label_select(self, value):
+      # TODO DELPH remove ICH stuff in UI if ICH not in label names
+      label = self.config_yaml["labels"][value]
+      self.setUpperAndLowerBoundHU(label["lower_bound_HU"], label["upper_bound_HU"])
 
+      label_name = label["name"]
+      try:
+        segment_name = f"{self.currentCase}_{label_name}"
+        self.onPushButton_select_label(segment_name, label["lower_bound_HU"], label["upper_bound_HU"])
+      except:
+        pass 
+      
   def onPushButton_Paint(self):
-      # TODO DELPH fix this
-      print("debug, pushed paint")
-    #   if self.ui.pushButton_Paint.isChecked():
-    #       self.segmentEditorWidget.setActiveEffectByName("Paint")
-    #       # Note it seems that sometimes you need to activate the effect first with :
-    #       # Assign effect to the segmentEditorWidget using the active effect
-    #       self.effect = self.segmentEditorWidget.activeEffect()
-    #       self.effect.activate()
-    #       self.effect.setParameter('BrushSphere',1)
-    #       # Seems that you need to activate the effect to see it in Slicer
-    #       # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
-    #       self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-    #       #Set if using Editable intensity range (the range is defined below using object.setParameter)
-    #       self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-    #       self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-    #       self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
-    #   else:
-    #       self.segmentEditorWidget.setActiveEffectByName("Paint")
-    #       self.effect = self.segmentEditorWidget.activeEffect()
-    #       # Seems that you need to activate the effect to see it in Slicer
-    #       self.effect.activate()
-    #       # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
-    #       self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-    #       # Set if using Editable intensity range (the range is defined below using object.setParameter)
-    #       self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
-    #       self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
-            
+        # TODO DELPH fix HU bounds
+
+        self.segmentEditorWidget.setActiveEffectByName("Paint")
+        # Note it seems that sometimes you need to activate the effect first with :
+        # Assign effect to the segmentEditorWidget using the active effect
+        self.effect = self.segmentEditorWidget.activeEffect()
+        self.effect.activate()
+        self.effect.setParameter('BrushSphere',1)
+        # Seems that you need to activate the effect to see it in Slicer
+        # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
+        self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
+        #Set if using Editable intensity range (the range is defined below using object.setParameter)
+        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+        self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
+        
 
   def toggleFillButton(self):
       if self.ui.pushButton_ToggleFill.isChecked():
@@ -1100,17 +1098,22 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.self().onApply()
 
   def onLB_HU(self):
-      self.LB_HU=self.ui.LB_HU.value
-
-      self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-      self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-  
+      try:
+        self.LB_HU=self.ui.LB_HU.value
+      
+        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+      except:
+        pass
+      
   def onUB_HU(self):
-      self.UB_HU=self.ui.UB_HU.value
-
-      self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-      self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-
+      try:
+        self.UB_HU=self.ui.UB_HU.value
+      
+        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+      except:
+        pass
 class ICH_SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
   computation done by your module.  The interface
