@@ -13,7 +13,12 @@ import slicerio # cannot install in slicer
 import nrrd
 import yaml
 from pathlib import Path
-
+# TODO DELPH = add shortcut to undo button (z)
+# TODO DELPH remove value field in config file, will be indices instead
+# TODO DELPH remove all ICH, IVH, PHE variables that do not belong
+# TODO DELPH remove all ICH mentions in method names and file names
+# TODO DELPH adjust read me
+# TODO DELPH make a new video 
 
 VOLUME_FILE_TYPE = '*.nrrd' 
 SEGM_FILE_TYPE = '*.seg.nrrd'
