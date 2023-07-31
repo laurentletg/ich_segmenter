@@ -535,14 +535,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.UB_HU = label_UB_HU
       self.onPushButton_Paint()
   
-      # TODO DELPH what is this
-      self.number=self.current_label_index
       if (self.MostRecentPausedCasePath != self.currentCasePath):
         self.timers[self.current_label_index] = Timer(number=self.current_label_index) # new path, new timer
       else:
         self.timer_router()
-
-      self.timer_router()
 
   def onPushButton_SemiAutomaticPHE_Launch(self):
       flag_PHE_label_exists = False
@@ -618,11 +614,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       with TIMER_MUTEX:
         # If already called once (i.e when user pressed save segm button but forgot to annotator name), simply return the time
         if self.called:
-            print("passes here 1")
             return self.total_time
         else:
             try:
-                print("passes here 2")
                 self.total_time = self.counter/10
                 self.timer.stop()
                 self.flag2 = False  # Flag is for the timer to stop counting
@@ -788,38 +782,27 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None: 
-          # Save time to csv TODO DELPH refactor this
+          # Save time to csv 
+          tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time, " 
+          for label in self.config_yaml["labels"]:
+                tag_str = tag_str + label["name"] + " time"
           if self.flag_ICH_in_labels:
-                tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time, " 
-                for label in self.config_yaml["labels"]:
-                    tag_str = tag_str + label["name"] + " time, "
-                tag_str = tag_str + "ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
-                
-                data_str = self.currentCase 
-                data_str = data_str + ", " + self.annotator_name
-                data_str = data_str + ", " + self.annotator_degree
-                data_str = data_str + ", " + self.revision_step[0]
-                data_str = data_str + ", " + str(self.ui.lcdNumber.value)
-                for timer in self.timers:
-                    data_str = data_str + ", " + str(timer.total_time)
+                tag_str = tag_str + ", ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
+            
+          data_str = self.currentCase 
+          data_str = data_str + ", " + self.annotator_name
+          data_str = data_str + ", " + self.annotator_degree
+          data_str = data_str + ", " + self.revision_step[0]
+          data_str = data_str + ", " + str(self.ui.lcdNumber.value)
+          for timer in self.timers:
+                data_str = data_str + ", " + str(timer.total_time)
+          if self.flag_ICH_in_labels:
                 data_str = data_str + ", " + self.checked_ichtype
                 data_str = data_str + ", " + self.checked_ichloc
                 data_str = data_str + ", " + self.checked_ems
                 data_str = data_str + ", " + self.ichtype_other
                 data_str = data_str + ", " + self.em_comments
-          else:
-                tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time, " 
-                for label in self.config_yaml["labels"]:
-                    tag_str = tag_str + label["name"] + " time, "
-                tag_str = tag_str + "ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
-                
-                data_str = self.currentCase 
-                data_str = data_str + ", " + self.annotator_name
-                data_str = data_str + ", " + self.annotator_degree
-                data_str = data_str + ", " + self.revision_step[0]
-                data_str = data_str + ", " + str(self.ui.lcdNumber.value)
-                for timer in self.timers:
-                    data_str = data_str + ", " + str(timer.total_time)
+          
           self.outputTimeFile = os.path.join(self.output_dir_time,
                                              '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
           if not os.path.isfile(self.outputTimeFile):
