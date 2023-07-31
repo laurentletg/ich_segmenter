@@ -488,37 +488,6 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       segmentICH = Segmentation.GetSegment(self.SegmentID)
       segmentICH.SetColor(label_color_r/255,label_color_g/255,label_color_b/255) 
       self.onPushButton_select_label(segment_name, label_LB_HU, label_UB_HU)
-
-  def onICHSegm(self):
-      self.ICH_segment_name = self.newSegment('ICH')  
-      # below is the code to select the segment in the segment editor (from the segmentation node))
-      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      Segmentation = self.segmentationNode.GetSegmentation()
-      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.ICH_segment_name)
-      segmentICH = Segmentation.GetSegment(self.SegmentID)
-      segmentICH.SetColor(255/255,10/255,10/255) # set color to red
-      self.onPushButton_select_ICH()
-
-
-  def onIVHSegm(self):
-      self.IVH_segment_name = self.newSegment('IVH') 
-      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      Segmentation = self.segmentationNode.GetSegmentation()
-      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.IVH_segment_name)
-      segmentIVH = Segmentation.GetSegment(self.SegmentID)
-      segmentIVH.SetColor(230/255,230/255,70/255) #set color to yellow
-      self.onPushButton_select_IVH()
-
-    
-  def onPHESegm(self):
-      self.PHE_segment_name = self.newSegment('PHE') 
-    
-      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      Segmentation = self.segmentationNode.GetSegmentation()
-      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
-      segmentPHE = Segmentation.GetSegment(self.SegmentID)
-      segmentPHE.SetColor(11/255,80/255,255/255) #set color to blue
-      self.onPushButton_select_PHE()
    
   def onPushButton_select_label(self, segment_name, label_LB_HU, label_UP_HU):  
       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
@@ -536,44 +505,19 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.timer1.start() # same path, restart same timer 
 
       self.timer_router()
-      
-  def onPushButton_select_IVH(self):
-      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      Segmentation = self.segmentationNode.GetSegmentation()
-      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.IVH_segment_name)
-      self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
-      self.updateCurrentSegmenationLabel()
-      self.setUpperAndLowerBoundHU(30, 90)
-      self.onPushButton_Paint()
-  
-      self.number=2
-      if (self.MostRecentPausedCasePath != self.currentCasePath):
-        self.timer2 = Timer(number=2) # new path, new timer
-      else:
-        self.timer2.start() # same path, restart same timer 
-      self.timer_router()
-      
-      
-  def onPushButton_select_PHE(self):
-      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      Segmentation = self.segmentationNode.GetSegmentation()
-      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(self.PHE_segment_name)
-      self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
-      self.updateCurrentSegmenationLabel()
-      self.setUpperAndLowerBoundHU(5, 33)
-      self.onPushButton_Paint()
-
-      self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedOutsideAllSegments)
-  
-      self.number=3
-      if (self.MostRecentPausedCasePath != self.currentCasePath):
-        self.timer3 = Timer(number=3) # new path, new timer
-      else:
-        self.timer3.start() # same path, restart same timer 
-      self.timer_router()
 
   def onPushButton_SemiAutomaticPHE_Launch(self):
-      self.onPushButton_select_PHE()
+      flag_PHE_label_exists = False
+      PHE_label = None
+      for label in self.config_yaml["labels"]:
+          if label["name"] == "PHE":
+              flag_PHE_label_exists = True 
+              PHE_label = label
+              break
+      assert flag_PHE_label_exists
+
+      PHE_segment_name = f"{self.currentCase}_PHE"
+      self.onPushButton_select_label(PHE_segment_name, PHE_label["lower_bound_HU"], PHE_label["upper_bound_HU"])
       toolWindow = SemiAutoPheToolThresholdWindow(self)
       toolWindow.show()
       
