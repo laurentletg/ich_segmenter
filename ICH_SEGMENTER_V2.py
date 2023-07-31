@@ -13,7 +13,7 @@ import slicerio # cannot install in slicer
 import nrrd
 import yaml
 from pathlib import Path
-# TODO DELPH bug colors blue when tag is ICH - when new patient, set back dropbox
+# TODO DELPH fix race condition of lcd timer (and other timers?)
 # TODO DELPH = add shortcut to undo button (z)
 # TODO DELPH remove all ICH, IVH, PHE variables that do not belong
 # TODO DELPH remove all ICH mentions in method names and file names
@@ -403,6 +403,9 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       for label in self.config_yaml["labels"]:
           self.timers.append(Timer(number = timer_index))
           timer_index = timer_index + 1
+      
+      # reset dropbox to index 0
+      self.ui.dropDownButton_label_select.setCurrentIndex(0)
 
       slicer.mrmlScene.Clear()
       slicer.util.loadVolume(self.currentCasePath)
@@ -477,6 +480,8 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # restart the current timer 
       self.timers[self.current_label_index] = Timer(number=self.current_label_index)
+      # reset tool 
+      self.segmentEditorWidget.setActiveEffectByName("No editing")
       
   # Load all segments at once    
   def createNewSegments(self):
