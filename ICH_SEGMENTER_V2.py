@@ -13,8 +13,9 @@ import slicerio # cannot install in slicer
 import nrrd
 import yaml
 from pathlib import Path
+# TODO DELPH fix timers and csv write for timers
+# TODO DELPH start the timers only when start button is pressed :)
 # TODO DELPH = add shortcut to undo button (z)
-# TODO DELPH remove value field in config file, will be indices instead
 # TODO DELPH remove all ICH, IVH, PHE variables that do not belong
 # TODO DELPH remove all ICH mentions in method names and file names
 # TODO DELPH adjust read me
@@ -301,17 +302,17 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                     self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, self.ui.EM_swirl]
     
     
-    flag_ICH_in_labels = False
-    flag_PHE_in_labels = False
+    self.flag_ICH_in_labels = False
+    self.flag_PHE_in_labels = False
     for label in self.config_yaml["labels"]:
         if "ICH" in label["name"].upper() or "HEMORRHAGE" in label["name"].upper() or "HÉMORRAGIE" in label["name"].upper() or "HEMORRAGIE" in label["name"].upper() or "HAEMORRHAGE" in label["name"].upper():
-            flag_ICH_in_labels = True 
+            self.flag_ICH_in_labels = True 
         if "PHE" in label["name"].upper() or "EDEMA" in label["name"].upper() or "OEDEME" in label["name"].upper() or "OEDÈME" in label["name"].upper():
-            flag_PHE_in_labels = True
+            self.flag_PHE_in_labels = True
     
-    if not flag_ICH_in_labels:
+    if not self.flag_ICH_in_labels:
         self.ui.MRMLCollapsibleButton.setVisible(False)
-    if not flag_PHE_in_labels:
+    if not self.flag_PHE_in_labels:
         self.ui.SemiAutomaticPHELabel.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
@@ -771,20 +772,31 @@ class ICH_SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None: 
           # Save time to csv
-          self.df = pd.DataFrame(
-              {'Case number': [self.currentCase], 
-               'Annotator Name': [self.annotator_name], 
-               'Annotator degree': [self.annotator_degree],
-               'Time': [self.ui.lcdNumber.value], 
-               'Revision step': [self.revision_step[0]], 
-               'Time ICH':[self.timer1.total_time], 
-               'Time IVH':[self.timer2.total_time], 
-               'Time PHE':[self.timer3.total_time], 
-               'ICH type': self.checked_ichtype,
-               'ICH location': self.checked_ichloc,
-               'Expansion markers': self.checked_ems,
-               'Other ICH type': [self.ichtype_other],
-               'Other expansion markers': [self.em_comments]})
+          if self.flag_ICH_in_labels:
+                self.df = pd.DataFrame(
+                    {'Case number': [self.currentCase], 
+                    'Annotator Name': [self.annotator_name], 
+                    'Annotator degree': [self.annotator_degree],
+                    'Time': [self.ui.lcdNumber.value], 
+                    'Revision step': [self.revision_step[0]], 
+                    'Time ICH':[self.timer1.total_time], 
+                    'Time IVH':[self.timer2.total_time], 
+                    'Time PHE':[self.timer3.total_time], 
+                    'ICH type': self.checked_ichtype,
+                    'ICH location': self.checked_ichloc,
+                    'Expansion markers': self.checked_ems,
+                    'Other ICH type': [self.ichtype_other],
+                    'Other expansion markers': [self.em_comments]})
+          else:
+                self.df = pd.DataFrame(
+                    {'Case number': [self.currentCase], 
+                    'Annotator Name': [self.annotator_name], 
+                    'Annotator degree': [self.annotator_degree],
+                    'Time': [self.ui.lcdNumber.value], 
+                    'Revision step': [self.revision_step[0]], 
+                    'Time ICH':[self.timer1.total_time], 
+                    'Time IVH':[self.timer2.total_time], 
+                    'Time PHE':[self.timer3.total_time]})
           self.outputTimeFile = os.path.join(self.output_dir_time,
                                              '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
           if not os.path.isfile(self.outputTimeFile):
