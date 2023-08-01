@@ -535,23 +535,26 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.UB_HU = label_UB_HU
       self.onPushButton_Paint()
   
-      if (self.MostRecentPausedCasePath != self.currentCasePath):
+      if (self.MostRecentPausedCasePath != self.currentCasePath and self.MostRecentPausedCasePath != ""):
         self.timers[self.current_label_index] = Timer(number=self.current_label_index) # new path, new timer
-      else:
-        self.timer_router()
+      
+      self.timer_router()
 
   def onPushButton_SemiAutomaticPHE_Launch(self):
       flag_PHE_label_exists = False
       PHE_label = None
+      PHE_label_index = 0
       for label in self.config_yaml["labels"]:
           if label["name"] == "PHE":
               flag_PHE_label_exists = True 
               PHE_label = label
               break
+          PHE_label_index = PHE_label_index + 1
       assert flag_PHE_label_exists
 
       PHE_segment_name = f"{self.currentCase}_PHE"
       self.onPushButton_select_label(PHE_segment_name, PHE_label["lower_bound_HU"], PHE_label["upper_bound_HU"])
+      self.ui.dropDownButton_label_select.setCurrentIndex(PHE_label_index)
       toolWindow = SemiAutoPheToolThresholdWindow(self)
       toolWindow.show()
       
@@ -783,9 +786,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None: 
           # Save time to csv 
-          tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time, " 
+          tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time" 
           for label in self.config_yaml["labels"]:
-                tag_str = tag_str + label["name"] + " time"
+                tag_str = tag_str + ", " + label["name"] + " time"
           if self.flag_ICH_in_labels:
                 tag_str = tag_str + ", ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
             
