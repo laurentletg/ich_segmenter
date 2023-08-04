@@ -84,6 +84,7 @@ class SemiAutoPheToolThresholdWindow(qt.QWidget):
        self.close()
 
    def pushCancel(self):
+       self.segmenter.ClearPHESegment()
        self.close()
 
 class SemiAutoPheToolInstructionsWindow(qt.QWidget):
@@ -120,6 +121,7 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
        self.close()
 
    def pushCancel(self):
+       self.segmenter.ClearPHESegment()
        self.close()
 
 class SEGMENTER_V2(ScriptedLoadableModule):
@@ -499,15 +501,15 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
       self.segment_name = f"{self.currentCase}_{segment_name}"
       srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      srcSegmentation = srcNode.GetSegmentation()
+      self.srcSegmentation = srcNode.GetSegmentation()
       
       # Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
-      if not srcSegmentation.GetSegmentIDs(): # if there are no segments in the segmentation node
+      if not self.srcSegmentation.GetSegmentIDs(): # if there are no segments in the segmentation node
         self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
         self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
       
       # if there are segments in the segmentation node, check if the segment name is already in the segmentation node
-      if any([self.segment_name in i for i in srcSegmentation.GetSegmentIDs()]):
+      if any([self.segment_name in i for i in self.srcSegmentation.GetSegmentIDs()]):
             pass
       else:
             self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
@@ -585,7 +587,23 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect = self.segmentEditorWidget.activeEffect()
       effect.setParameter("Operation","EraseOutside")
       effect.setParameter("Shape","FreeForm")
-      
+
+  def ClearPHESegment(self):
+      flag_PHE_label_exists = False
+      PHE_label = None
+      PHE_label_index = 0
+      for label in self.config_yaml["labels"]:
+          if label["name"] == "PHE":
+              flag_PHE_label_exists = True 
+              PHE_label = label
+              break
+          PHE_label_index = PHE_label_index + 1
+      assert flag_PHE_label_exists
+
+      segm_name = f"{self.currentCase}_PHE"
+      self.srcSegmentation.RemoveSegment(segm_name)
+      self.onNewLabelSegm(PHE_label["name"], PHE_label["color_r"], PHE_label["color_g"], PHE_label["color_b"], PHE_label["lower_bound_HU"], PHE_label["upper_bound_HU"])
+
   def startTimer(self):
       with TIMER_MUTEX:
         self.counter = 0
