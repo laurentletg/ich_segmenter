@@ -27,6 +27,9 @@
           <property name="text">
            <string>Tools</string>
           </property>
+          <property name="collapsed">
+           <bool>true</bool>
+          </property>
           <layout class="QGridLayout" name="gridLayout_6">
            <item row="1" column="0">
             <widget class="QPushButton" name="SegmentWindowPushButton">
@@ -40,9 +43,6 @@
            </item>
            <item row="2" column="0">
             <layout class="QGridLayout" name="gridLayout">
-             <item row="3" column="1">
-              <widget class="QSpinBox" name="UB_HU"/>
-             </item>
              <item row="2" column="2">
               <widget class="QPushButton" name="PushButton_segmeditor">
                <property name="text">
@@ -50,54 +50,41 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="2">
+             <item row="3" column="1">
+              <widget class="QPushButton" name="pushButton_ToggleVisibility">
+               <property name="text">
+                <string>Visibility: ON</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QPushButton" name="pushButton_undo">
+               <property name="text">
+                <string>Undo</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
               <widget class="QPushButton" name="pushButton_Smooth">
                <property name="text">
                 <string>Smooth margins</string>
                </property>
               </widget>
              </item>
-             <item row="3" column="0">
-              <widget class="QSpinBox" name="LB_HU">
-               <property name="toolTip">
-                <string extracomment="testtool tip coment"/>
-               </property>
-               <property name="minimum">
-                <number>-3000</number>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="1">
+             <item row="2" column="0">
               <widget class="QPushButton" name="pushButton_Small_holes">
                <property name="text">
                 <string>Remove small holes</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
-              <widget class="QPushButton" name="pushButton_Erase">
-               <property name="text">
-                <string>Erase mode</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QPushButton" name="pushButton_Paint">
-               <property name="text">
-                <string>Paint with mask</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
              <item row="3" column="2">
               <widget class="QPushButton" name="pushButton_ToggleFill">
                <property name="text">
-                <string>Fill OFF</string>
+                <string>Fill: OFF</string>
                </property>
                <property name="checkable">
                 <bool>true</bool>
@@ -105,27 +92,92 @@
               </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QPushButton" name="pushButton_ICH_select">
-               <property name="text">
-                <string>ICH</string>
-               </property>
+              <widget class="QComboBox" name="dropDownButton_label_select">
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QPushButton" name="pushButton_IVH_select">
+              <widget class="QPushButton" name="pushButton_Paint">
                <property name="text">
-                <string>IVH</string>
+                <string>Paint</string>
                </property>
               </widget>
              </item>
              <item row="1" column="2">
-              <widget class="QPushButton" name="pushButton_PHE_select">
+              <widget class="QPushButton" name="pushButton_Erase">
                <property name="text">
-                <string>PHE</string>
+                <string>Erase mode</string>
                </property>
               </widget>
              </item>
             </layout>
+           </item>
+           <item row="3" column="0">
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="0" column="0">
+             <widget class="QLabel" name="ThresholdLabel">
+             <property name="text">
+                <string>Thresholds</string>
+               </property>
+             </widget>
+             </item>
+             <item row="1" column="0">
+             <widget class="QLabel" name="MinimumLabel">
+             <property name="text">
+                <string>Minimum</string>
+               </property>
+             </widget>
+             </item>
+             <item row="1" column="1">
+             <widget class="QLabel"  name="MaximumLabel">
+             <property name="text">
+                <string>Maximum</string>
+               </property>
+             </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QSpinBox" name="LB_HU">
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QSpinBox" name="UB_HU">
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QPushButton" name="pushDefaultMin">
+              <property name="text">
+                <string>Default Min. HU</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QPushButton" name="pushDefaultMax">
+              <property name="text">
+                <string>Default Max. HU</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="4" column="0">
+           <widget class="QLabel"  name="SemiAutomaticPHELabel">
+             <property name="text">
+                <string>Semi-automatic PHE Tool</string>
+               </property>
+             </widget>
+           </item>
+           <item row="5" column="0">
+           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_Launch">
+               <property name="text">
+                <string>Launch</string>
+               </property>
+              </widget>
+           </item>
+           <item row="6" column="0">
+           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_ShowResult">
+               <property name="text">
+                <string>Show Result</string>
+               </property>
+              </widget>
            </item>
           </layout>
          </widget>
@@ -340,23 +392,25 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="ICHSegm">
+            <widget class="QPushButton" name="StartTimerButton">
              <property name="text">
-              <string>ICH segm</string>
+              <string>Start</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="IVHSegm">
-             <property name="text">
-              <string> IVH segm</string>
-             </property>
-            </widget>
+            <widget class="QLCDNumber" name="lcdNumber"/>
            </item>
            <item>
-            <widget class="QPushButton" name="PHESegm">
+            <widget class="QPushButton" name="PauseTimerButton">
              <property name="text">
-              <string>PHE segm</string>
+              <string>Pause</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -379,19 +433,6 @@
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QLCDNumber" name="lcdNumber"/>
-           </item>
-           <item>
-            <widget class="QPushButton" name="PauseTimerButton">
-             <property name="text">
-              <string>Pause</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
           </layout>
          </item>
         </layout>
@@ -407,6 +448,9 @@
         </property>
         <property name="text">
          <string>CRFs</string>
+        </property>
+        <property name="collapsed">
+           <bool>true</bool>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_8">
          <item>
