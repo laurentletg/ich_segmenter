@@ -14,13 +14,18 @@ import nrrd
 import yaml
 from pathlib import Path
 from threading import RLock
+import slicerio
+import SimpleITK as sitk
+import nibabel as nib
 
+# TODO: add all constants to the config file
 VOLUME_FILE_TYPE = '*.nrrd' 
 SEGM_FILE_TYPE = '*.seg.nrrd'
-DEFAULT_VOLUMES_DIRECTORY = '' # adjust to your default volume directory
+DEFAULT_VOLUMES_DIRECTORY = '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/Revision 03_2023 ICH_IVH/raw_data/Volumes_NRRD' # adjust to your default volume directory
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "label_config.yml")
 
 TIMER_MUTEX = RLock()
+
 
 class SemiAutoPheToolThresholdWindow(qt.QWidget):
    def __init__(self, segmenter, parent = None):
@@ -193,7 +198,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadPrediction = False
-  
+    self.segmentationNode = None
+
+
   def get_config_values(self):
       with open(CONFIG_FILE_PATH, 'r') as file:
         self.config_yaml = yaml.safe_load(file)
@@ -260,6 +267,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushDefaultMin.connect('clicked(bool)', self.onPushDefaultMin)
     self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
+    self.ui.testButton.connect('clicked(bool)', self.onTestButton)
+    self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.onPushButton_check_errors_labels)
 
     for label in self.config_yaml["labels"]:
         self.ui.dropDownButton_label_select.addItem(label["name"])
@@ -945,7 +954,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def load_mask_v2(self):
       # Get list of prediction names
       msg_warnig_delete_segm_node =qt.QMessageBox() # Typo correction
-      msg_warnig_delete_segm_node.setText('This will delete the current segementation. Do you want to continue?')
+      msg_warnig_delete_segm_node.setText('This will delete the current segmentation. Do you want to continue?')
       msg_warnig_delete_segm_node.setIcon(qt.QMessageBox.Warning)
       msg_warnig_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
       msg_warnig_delete_segm_node.buttonClicked.connect(self.msg_warnig_delete_segm_node_clicked)
@@ -986,7 +995,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
       else:
           msg_no_such_case = qt.QMessageBox()
-          msg_no_such_case.setText('There are no predictions for this case in the directory that you chose!')
+          msg_no_such_case.setText('There are no mask for this case in the directory that you chose!')
           msg_no_such_case.exec()
 
   def onSegmendEditorPushButton(self):
@@ -1124,7 +1133,151 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
       except:
         pass
-      
+
+  def onTestButton(self):
+      """"
+      Check match between lable name and values
+      # seg.nrrd file = outputSegmFile
+      # seg nifti file = outputSegmFileNifti
+      # volume nifti file = outputVolfile
+      #
+      """
+      # get the current label name
+      # read with slicerio
+      print('-'*20)
+      print('self.currentCase')
+      print(self.currentCase)
+
+      segmentation_info = slicerio.read_segmentation_info(self.outputSegmFile)
+      print('-' * 20)
+      print('Segmentation info :')
+      print(segmentation_info)
+
+      # get the segment names
+      segment_names = slicerio.segment_names(segmentation_info)
+      print('-'*20)
+      print('segment names:')
+      print(segment_names)
+
+      print('-' * 20)
+      print(f'lenght of segment names {len(segment_names)}')
+      if len(segment_names) != 3:
+          raise ValueError('Number of segments not equal to 3')
+
+
+      for i in segment_names:
+          if self.currentCase not in i:
+              raise ValueError(f'Case IC not found in segmentation segment name {i}')
+          else:
+              if 'ich' in i.lower():
+                  ich_name = i
+              elif 'ivh' in i.lower():
+                  ivh_name = i
+              elif 'phe' in i.lower():
+                  phe_name = i
+              else:
+                  raise ValueError('Segment name not recognized')
+
+      # #TODO: put in the config file
+      segment_names_to_labels = [(ich_name, 1), (ivh_name, 2), (phe_name, 3)]
+      voxels, header = nrrd.read(self.outputSegmFile)
+      # I think this function corrects the segment names and labels
+      extracted_voxels, extracted_header = slicerio.extract_segments(voxels, header, segmentation_info,
+                                                                     segment_names_to_labels)
+      # Below could be refactored to a function that take an arbitrary number of segment names and labels (e.g. generic qc script)
+
+      try:
+          print('-' * 20)
+          print('*' * 20)
+          print('Segment0')
+          print(extracted_header['Segment0_LabelValue'])
+          print(extracted_header['Segment0_Name'])
+          print('*' * 20)
+          print('Segment1')
+          print(extracted_header['Segment1_LabelValue'])
+          print(extracted_header['Segment1_Name'])
+          print('*' * 20)
+          print('Segment2')
+          print(extracted_header['Segment2_LabelValue'])
+          print(extracted_header['Segment2_Name'])
+
+          assert extracted_header['Segment0_LabelValue'] == 1
+          assert extracted_header['Segment0_Name'] == ich_name
+          assert extracted_header['Segment1_LabelValue'] == 2
+          assert extracted_header['Segment1_Name'] == ivh_name
+          assert extracted_header['Segment2_LabelValue'] == 3
+          assert extracted_header['Segment2_Name'] == phe_name
+          print('-' * 20)
+          print(f'PASSED: Match segmentation labels and names for case {self.currentCase}')
+
+      except AssertionError as e:  # TODO : check for segment index also
+          # # Correct segmentation labels and names. Not that this requires pynnrd directly.
+          print('Correcting segmentation labels and names for case {}'.format(self.currentCase))
+          print(e)
+          print('Segmentation name {} to label value {}'.format(extracted_header['Segment0_Name'], extracted_header['Segment0_LabelValue']))
+          header['Segment0_LabelValue'] = 1
+          header['Segment0_Name'] = ich_name
+          print('Segmentation name {} to label value {}'.format(extracted_header['Segment1_Name'], extracted_header['Segment1_LabelValue']))
+          header['Segment1_LabelValue'] = 2
+          header['Segment1_Name'] = ivh_name
+          print('Segmentation name {} to label value {}'.format(extracted_header['Segment2_Name'], extracted_header['Segment2_LabelValue']))
+          header['Segment2_LabelValue'] = 3
+          header['Segment2_Name'] = phe_name
+          nrrd.write(self.outputSegmFile, voxels, header)
+          print(f'Corrected: changed the  segmentation labels and names matches for case {ID}')
+
+
+      # Test on nifti
+      # read with nibabel
+      # print('-' * 20)
+      # print('Testing nifti')
+      # print('-' * 20)
+      # print('self.currentCase')
+      # # load header
+      # nifti_header = nib.load(self.outputSegmFileNifti).header
+      # print(nifti_header)
+
+  def onPushButton_check_errors_labels(self):
+      UB = 150
+      LB = -50
+
+      # Create a label map from the segmentation
+      # Get the volume node and segmentation node
+      volumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
+      segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+
+      volumeArray = slicer.util.arrayFromVolume(self.VolumeNode)
+
+      # Loop through each segment
+      segmentIDs = segmentationNode.GetSegmentation().GetSegmentIDs()
+      for segmentID in segmentIDs:
+          # Export the current segment to a new labelmap
+          labelMapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
+          slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(segmentationNode, [segmentID],
+                                                                            labelMapVolumeNode, self.VolumeNode)
+          labelArray = slicer.util.arrayFromVolume(labelMapVolumeNode)
+          print(segmentID)
+          # Check and correct the values
+          array_range = labelArray[(volumeArray < LB) | (volumeArray > UB)]
+          if array_range.any():
+              print('Voxels to correct')
+              labelArray[(volumeArray < LB) | (volumeArray > UB)] = 0
+              slicer.util.updateVolumeFromArray(labelMapVolumeNode, labelArray)
+
+              # Clear the original segment
+              segmentationNode.GetSegmentation().RemoveSegment(segmentID)
+
+              # Import the corrected labelmap back to this segment
+              slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelMapVolumeNode,
+                                                                                    segmentationNode)
+          else:
+              print('No correction needed')
+          # Cleanup this temporary node
+          slicer.mrmlScene.RemoveNode(labelMapVolumeNode.GetDisplayNode().GetColorNode())
+          slicer.mrmlScene.RemoveNode(labelMapVolumeNode)
+
+
 class SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
   computation done by your module.  The interface

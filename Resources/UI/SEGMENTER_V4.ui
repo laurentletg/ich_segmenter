@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>883</width>
-    <height>1278</height>
+    <height>1147</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,11 +23,11 @@
       <item row="11" column="0" colspan="2">
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
-         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
-          <property name="text">
+         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2" native="true">
+          <property name="text" stdset="0">
            <string>Tools</string>
           </property>
-          <property name="collapsed">
+          <property name="collapsed" stdset="0">
            <bool>true</bool>
           </property>
           <layout class="QGridLayout" name="gridLayout_6">
@@ -92,8 +92,7 @@
               </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QComboBox" name="dropDownButton_label_select">
-              </widget>
+              <widget class="QComboBox" name="dropDownButton_label_select"/>
              </item>
              <item row="1" column="1">
               <widget class="QPushButton" name="pushButton_Paint">
@@ -114,44 +113,42 @@
            <item row="3" column="0">
             <layout class="QGridLayout" name="gridLayout">
              <item row="0" column="0">
-             <widget class="QLabel" name="ThresholdLabel">
-             <property name="text">
+              <widget class="QLabel" name="ThresholdLabel">
+               <property name="text">
                 <string>Thresholds</string>
                </property>
-             </widget>
+              </widget>
              </item>
              <item row="1" column="0">
-             <widget class="QLabel" name="MinimumLabel">
-             <property name="text">
+              <widget class="QLabel" name="MinimumLabel">
+               <property name="text">
                 <string>Minimum</string>
                </property>
-             </widget>
+              </widget>
              </item>
              <item row="1" column="1">
-             <widget class="QLabel"  name="MaximumLabel">
-             <property name="text">
+              <widget class="QLabel" name="MaximumLabel">
+               <property name="text">
                 <string>Maximum</string>
                </property>
-             </widget>
+              </widget>
              </item>
              <item row="2" column="0">
-              <widget class="QSpinBox" name="LB_HU">
-              </widget>
+              <widget class="QSpinBox" name="LB_HU"/>
              </item>
              <item row="2" column="1">
-              <widget class="QSpinBox" name="UB_HU">
-              </widget>
+              <widget class="QSpinBox" name="UB_HU"/>
              </item>
              <item row="3" column="0">
               <widget class="QPushButton" name="pushDefaultMin">
-              <property name="text">
+               <property name="text">
                 <string>Default Min. HU</string>
                </property>
               </widget>
              </item>
              <item row="3" column="1">
               <widget class="QPushButton" name="pushDefaultMax">
-              <property name="text">
+               <property name="text">
                 <string>Default Max. HU</string>
                </property>
               </widget>
@@ -159,25 +156,25 @@
             </layout>
            </item>
            <item row="4" column="0">
-           <widget class="QLabel"  name="SemiAutomaticPHELabel">
+            <widget class="QLabel" name="SemiAutomaticPHELabel">
              <property name="text">
-                <string>Semi-automatic PHE Tool</string>
-               </property>
-             </widget>
+              <string>Semi-automatic PHE Tool</string>
+             </property>
+            </widget>
            </item>
            <item row="5" column="0">
-           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_Launch">
-               <property name="text">
-                <string>Launch</string>
-               </property>
-              </widget>
+            <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_Launch">
+             <property name="text">
+              <string>Launch</string>
+             </property>
+            </widget>
            </item>
            <item row="6" column="0">
-           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_ShowResult">
-               <property name="text">
-                <string>Show Result</string>
-               </property>
-              </widget>
+            <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_ShowResult">
+             <property name="text">
+              <string>Show Result</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -335,6 +332,20 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_check_errors_labels">
+            <property name="text">
+             <string>check error labels</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="testButton">
+            <property name="text">
+             <string>check saved seg</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
@@ -361,8 +372,8 @@
        </layout>
       </item>
       <item row="1" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3">
-        <property name="text">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3" native="true">
+        <property name="text" stdset="0">
          <string>Case list</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_9">
@@ -439,18 +450,18 @@
        </widget>
       </item>
       <item row="10" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton" native="true">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
           <height>175</height>
          </size>
         </property>
-        <property name="text">
+        <property name="text" stdset="0">
          <string>CRFs</string>
         </property>
-        <property name="collapsed">
-           <bool>true</bool>
+        <property name="collapsed" stdset="0">
+         <bool>true</bool>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_8">
          <item>
