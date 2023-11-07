@@ -22,6 +22,7 @@
 >    - slicer.util.pip_install('nibabel')
 >    - slicer.util.pip_install('pynrrd')
 >    - slicer.util.pip_install('pyyaml')
+>    - slicer.util.pip_install('slicerio')
 
 ### Other extensions that could be useful
 * `SlicerJupyter` to be able to use Jupyter Notebooks connected to 3D Slicer. 
