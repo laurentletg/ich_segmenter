@@ -15,7 +15,7 @@
 ### Trouble shooting 
 * Qt might need to be installed. The first five steps of the following procedure might be useful for this: [procedure](https://web.stanford.edu/dept/cs_edu/resources/qt/install-mac). 
 * If some modules are missing (`ModuleNotFoundError`), they must be added to the 3D Slicer environment by using the following commands in the Python Console: 
-        `from slicer.util import pip_install`
+        `from slicer.util import pip_install`. Alternatively, it is possible to use : slicer.util.pip_install('XYZ')
         `pip_install("XYZ")` where `XYZ` is replaced by the proper library
 
 ### Other extensions that could be useful
