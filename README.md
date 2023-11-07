@@ -17,6 +17,11 @@
 * If some modules are missing (`ModuleNotFoundError`), they must be added to the 3D Slicer environment by using the following commands in the Python Console: 
         `from slicer.util import pip_install`. Alternatively, it is possible to use : slicer.util.pip_install('XYZ')
         `pip_install("XYZ")` where `XYZ` is replaced by the proper library
+> Minimally the following packages are not already available (copy and paste in the python interactor):
+>    - slicer.util.pip_install('pandas')
+>    - slicer.util.pip_install('nibabel')
+>    - slicer.util.pip_install('pynrrd')
+>    - slicer.util.pip_install('pyyaml')
 
 ### Other extensions that could be useful
 * `SlicerJupyter` to be able to use Jupyter Notebooks connected to 3D Slicer. 
