@@ -24,6 +24,8 @@
 >    - slicer.util.pip_install('pyyaml')
 >    - slicer.util.pip_install('slicerio')
 
+![alt text](https://github.com/laurentletg/ICH_SEGMENTER_V2/blob/main/Slicer%20how%20to%20install%20package.png?raw=true)
+
 ### Other extensions that could be useful
 * `SlicerJupyter` to be able to use Jupyter Notebooks connected to 3D Slicer. 
 
