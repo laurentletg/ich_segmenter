@@ -30,7 +30,7 @@
 ### Video tutorials
 The videos are much less blurry if the mp4 files are downloaded to your computer. 
 
-[Videos](https://drive.google.com/drive/folders/1GQJi9Qqy5FyzHR690quK81nSt4WMXBbd](https://drive.google.com/drive/folders/1iM5r3zn6414RSQQNnYzGXxsDnVgd-KjP?usp=sharing)
+[Videos](https://drive.google.com/drive/folders/1iM5r3zn6414RSQQNnYzGXxsDnVgd-KjP?usp=sharing)
 
 ### Other resources
 * [3D Slicer Tutorials](https://www.youtube.com/watch?v=QTEti9aY0vs&)
