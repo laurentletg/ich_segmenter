@@ -270,6 +270,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.testButton.connect('clicked(bool)', self.onTestButton)
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.onPushButton_check_errors_labels)
 
+
+    
     for label in self.config_yaml["labels"]:
         self.ui.dropDownButton_label_select.addItem(label["name"])
 
