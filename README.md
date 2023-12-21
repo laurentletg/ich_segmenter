@@ -1,3 +1,4 @@
+![image](https://github.com/laurentletg/ICH_SEGMENTER_V2/assets/48111184/37787b77-a9e3-4603-a7b4-910a3ecfff5d)
 # SEGMENTER_V2
 * 3D Slicer extension
 * Manual medical image segmentation 
