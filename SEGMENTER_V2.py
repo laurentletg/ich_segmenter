@@ -201,6 +201,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.segmentationNode = None
 
 
+
   def get_config_values(self):
       with open(CONFIG_FILE_PATH, 'r') as file:
         self.config_yaml = yaml.safe_load(file)
@@ -1281,62 +1282,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 class SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
-  """This class should implement all the actual
-  computation done by your module.  The interface
-  should be such that other python code can import
-  this class and make use of the functionality without
-  requiring an instance of the Widget.
-  Uses ScriptedLoadableModuleLogic base class, available at:
-  https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
-  """
-
-  def __init__(self):
-    """
-    Called when the logic class is instantiated. Can be used for initializing member variables.
-    """
-    ScriptedLoadableModuleLogic.__init__(self)
-
-  def setDefaultParameters(self, parameterNode):
-    """
-    Initialize parameter node with default settings.
-    """
-    if not parameterNode.GetParameter("Threshold"):
-      parameterNode.SetParameter("Threshold", "100.0")
-    if not parameterNode.GetParameter("Invert"):
-      parameterNode.SetParameter("Invert", "false")
-
-  def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
-    """
-    Run the processing algorithm.
-    Can be used without GUI widget.
-    :param inputVolume: volume to be thresholded
-    :param outputVolume: thresholding result
-    :param imageThreshold: values above/below this threshold will be set to 0
-    :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
-    :param showResult: show output volume in slice viewers
-    """
-
-    if not inputVolume or not outputVolume:
-      raise ValueError("Input or output volume is invalid")
-
-    import time
-    startTime = time.time()
-    logging.info('Processing started')
-
-    # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
-    cliParams = {
-      'InputVolume': inputVolume.GetID(),
-      'OutputVolume': outputVolume.GetID(),
-      'ThresholdValue' : imageThreshold,
-      'ThresholdType' : 'Above' if invert else 'Below'
-      }
-    cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
-    # We don't need the CLI module node anymore, remove it to not clutter the scene with it
-    slicer.mrmlScene.RemoveNode(cliNode)
-
-    stopTime = time.time()
-    logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
-
+ 
+    pass
 class SEGMENTER_V2Test(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
@@ -1371,32 +1318,4 @@ class SEGMENTER_V2Test(ScriptedLoadableModuleTest):
 
     # Get/create input data
 
-    import SampleData
-    registerSampleData()
-    inputVolume = SampleData.downloadSample('SEGMENTER_V21')
-    self.delayDisplay('Loaded test data set')
-
-    inputScalarRange = inputVolume.GetImageData().GetScalarRange()
-    self.assertEqual(inputScalarRange[0], 0)
-    self.assertEqual(inputScalarRange[1], 695)
-
-    outputVolume = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode")
-    threshold = 100
-
-    # Test the module logic
-
-    logic = SEGMENTER_V2Logic()
-
-    # Test algorithm with non-inverted threshold
-    logic.process(inputVolume, outputVolume, threshold, True)
-    outputScalarRange = outputVolume.GetImageData().GetScalarRange()
-    self.assertEqual(outputScalarRange[0], inputScalarRange[0])
-    self.assertEqual(outputScalarRange[1], threshold)
-
-    # Test algorithm with inverted threshold
-    logic.process(inputVolume, outputVolume, threshold, False)
-    outputScalarRange = outputVolume.GetImageData().GetScalarRange()
-    self.assertEqual(outputScalarRange[0], inputScalarRange[0])
-    self.assertEqual(outputScalarRange[1], inputScalarRange[1])
-
-    self.delayDisplay('Test passed')
+    pass
