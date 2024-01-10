@@ -1,0 +1,33 @@
+default_volume_directory: '/Users/laurentletourneau-guillon/Dropbox/CHUM/RECHERCHE/2020ICHHEMATOMAS/2023 05 SLICER SANITIZATION TILT ANGULATION CASES/TILT_SANITIZATION/LLG_Delphine_0/volume' # adjust to your default volume directory
+volume_extension: "*.nrrd"
+regex_format_volume_load: 'Volume_pt_id_(ID_[a-zA-Z0-9]+)*'
+regex_format_volume_save: "Volume_pt_id_(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*"
+
+default_segmentation_directory: /Users/laurentletourneau-guillon/Dropbox/CHUM/RECHERCHE/2020ICHHEMATOMAS/2023 05 SLICER SANITIZATION TILT ANGULATION CASES/TILT_SANITIZATION/LLG_Delphine_0/segmentation
+segmentation_extension:  "*.seg.nrrd"
+regex_format_segmentation_load:  'Segmentation_pt_id_(ID_[a-zA-Z0-9]+)*'
+# regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
+
+OUTLIER_THRESHOLD: 
+  LOWER_BOUND: -50
+  UPPER_BOUND: 150
+
+labels: # make sure that PHE and ICH have no gap between bounds
+  - name: "ICH"
+    color_r: 255
+    color_g: 10
+    color_b: 10
+    lower_bound_HU: 33
+    upper_bound_HU: 90
+  - name: "IVH"
+    color_r: 230
+    color_g: 230
+    color_b: 70
+    lower_bound_HU: 33
+    upper_bound_HU: 90
+  - name: "PHE"
+    color_r: 11
+    color_g: 80
+    color_b: 255
+    lower_bound_HU: 5
+    upper_bound_HU: 33

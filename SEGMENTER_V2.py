@@ -19,7 +19,7 @@ import SimpleITK as sitk
 import nibabel as nib
 
 # TODO: add all constants to the config file
-CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yml")
+CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yaml")
 
 TIMER_MUTEX = RLock()
 
@@ -190,7 +190,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._updatingGUIFromParameterNode = False
     # LLG CODE BELOW
     self.predictions_names= None
-    self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
+    
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
@@ -233,11 +233,15 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.logic = SEGMENTER_V2Logic()
     self.get_config_values()
     
-    
-    VOLUME_FILE_TYPE = self.config_yaml['volume_extension']
-    SEGM_FILE_TYPE = self.config_yaml['segmentation_extension']
-    DEFAULT_VOLUMES_DIRECTORY = self.config_yaml['default_volume_directory']
-
+    self.DefaultDir = self.config_yaml['default_volume_directory']
+    self.DEFAULT_SEGMENTATION_DIR = self.config_yaml['default_segmentation_directory']
+    self.VOLUME_FILE_TYPE = self.config_yaml['volume_extension']
+    self.SEGM_FILE_TYPE = self.config_yaml['segmentation_extension']
+    self.VOL_REGEX_PATTERN = self.config_yaml['regex_format_volume_load']
+    self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE = self.config_yaml['regex_format_volume_save']
+    self.SEGM_REGEX_PATTERN = self.config_yaml['regex_format_segmentation_load']
+    self.OUTLIER_THRESHOLD_LB = self.config_yaml['OUTLIER_THRESHOLD']['LOWER_BOUND']
+    self.OUTLIER_THRESHOLD_UB = self.config_yaml['OUTLIER_THRESHOLD']['UPPER_BOUND']
 
 
     self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
@@ -361,8 +365,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
       self.updateCurrentFolder()
       # LLG GET A LIST OF cases WITHIN CURRENT FOLDERS (SUBDIRECTORIES). List comp to get only the case
-      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{VOLUME_FILE_TYPE}'))
-      self.Cases = sorted([re.findall(r'Volume_(ID_[a-zA-Z\d]+)',os.path.split(i)[-1])[0] for i in self.CasesPaths])
+      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.VOLUME_FILE_TYPE}'))
+      self.Cases = sorted([re.findall(self.VOL_REGEX_PATTERN,os.path.split(i)[-1])[0] for i in self.CasesPaths])
       self.ui.SlicerDirectoryListView.clear()
       # Populate the SlicerDirectoryListView
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
@@ -461,10 +465,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.currentCase_index = max(0, self.currentCase_index-1)
       self.updateCaseAll()
       self.loadPatient()
-
-
   
-
   def onNextButton(self):
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
       self.resetTimer()
@@ -477,9 +478,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.currentCase_index = min(len(self.Cases)-1, self.currentCase_index+1)
       self.updateCaseAll()
       self.loadPatient()
-
-
-
 
   def newSegmentation(self):
       # Create segment editor widget and node
@@ -503,7 +501,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # reset tool 
       self.segmentEditorWidget.setActiveEffectByName("No editing")
       
-  # Load all segments at once    
+  # Load all segments at once
+  # TODO REMOVE THE NAME IN EACH SEGMENTS SINCE THIS IS NOT REALLY NEED. WOULD NEED TO MODIFY THE QC SCRIPT ALSO    
   def createNewSegments(self):
         for label in self.config_yaml["labels"]:
             self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
@@ -802,7 +801,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             timer.stop()
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
+      output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,os.path.basename(self.currentCasePath))[0]
 
+    
       # get ICH types and locations
       self.checked_ichtype, self.checked_ichloc, self.checked_ems = self.checkboxChanged()
       self.ichtype_other = self.ui.ichtype_other.text
@@ -812,10 +813,14 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Create folders if not exist
       self.createFolders()
       
-      # Make sure to select the first segmentation node  (i.e. the one that was created when the module was loaded, not the one created when the user clicked on the "Load mask" button)
+      # Run the code to remove outliers
+      print('*** Running outlier removal ***')
+      self.onPushButton_check_errors_labels()
+      
+      # Get the segmentation node (the current one)
       self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
 
-
+     
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None: 
           # Save time to csv 
@@ -840,7 +845,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 data_str = data_str + ", " + self.em_comments
           
           self.outputTimeFile = os.path.join(self.output_dir_time,
-                                             '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
+                                             '{}_Case_{}_time_{}.csv'.format(self.annotator_name, output_file_pt_id_instanceUid, self.revision_step[0]))
           if not os.path.isfile(self.outputTimeFile):
               with open(self.outputTimeFile, 'w') as f:
                   f.write(tag_str)
@@ -853,8 +858,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           # Save .seg.nrrd file
           
+          
           self.outputSegmFile = os.path.join(self.output_dir_labels,
-                                                 "{}_{}_{}.seg.nrrd".format(self.currentCase, self.annotator_name, self.revision_step[0]))
+                                                 "{}_{}_{}.seg.nrrd".format(output_file_pt_id_instanceUid, self.annotator_name, self.revision_step[0]))
 
           if not os.path.isfile(self.outputSegmFile):
               slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
@@ -863,7 +869,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg2 = qt.QMessageBox()
               msg2.setWindowTitle('Save As')
               msg2.setText(
-                  f'The file {self.currentCase}_{self.annotator_name}_{self.revision_step[0]}.seg.nrrd already exists \n Do you want to replace the existing file?')
+                  f'The file {output_file_pt_id_instanceUid}_{self.annotator_name}_{self.revision_step[0]}.seg.nrrd already exists \n Do you want to replace the existing file?')
               msg2.setIcon(qt.QMessageBox.Warning)
               msg2.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg2.buttonClicked.connect(self.msg2_clicked)
@@ -878,7 +884,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                                                    self.VolumeNode)
 
           self.outputSegmFileNifti = os.path.join(self.output_dir_labels_nii,
-                                                  "{}_{}_{}.nii.gz".format(self.currentCase, self.annotator_name, self.revision_step[0]))
+                                                  "{}_{}_{}.nii.gz".format(output_file_pt_id_instanceUid, self.annotator_name, self.revision_step[0]))
 
           if not os.path.isfile(self.outputSegmFileNifti):
               slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
@@ -886,7 +892,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg3 = qt.QMessageBox()
               msg3.setWindowTitle('Save As')
               msg3.setText(
-                  f'The file {self.currentCase}_{self.annotator_name}_{self.revision_step[0]}.nii.gz already exists \n Do you want to replace the existing file?')
+                  f'The file {output_file_pt_id_instanceUid}_{self.annotator_name}_{self.revision_step[0]}.nii.gz already exists \n Do you want to replace the existing file?')
               msg3.setIcon(qt.QMessageBox.Warning)
               msg3.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg3.buttonClicked.connect(self.msg3_clicked)
@@ -896,7 +902,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.CurrentSegmenationLabel.setText(f'Case {self.VolumeNode.GetName()} saved !')
           
           # Saving a nii.gz version of the volume
-          self.outputVolfile = os.path.join(self.output_dir_vol_nii,"{}.nii.gz".format(self.currentCase))
+          self.outputVolfile = os.path.join(self.output_dir_vol_nii,"{}.nii.gz".format(output_file_pt_id_instanceUid))
           
           if not os.path.isfile(self.outputVolfile):
               slicer.util.saveNode(self.VolumeNode, self.outputVolfile)
@@ -904,11 +910,14 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg4 = qt.QMessageBox()
               msg4.setWindowTitle('Save As')
               msg4.setText(
-                  f'The file {self.currentCase}.nii.gz already exists \n Do you want to replace the existing file?')
+                  f'The file {output_file_pt_id_instanceUid}.nii.gz already exists \n Do you want to replace the existing file?')
               msg4.setIcon(qt.QMessageBox.Warning)
               msg4.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
               msg4.buttonClicked.connect(self.msg4_clicked)
               msg4.exec()
+
+          # saving the slicerio corrected version
+          self.onTestButton()
 
       # If annotator_name empty or timer not started.
       else:
@@ -921,7 +930,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
       try:
-        self.SlicerVolumeName = re.findall('Volume_(ID_[a-zA-Z\d]+)', self.VolumeNode.GetName())[0]
+        self.SlicerVolumeName = re.findall(self.VOL_REGEX_PATTERN, self.VolumeNode.GetName())[0]
         assert self.currentCase == self.SlicerVolumeName
       except AssertionError as e:
         print('Mismatch in case error :: {}'.format(str(e)))
@@ -945,9 +954,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return
       
   def onBrowseFolders_2Button(self):
-      self.predictionFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+      self.predictionFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DEFAULT_SEGMENTATION_DIR, qt.QFileDialog.ShowDirsOnly)
 
-      self.predictions_paths = sorted(glob(os.path.join(self.predictionFolder, f'{SEGM_FILE_TYPE}')))
+      self.predictions_paths = sorted(glob(os.path.join(self.predictionFolder, f'{self.SEGM_FILE_TYPE}')))
+
 
   def msg_warnig_delete_segm_node_clicked(self, msg_warnig_delete_segm_node_button):
       if msg_warnig_delete_segm_node_button.text == 'OK':
@@ -967,7 +977,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       msg_warnig_delete_segm_node.exec() # calls remove node if ok is clicked
 
       try:
-            self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_segmentation.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
+            self.predictions_names = sorted([re.findall(self.SEGM_REGEX_PATTERN,os.path.split(i)[-1]) for i in self.predictions_paths])
             self.called = False # restart timer
       except AttributeError as e:
             msgnopredloaded=qt.QMessageBox() # Typo correction
@@ -995,6 +1005,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           nn = self.segmentationNode.GetDisplayNode()
           # set Segmentation visible:
           nn.SetAllSegmentsVisibility(True)
+          self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
           
           #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
           for label in self.config_yaml["labels"]:
@@ -1003,6 +1014,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msg_no_such_case = qt.QMessageBox()
           msg_no_such_case.setText('There are no mask for this case in the directory that you chose!')
           msg_no_such_case.exec()
+    
 
   def onSegmendEditorPushButton(self):
 
@@ -1062,14 +1074,14 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         
 
   def toggleFillButton(self):
-      if self.ui.pushButton_ToggleFill.isChecked():
+      if  self.ui.pushButton_ToggleFill.isChecked():
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : lightgreen")
           self.ui.pushButton_ToggleFill.setText('Fill: ON')
-          self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
+          self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
       else:
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
           self.ui.pushButton_ToggleFill.setText('Fill: OFF')
-          self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
+          self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
 
   def onPushButton_ToggleVisibility(self):
       if self.ui.pushButton_ToggleVisibility.isChecked():
@@ -1151,9 +1163,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # get the current label name
       # read with slicerio
       print('-'*20)
-      print('self.currentCase')
-      print(self.currentCase)
-
+      print(f'self.currentCase::{self.currentCase}')
+      print(f'self.outputSegmFile ::{self.outputSegmFile}')
       segmentation_info = slicerio.read_segmentation_info(self.outputSegmFile)
       print('-' * 20)
       print('Segmentation info :')
@@ -1192,6 +1203,15 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                                      segment_names_to_labels)
       # Below could be refactored to a function that take an arbitrary number of segment names and labels (e.g. generic qc script)
 
+
+      # Overwrite the nrrd file
+      print(f'Writing a copy of the slicerio corrected segmentation file  {self.outputSegmFile} with the corrected labels and names')  
+      output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,os.path.basename(self.currentCasePath))[0]
+      output_dir_segmentation_file_corrected = os.path.join(self.DefaultDir, 'Segmentation_file_corrected_slicerio')
+      if not os.path.isdir(output_dir_segmentation_file_corrected):
+          os.makedirs(output_dir_segmentation_file_corrected)
+      output_path = os.path.join(output_dir_segmentation_file_corrected, f'Slicerio_corrected_segmentation_{output_file_pt_id_instanceUid}.seg.nrrd')      
+      
       try:
           print('-' * 20)
           print('*' * 20)
@@ -1214,7 +1234,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           assert extracted_header['Segment2_LabelValue'] == 3
           assert extracted_header['Segment2_Name'] == phe_name
           print('-' * 20)
+          nrrd.write(output_path, extracted_voxels, extracted_header)
           print(f'PASSED: Match segmentation labels and names for case {self.currentCase}')
+        
+          
 
       except AssertionError as e:  # TODO : check for segment index also
           # # Correct segmentation labels and names. Not that this requires pynnrd directly.
@@ -1228,9 +1251,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           header['Segment1_Name'] = ivh_name
           print('Segmentation name {} to label value {}'.format(extracted_header['Segment2_Name'], extracted_header['Segment2_LabelValue']))
           header['Segment2_LabelValue'] = 3
-          header['Segment2_Name'] = phe_name
-          nrrd.write(self.outputSegmFile, voxels, header)
+          header['Segment2_Name'] = phe_name               
+          nrrd.write(output_path, extracted_voxels, extracted_header)
           print(f'Corrected: changed the  segmentation labels and names matches for case {ID}')
+      
 
 
       # Test on nifti
@@ -1244,9 +1268,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # print(nifti_header)
 
   def onPushButton_check_errors_labels(self):
-      UB = 150
-      LB = -50
-
       # Create a label map from the segmentation
       # Get the volume node and segmentation node
       volumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
@@ -1265,10 +1286,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           labelArray = slicer.util.arrayFromVolume(labelMapVolumeNode)
           print(segmentID)
           # Check and correct the values
-          array_range = labelArray[(volumeArray < LB) | (volumeArray > UB)]
+          array_range = labelArray[(volumeArray < self.OUTLIER_THRESHOLD_LB) | (volumeArray > self.OUTLIER_THRESHOLD_UB)]
           if array_range.any():
               print('Voxels to correct')
-              labelArray[(volumeArray < LB) | (volumeArray > UB)] = 0
+              labelArray[(volumeArray < self.OUTLIER_THRESHOLD_LB) | (volumeArray > self.OUTLIER_THRESHOLD_UB)] = 0
               slicer.util.updateVolumeFromArray(labelMapVolumeNode, labelArray)
 
               # Clear the original segment
