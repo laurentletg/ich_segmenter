@@ -1,3 +1,4 @@
+![image](https://github.com/laurentletg/ICH_SEGMENTER_V2/assets/48111184/37787b77-a9e3-4603-a7b4-910a3ecfff5d)
 # SEGMENTER_V2
 * 3D Slicer extension
 * Manual medical image segmentation 
@@ -15,8 +16,16 @@
 ### Trouble shooting 
 * Qt might need to be installed. The first five steps of the following procedure might be useful for this: [procedure](https://web.stanford.edu/dept/cs_edu/resources/qt/install-mac). 
 * If some modules are missing (`ModuleNotFoundError`), they must be added to the 3D Slicer environment by using the following commands in the Python Console: 
-        `from slicer.util import pip_install`
+        `from slicer.util import pip_install`. Alternatively, it is possible to use : slicer.util.pip_install('XYZ')
         `pip_install("XYZ")` where `XYZ` is replaced by the proper library
+> Minimally the following packages are not already available (copy and paste in the python interactor):
+>    - slicer.util.pip_install('pandas')
+>    - slicer.util.pip_install('nibabel')
+>    - slicer.util.pip_install('pynrrd')
+>    - slicer.util.pip_install('pyyaml')
+>    - slicer.util.pip_install('slicerio')
+
+![alt text](https://github.com/laurentletg/ICH_SEGMENTER_V2/blob/main/Slicer%20how%20to%20install%20package.png?raw=true)
 
 ### Other extensions that could be useful
 * `SlicerJupyter` to be able to use Jupyter Notebooks connected to 3D Slicer. 
@@ -24,7 +33,7 @@
 ### Video tutorials
 The videos are much less blurry if the mp4 files are downloaded to your computer. 
 
-[Videos](https://drive.google.com/drive/folders/1GQJi9Qqy5FyzHR690quK81nSt4WMXBbd)
+[Videos](https://drive.google.com/drive/folders/1iM5r3zn6414RSQQNnYzGXxsDnVgd-KjP?usp=sharing)
 
 ### Other resources
 * [3D Slicer Tutorials](https://www.youtube.com/watch?v=QTEti9aY0vs&)
