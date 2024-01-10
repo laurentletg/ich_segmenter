@@ -19,10 +19,7 @@ import SimpleITK as sitk
 import nibabel as nib
 
 # TODO: add all constants to the config file
-VOLUME_FILE_TYPE = '*.nrrd' 
-SEGM_FILE_TYPE = '*.seg.nrrd'
-DEFAULT_VOLUMES_DIRECTORY = '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/Revision 03_2023 ICH_IVH/raw_data/Volumes_NRRD' # adjust to your default volume directory
-CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "label_config.yml")
+CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yml")
 
 TIMER_MUTEX = RLock()
 
@@ -203,13 +200,12 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def get_config_values(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
+    with open(CONFIG_FILE_PATH, 'r', encoding = 'utf-8') as file:
         self.config_yaml = yaml.safe_load(file)
-        
-        print("DEBUG configuration values for labels.")
-        for label in self.config_yaml["labels"]:
-            print(20*"-")
-            print(label)
+    print("DEBUG configuration values for labels.")
+    for label in self.config_yaml["labels"]:
+        print(20*"-")
+        print(label)
         print(20*"-")
 
   def setup(self):
@@ -236,6 +232,13 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # in batch mode, without a graphical user interface.
     self.logic = SEGMENTER_V2Logic()
     self.get_config_values()
+    
+    
+    VOLUME_FILE_TYPE = self.config_yaml['volume_extension']
+    SEGM_FILE_TYPE = self.config_yaml['segmentation_extension']
+    DEFAULT_VOLUMES_DIRECTORY = self.config_yaml['default_volume_directory']
+
+
 
     self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
     self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
