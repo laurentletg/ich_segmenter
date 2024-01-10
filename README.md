@@ -19,11 +19,13 @@
         `from slicer.util import pip_install`. Alternatively, it is possible to use : slicer.util.pip_install('XYZ')
         `pip_install("XYZ")` where `XYZ` is replaced by the proper library
 > Minimally the following packages are not already available (copy and paste in the python interactor):
->    - slicer.util.pip_install('pandas')
->    - slicer.util.pip_install('nibabel')
->    - slicer.util.pip_install('pynrrd')
->    - slicer.util.pip_install('pyyaml')
->    - slicer.util.pip_install('slicerio')
+```py
+slicer.util.pip_install('pandas')
+slicer.util.pip_install('nibabel')
+slicer.util.pip_install('pynrrd')
+slicer.util.pip_install('pyyaml')
+slicer.util.pip_install('slicerio')
+```
 
 ![alt text](https://github.com/laurentletg/ICH_SEGMENTER_V2/blob/main/Slicer%20how%20to%20install%20package.png?raw=true)
 
