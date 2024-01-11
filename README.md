@@ -3,6 +3,18 @@
 * 3D Slicer extension
 * Manual medical image segmentation 
 
+### Overview
+This module is currently targeted at the segmentation of intracerebral hemorrhage (ICH), intraventricular hemorrhage (IVH) and perihematomal edema (PHE) in CT scans. It can be adapted to other tasks. 
+Among other things, it allows the user to:
+* Load a CT scan and its corresponding labels.
+* Use thresholding to segment the ICH, IVH and PHE.
+* Smooth the segmentations.
+* Use standardized filenaming conventions.
+* Record the annotatore name, level and revision step in the filenames. 
+* Save the segmentations in NRRD format. A separate script is avalaible to convert the NRRD files to NIFTI format.
+* Remove outliers from the segmentations based on the corresponding volume Housefield units (HU). For example, if the HU of a voxel is -300, it is likely that the voxel is not part of the ICH and represent air. The upper and lower HU thresholds are configurable in the `label_config.yml` file.
+* Perform a QC to check that each label as the right label value. TODO: This part is hard-coded for the moment and works only for ICH = 1, IVH = 2, PHE = 3but could be adapted to be more flexible in the future. A separate is available to perform the later task. 
+
 ### Installation steps
 1. Install [3D Slicer](https://download.slicer.org).  
 2. Clone this repository.
@@ -26,6 +38,13 @@ slicer.util.pip_install('pynrrd')
 slicer.util.pip_install('pyyaml')
 slicer.util.pip_install('slicerio')
 ```
+
+### Usage
+A configuration file `config.yaml` is required to use the extension. The configuration file is a YAML file that describes the input directories, regular expression pattern to extract the ID from the the labels that will be used for the segmentation.
+
+### TODO:
+- [ ] In the future, the IDs won't be incorporated in the segment names, only in the filenames. This will require a change in post-annotation QC script (separate repository).
+- [ ] Add the QC check module within the extension and allow to check the label name : value correspondance based on the config file. 
 
 ![alt text](https://github.com/laurentletg/ICH_SEGMENTER_V2/blob/main/Slicer%20how%20to%20install%20package.png?raw=true)
 
