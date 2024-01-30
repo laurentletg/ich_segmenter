@@ -17,6 +17,7 @@ from threading import RLock
 import slicerio
 import SimpleITK as sitk
 import nibabel as nib
+import SegmentStatistics
 
 # TODO: add all constants to the config file
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yaml")
@@ -275,7 +276,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushDefaultMin.connect('clicked(bool)', self.onPushDefaultMin)
     self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
-    self.ui.testButton.connect('clicked(bool)', self.onTestButton)
+    self.ui.testButton.connect('clicked(bool)', self.save_statistics)
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.onPushButton_check_errors_labels)
 
 
@@ -929,11 +930,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               print("Error: timer is not started for some unknown reason.")
 
 
-      try:
-        self.SlicerVolumeName = re.findall(self.VOL_REGEX_PATTERN, self.VolumeNode.GetName())[0]
-        assert self.currentCase == self.SlicerVolumeName
-      except AssertionError as e:
-        print('Mismatch in case error :: {}'.format(str(e)))
+      self.save_statistics()
+
+
+
 
   def msg2_clicked(self, msg2_button):
       if msg2_button.text == 'OK':
@@ -959,22 +959,25 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.predictions_paths = sorted(glob(os.path.join(self.predictionFolder, f'{self.SEGM_FILE_TYPE}')))
 
 
-  def msg_warnig_delete_segm_node_clicked(self, msg_warnig_delete_segm_node_button):
-      if msg_warnig_delete_segm_node_button.text == 'OK':
-        srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-        slicer.mrmlScene.RemoveNode(srcNode)
-      else:
-          return
+  def msg_warnig_delete_segm_node_clicked(self):
+      if slicer.util.getNodesByClass('vtkMRMLSegmentationNode'):
+        slicer.mrmlScene.RemoveNode(slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0])
     
     
   def load_mask_v2(self):
       # Get list of prediction names
-      msg_warnig_delete_segm_node =qt.QMessageBox() # Typo correction
-      msg_warnig_delete_segm_node.setText('This will delete the current segmentation. Do you want to continue?')
-      msg_warnig_delete_segm_node.setIcon(qt.QMessageBox.Warning)
-      msg_warnig_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-      msg_warnig_delete_segm_node.buttonClicked.connect(self.msg_warnig_delete_segm_node_clicked)
-      msg_warnig_delete_segm_node.exec() # calls remove node if ok is clicked
+      msg_warning_delete_segm_node =qt.QMessageBox() # Typo correction
+      msg_warning_delete_segm_node.setText('This will delete the current segmentation. Do you want to continue?')
+      msg_warning_delete_segm_node.setIcon(qt.QMessageBox.Warning)
+      msg_warning_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+      # if clikc ok, then delete the current segmentatio
+      msg_warning_delete_segm_node.setDefaultButton(qt.QMessageBox.Cancel)
+      response = msg_warning_delete_segm_node.exec() # calls remove node if ok is clicked
+      if response == qt.QMessageBox.Ok:
+          self.msg_warnig_delete_segm_node_clicked()
+
+      else:
+          return
 
       try:
             self.predictions_names = sorted([re.findall(self.SEGM_REGEX_PATTERN,os.path.split(i)[-1]) for i in self.predictions_paths])
@@ -985,15 +988,16 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             msgnopredloaded.exec()
             # Then load the browse folder thing for the user
             self.onBrowseFolders_2Button()
-      
+
       self.currentPredictionPath = ""
       for p in self.predictions_paths:
           if self.currentCase in p:
               self.currentPredictionPath = p
               break
-      
+
       if self.currentPredictionPath != "":
 
+          # Then load the prediction segmentation
           slicer.util.loadSegmentation(self.currentPredictionPath)
           self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
           self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -1006,10 +1010,31 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           # set Segmentation visible:
           nn.SetAllSegmentsVisibility(True)
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
+
+          # Check if the first segment starts with Segment_1 (e.g. loaded from nnunet).
+          # If so change the name and colors of the segments to match the ones in the config file
+          first_segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(0).GetName()
+          print(f'first_segment_name :: {first_segment_name}')
+          if first_segment_name.startswith("Segment_1"):
+              # iterate through all segments and rename them
+                for i in range(self.segmentationNode.GetSegmentation().GetNumberOfSegments()):
+                    segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(i).GetName()
+                    print(f' src segment_name :: {segment_name}')
+                    for label in self.config_yaml["labels"]:
+                        if label["value"] == int(segment_name.split("_")[-1]):
+                            new_segment_name = f"{self.currentCase}_{label['name']}"
+                            print(f'new segment_name :: {new_segment_name}')
+                            self.segmentationNode.GetSegmentation().GetNthSegment(i).SetName(new_segment_name)
+                            # set color
+                            self.segmentationNode.GetSegmentation().GetNthSegment(i).SetColor(label["color_r"]/255,label["color_g"]/255,label["color_b"]/255)
+
+
+
+
+
           
           #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
-          for label in self.config_yaml["labels"]:
-            self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
+
       else:
           msg_no_such_case = qt.QMessageBox()
           msg_no_such_case.setText('There are no mask for this case in the directory that you chose!')
@@ -1303,6 +1328,42 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           # Cleanup this temporary node
           slicer.mrmlScene.RemoveNode(labelMapVolumeNode.GetDisplayNode().GetColorNode())
           slicer.mrmlScene.RemoveNode(labelMapVolumeNode)
+
+  def save_statistics(self):
+      volumeNode=slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
+      segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(volumeNode)
+      segStatLogic = SegmentStatistics.SegmentStatisticsLogic()
+      segStatLogic.getParameterNode().SetParameter("Segmentation", segmentationNode.GetID())
+      segStatLogic.getParameterNode().SetParameter("ScalarVolume", volumeNode.GetID())
+      segStatLogic.getParameterNode().SetParameter("LabelSegmentStatisticsPlugin.obb_origin_ras.enabled",str(True))
+      segStatLogic.getParameterNode().SetParameter("LabelSegmentStatisticsPlugin.obb_diameter_mm.enables",str(True))
+      segStatLogic.getParameterNode().SetParameter("LabelSegmentStatisticsPlugin.obb_direction_ras_x_.enabled", str(True))
+      segStatLogic.getParameterNode().SetParameter("LabelSegmentStatisticsPlugin.obb_direction_ras_y_.enabled",str(True))
+      segStatLogic.getParameterNode().SetParameter("LabelSegmentStatisticsPlugin.obb_direction_ras_z_.enabled", str(True))
+      segStatLogic.getParameterNode().SetParameter("LabelSegmentStatisticsPLugin.obb_diameter_mm.enables", str(True))
+      segStatLogic.computeStatistics()
+      output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE, os.path.basename(self.currentCasePath))[0]
+
+      output_dir_volumes_csv = os.path.join(self.CurrentFolder, 'csv_volumes')
+      if not os.path.exists(output_dir_volumes_csv):
+          os.makedirs(output_dir_volumes_csv)
+      outputFilename = f'Volumes_{output_file_pt_id_instanceUid}.csv'
+      outputFilename = os.path.join(output_dir_volumes_csv, outputFilename)
+
+      segStatLogic.exportToCSVFile(outputFilename)
+      stats = segStatLogic.getStatistics()
+
+      # Read the csv and clean it up
+      df = pd.read_csv(outputFilename)
+      df.set_index('Segment')
+      df = df[['Segment', 'LabelmapSegmentStatisticsPlugin.volume_cm3']]
+      df.rename(columns={'LabelmapSegmentStatisticsPlugin.volume_cm3': "Volumes"}, inplace=True)
+      df['ID'] = df['Segment'].str.extract("(ID_[a-zA-Z0-90]+)_")
+      df['Category'] = df['Segment'].str.extract("_([A-Z]+)$")
+      df.to_csv(outputFilename, index=False)
+      print(f'Wrote segmentation file here {outputFilename}')
+
 
 
 class SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
