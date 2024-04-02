@@ -209,6 +209,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         print(label)
         print(20*"-")
 
+
   def setup(self):
     """
     Called when the user opens the module the first time and the widget is initialized.
@@ -236,6 +237,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     self.DefaultDir = self.config_yaml['default_volume_directory']
     self.DEFAULT_SEGMENTATION_DIR = self.config_yaml['default_segmentation_directory']
+    print(f'Default directory location: {self.DEFAULT_SEGMENTATION_DIR}')
     self.VOLUME_FILE_TYPE = self.config_yaml['volume_extension']
     self.SEGM_FILE_TYPE = self.config_yaml['segmentation_extension']
     self.VOL_REGEX_PATTERN = self.config_yaml['regex_format_volume_load']
@@ -1139,6 +1141,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onPushButton_Smooth(self):
       # pass
+      # Remove masking
+      self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
       # Smoothing
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorWidget.setActiveEffectByName("Smoothing")
@@ -1151,6 +1155,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   def onPushButton_Small_holes(self):
       # pass
+      # Remove masking
+      self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
       # Fill holes smoothing
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorWidget.setActiveEffectByName("Smoothing")
