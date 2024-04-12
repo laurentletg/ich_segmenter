@@ -355,8 +355,11 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_test2">
+            <property name="toolTip">
+             <string>update the list keeping only remainig cases based on the folder where segmentations are currently being saved</string>
+            </property>
             <property name="text">
-             <string>pushButton_test2</string>
+             <string>Remaining cases</string>
             </property>
            </widget>
           </item>

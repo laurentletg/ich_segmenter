@@ -19,6 +19,7 @@ import SimpleITK as sitk
 import nibabel as nib
 import SegmentStatistics
 
+
 # TODO: add all constants to the config file
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yaml")
 
@@ -281,7 +282,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.testButton.connect('clicked(bool)', self.save_statistics)
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.onPushButton_check_errors_labels)
     self.ui.pushButton_test1.connect('clicked(bool)', self.subjectHierarchy)
-    self.ui.pushButton_test2.connect('clicked(bool)', print('hello'))
+    self.ui.pushButton_test2.connect('clicked(bool)', self.onpushbuttonttest2)
 
 
     
@@ -372,11 +373,13 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # LLG GET A LIST OF cases WITHIN CURRENT FOLDERS (SUBDIRECTORIES). List comp to get only the case
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.VOLUME_FILE_TYPE}'))
       self.Cases = sorted([re.findall(self.VOL_REGEX_PATTERN,os.path.split(i)[-1])[0] for i in self.CasesPaths])
+      self.update_UI_case_list()
+
+  def update_UI_case_list(self):
       self.ui.SlicerDirectoryListView.clear()
       # Populate the SlicerDirectoryListView
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
-      # List view s
-      self.currentCase_index = 0 # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
+      self.currentCase_index = 0  # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
       self.updateCaseAll()
       self.loadPatient()
 
@@ -577,8 +580,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     for i in SegmentationNodeNames:
         itemID = shNode.GetItemChildWithName(sceneItemID, i)
         shNode.SetItemParent(itemID, folderID)
-
-
 
 
   def onPushButton_segmeditor(self):
@@ -983,6 +984,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
       self.save_statistics()
+      # Update the color of the segment
+      self.update_current_case_paths_by_segmented_volumes()
 
 
 
@@ -1048,7 +1051,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               break
 
       if self.currentPredictionPath != "":
-
           # Then load the prediction segmentation
           slicer.util.loadSegmentation(self.currentPredictionPath)
           self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
@@ -1063,35 +1065,60 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           nn.SetAllSegmentsVisibility(True)
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
 
-          # Check if the first segment starts with Segment_1 (e.g. loaded from nnunet).
-          # If so change the name and colors of the segments to match the ones in the config file
-          first_segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(0).GetName()
-          print(f'first_segment_name :: {first_segment_name}')
-          if first_segment_name.startswith("Segment_1"):
-              # iterate through all segments and rename them
-                for i in range(self.segmentationNode.GetSegmentation().GetNumberOfSegments()):
-                    segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(i).GetName()
-                    print(f' src segment_name :: {segment_name}')
-                    for label in self.config_yaml["labels"]:
-                        if label["value"] == int(segment_name.split("_")[-1]):
-                            new_segment_name = f"{self.currentCase}_{label['name']}"
-                            print(f'new segment_name :: {new_segment_name}')
-                            self.segmentationNode.GetSegmentation().GetNthSegment(i).SetName(new_segment_name)
-                            # set color
-                            self.segmentationNode.GetSegmentation().GetNthSegment(i).SetColor(label["color_r"]/255,label["color_g"]/255,label["color_b"]/255)
+          self.convert_nifti_header_Segment()
 
-
-
-
-
-          
           #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
 
       else:
           msg_no_such_case = qt.QMessageBox()
           msg_no_such_case.setText('There are no mask for this case in the directory that you chose!')
           msg_no_such_case.exec()
-    
+
+
+  def convert_nifti_header_Segment(self):
+      # Check if the first segment starts with Segment_1 (e.g. loaded from nnunet).
+      # If so change the name and colors of the segments to match the ones in the config file
+      first_segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(0).GetName()
+      print(f'first_segment_name :: {first_segment_name}')
+      if first_segment_name.startswith("Segment_"):
+          # iterate through all segments and rename them
+          for i in range(self.segmentationNode.GetSegmentation().GetNumberOfSegments()):
+              segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(i).GetName()
+              print(f' src segment_name :: {segment_name}')
+              for label in self.config_yaml["labels"]:
+                  if label["value"] == int(segment_name.split("_")[-1]):
+                      new_segment_name = f"{self.currentCase}_{label['name']}"
+                      print(f'new segment_name :: {new_segment_name}')
+                      self.segmentationNode.GetSegmentation().GetNthSegment(i).SetName(new_segment_name)
+                      # set color
+                      self.segmentationNode.GetSegmentation().GetNthSegment(i).SetColor(label["color_r"] / 255,
+                                                                                        label["color_g"] / 255,
+                                                                                        label["color_b"] / 255)
+
+  def update_current_case_paths_by_segmented_volumes(self):
+      print('test')
+      print(self.output_dir_labels)
+      segmentations = glob(os.path.join(self.output_dir_labels, '*.seg.nrrd'))
+      print(len(segmentations))
+      print(self.SEGM_REGEX_PATTERN)
+      print(os.path.basename(segmentations[0]))
+      segmented_IDs = [re.findall(self.SEGM_REGEX_PATTERN, os.path.basename(segmentation))[0] for segmentation in
+                       segmentations]
+
+      self.ui.SlicerDirectoryListView.clear()
+      for case in self.CasesPaths:
+          case_id = re.findall(self.VOL_REGEX_PATTERN, case)[0]
+          item = qt.QListWidgetItem(case_id)
+          if not case_id in segmented_IDs:
+              item.setForeground(qt.QColor('red'))
+
+          elif case_id in segmented_IDs:
+              item.setForeground(qt.QColor('green'))
+          self.ui.SlicerDirectoryListView.addItem(item)
+
+
+  def onpushbuttonttest2(self):
+    print('you clicked on pushButton_test2')
 
   def onSegmendEditorPushButton(self):
 

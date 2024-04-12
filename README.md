@@ -3,6 +3,8 @@
 * 3D Slicer extension
 * Manual medical image segmentation 
 
+### [Change log](CHANGELOG.md)
+
 ### Overview
 This module is currently targeted at the segmentation of intracerebral hemorrhage (ICH), intraventricular hemorrhage (IVH) and perihematomal edema (PHE) in CT scans. It can be adapted to other tasks. 
 Among other things, it allows the user to:
