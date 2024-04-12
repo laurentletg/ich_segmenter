@@ -23,11 +23,11 @@
       <item row="11" column="0" colspan="2">
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
-         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2" native="true">
-          <property name="text" stdset="0">
+         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
+          <property name="text">
            <string>Tools</string>
           </property>
-          <property name="collapsed" stdset="0">
+          <property name="collapsed">
            <bool>true</bool>
           </property>
           <layout class="QGridLayout" name="gridLayout_6">
@@ -346,6 +346,20 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_test1">
+            <property name="text">
+             <string>pushButton_test1</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_test2">
+            <property name="text">
+             <string>pushButton_test2</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
@@ -372,8 +386,8 @@
        </layout>
       </item>
       <item row="1" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3" native="true">
-        <property name="text" stdset="0">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3">
+        <property name="text">
          <string>Case list</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_9">
@@ -450,17 +464,17 @@
        </widget>
       </item>
       <item row="10" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton" native="true">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>175</height>
+          <height>38</height>
          </size>
         </property>
-        <property name="text" stdset="0">
+        <property name="text">
          <string>CRFs</string>
         </property>
-        <property name="collapsed" stdset="0">
+        <property name="collapsed">
          <bool>true</bool>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_8">

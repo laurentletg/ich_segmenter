@@ -280,6 +280,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
     self.ui.testButton.connect('clicked(bool)', self.save_statistics)
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.onPushButton_check_errors_labels)
+    self.ui.pushButton_test1.connect('clicked(bool)', self.subjectHierarchy)
+    self.ui.pushButton_test2.connect('clicked(bool)', print('hello'))
 
 
     
@@ -482,6 +484,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCaseAll()
       self.loadPatient()
 
+
   def newSegmentation(self):
       # Create segment editor widget and node
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -533,6 +536,53 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
 
       return self.segment_name
+
+  def subjectHierarchy(self):
+    # Get the subject hierarchy node
+
+    # Create a subject so that all series can be nested under this subject
+    # Create a subject
+    shNode = slicer.mrmlScene.GetSubjectHierarchyNode()
+    # folderID = shNode.CreateFolderItem(shNode.GetSceneItemID(), 'MyFolder')
+    # Create a case name
+    shNode.CreateSubjectItem(shNode.GetSceneItemID(), self.currentCase)
+    ## Get all the needed IDs (including the parent and child IDs)
+
+    # Get scene item ID first because it is the root item:
+    sceneItemID = shNode.GetSceneItemID()
+    # print(sceneItemID)
+    # Get direct parent (subjectItemID) by name
+    subjectItemID = shNode.GetItemChildWithName(sceneItemID, self.currentCase)
+
+    # TODO: this will need to be updated when moving to multiple studies per patient (or done in a separate script)
+    # Creat a folder to include a study (if more than one study)
+    folderID = shNode.CreateFolderItem(subjectItemID, 'Study')
+    # set under the subject
+    shNode.SetItemParent(folderID, subjectItemID)
+
+    # get all volume nodes
+    VolumeNodes = slicer.util.getNodesByClass('vtkMRMLVolumeNode')
+    VolumeNodeNames = [i.GetName() for i in VolumeNodes]
+
+    # Get all child (itemID = MR seris/sequences)
+    for i in VolumeNodeNames:
+        itemID = shNode.GetItemChildWithName(sceneItemID, i)
+        shNode.SetItemParent(itemID, folderID)
+
+    # same thing for segmentation nodes
+    # get all segmentation nodes
+    SegmentationNodes = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')
+    SegmentationNodeNames = [i.GetName() for i in SegmentationNodes]
+    # move all segmentation nodes to the subject
+    for i in SegmentationNodeNames:
+        itemID = shNode.GetItemChildWithName(sceneItemID, i)
+        shNode.SetItemParent(itemID, folderID)
+
+
+
+
+  def onPushButton_segmeditor(self):
+      slicer.util.selectModule("SegmentEditor")
 
   def onNewLabelSegm(self, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
       segment_name = self.newSegment(label_name)  
