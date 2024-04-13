@@ -584,22 +584,14 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def subjectHierarchy(self):
     # Get the subject hierarchy node
-
-    # Create a subject so that all series can be nested under this subject
-    # Create a subject
     shNode = slicer.mrmlScene.GetSubjectHierarchyNode()
-    # folderID = shNode.CreateFolderItem(shNode.GetSceneItemID(), 'MyFolder')
-    # Create a case name
+
+    # Get scene item ID first because it is the root item:
+    sceneItemID = shNode.GetSceneItemID()
+    # Get the scene item ID (check if the scene item exists)
     subjectItemID = shNode.GetItemChildWithName(shNode.GetSceneItemID(), self.currentCase)
     if not subjectItemID:
         subjectItemID = shNode.CreateSubjectItem(shNode.GetSceneItemID(), self.currentCase)
-    ## Get all the needed IDs (including the parent and child IDs)
-    # Get scene item ID first because it is the root item:
-    sceneItemID = shNode.GetSceneItemID()
-    # print(sceneItemID)
-    # Get direct parent (subjectItemID) by name
-
-    # subjectItemID = shNode.GetItemChildWithName(sceneItemID, self.currentCase)
 
     # TODO: this will need to be updated when moving to multiple studies per patient (or done in a separate script)
     # Creat a folder to include a study (if more than one study)
@@ -614,14 +606,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # get all volume nodes
     VolumeNodes = slicer.util.getNodesByClass('vtkMRMLVolumeNode')
     VolumeNodeNames = [i.GetName() for i in VolumeNodes]
-
-    # Get all child (itemID = MR seris/sequences)
+    # Get all child (itemID = CT or MR series/sequences)
     for i in VolumeNodeNames:
         itemID = shNode.GetItemChildWithName(sceneItemID, i)
         shNode.SetItemParent(itemID, folderID)
-
     # same thing for segmentation nodes
-    # get all segmentation nodes
     SegmentationNodes = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')
     SegmentationNodeNames = [i.GetName() for i in SegmentationNodes]
     # move all segmentation nodes to the subject
