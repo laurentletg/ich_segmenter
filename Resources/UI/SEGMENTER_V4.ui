@@ -191,6 +191,16 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="pushButton_uint8casting">
+          <property name="toolTip">
+           <string>This will check if all segmentation file are in the uint8 format. Since Slicer 5.6 this raises in an error if the segmentation file are in float. </string>
+          </property>
+          <property name="text">
+           <string>QC check segmentation uint8 casting</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="getDefaultDir">
           <property name="text">
            <string>Get default directory</string>
@@ -359,7 +369,7 @@
              <string>update the list keeping only remainig cases based on the folder where segmentations are currently being saved</string>
             </property>
             <property name="text">
-             <string>Remaining cases</string>
+             <string>pushButton_test2</string>
             </property>
            </widget>
           </item>

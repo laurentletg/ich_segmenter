@@ -1,23 +1,24 @@
 # To install a package in slicer python environment, use the following command:
 # pip install --user package_name
 import os
-import logging
-import qt, slicer
-from slicer.ScriptedLoadableModule import *
-from slicer.util import VTKObservationMixin
 from glob import glob
 import re
-import pandas as pd
 import time
-import slicerio # cannot install in slicer
-import nrrd
 import yaml
 from pathlib import Path
 from threading import RLock
-import slicerio
-import SimpleITK as sitk
-import nibabel as nib
+
+import qt, slicer
+from slicer.ScriptedLoadableModule import *
+from slicer.util import VTKObservationMixin
+import slicerio # cannot install in slicer
 import SegmentStatistics
+
+import pandas as pd
+import numpy as np
+
+import nrrd
+import nibabel as nib
 
 
 # TODO: add all constants to the config file
@@ -253,6 +254,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
   
     self.ui.PauseTimerButton.setText('Pause')
+    self.ui.pushButton_uint8casting.connect('clicked(bool)', self.onPushButton_uint8casting)
     self.ui.getDefaultDir.connect('clicked(bool)', self.getDefaultDir)
     self.ui.BrowseFolders.connect('clicked(bool)', self.onBrowseFoldersButton)
     self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
@@ -283,6 +285,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.onPushButton_check_errors_labels)
     self.ui.pushButton_test1.connect('clicked(bool)', self.subjectHierarchy)
     self.ui.pushButton_test2.connect('clicked(bool)', self.onpushbuttonttest2)
+
 
 
     
@@ -365,6 +368,44 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
   def getDefaultDir(self):
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+
+  def onPushButton_uint8casting(self):
+      """
+      Check for dtype in nrrd or nifti files and cast to uint8 if not already - this causes issues
+      in Slicer 5.6 (vector error). Segmentation file should anyway be uint8, not float.
+
+      """
+      # message box to confirm overwriting
+      reply = qt.QMessageBox.question(None, 'Message', 'Casiting to uint8. Do you want to overwrite the original segmentation files?', qt.QMessageBox.Yes | qt.QMessageBox.No, qt.QMessageBox.No)
+      if reply == qt.QMessageBox.No:
+          raise ValueError('The segmentation files were not overwritten.')
+      else:
+          self.cast_segmentation_to_uint8()
+
+  def cast_segmentation_to_uint8(self):
+      for case in self.CasesPaths:
+          # Load the segmentation
+          input_path = os.path.basename(case)
+          if input_path.endswith('.nii') or input_path.endswith('.nii.gz'):
+              segm = nib.load(case)
+              segm_data = segm.get_fdata()
+              print(f'infile: {input_path}, dtype: {segm_data.dtype}')
+              if segm_data.dtype != np.uint8:
+                  segm_data = segm_data.astype(np.uint8)
+                  segm_nii = nib.Nifti1Image(segm_data, segm.affine)
+                  nib.save(segm_nii, case)
+                  print(f'converted file {input_path} to uint8')
+          elif input_path.endswith('.nrrd'):
+              segm_data, header = nrrd.read(case)
+              print(f'infile: {input_path}, dtype: {segm_data.dtype}')
+              if segm_data.dtype != np.uint8:
+                  segm_data = segm_data.astype(np.uint8)
+                  header['type'] = 'unsigned char'
+                  nrrd.write(case, segm_data, header = header)
+                  print(f'converted file {input_path} to uint8')
+          else:
+              raise ValueError('The input segmentation file must be in nii, nii.gz or nrrd format.')
+
 
   def onBrowseFoldersButton(self):
       # LLG get dialog window to ask for directory
