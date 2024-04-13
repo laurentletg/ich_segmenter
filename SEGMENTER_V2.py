@@ -491,6 +491,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Vol_displayNode.SetWindow(85)
       Vol_displayNode.SetLevel(45)
       self.newSegmentation()
+      self.subjectHierarchy()
   
   # Getter method to get the segmentation node name    - Not sure if this is really useful here. 
   @property
@@ -589,18 +590,24 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     shNode = slicer.mrmlScene.GetSubjectHierarchyNode()
     # folderID = shNode.CreateFolderItem(shNode.GetSceneItemID(), 'MyFolder')
     # Create a case name
-    shNode.CreateSubjectItem(shNode.GetSceneItemID(), self.currentCase)
+    subjectItemID = shNode.GetItemChildWithName(shNode.GetSceneItemID(), self.currentCase)
+    if not subjectItemID:
+        subjectItemID = shNode.CreateSubjectItem(shNode.GetSceneItemID(), self.currentCase)
     ## Get all the needed IDs (including the parent and child IDs)
-
     # Get scene item ID first because it is the root item:
     sceneItemID = shNode.GetSceneItemID()
     # print(sceneItemID)
     # Get direct parent (subjectItemID) by name
-    subjectItemID = shNode.GetItemChildWithName(sceneItemID, self.currentCase)
+
+    # subjectItemID = shNode.GetItemChildWithName(sceneItemID, self.currentCase)
 
     # TODO: this will need to be updated when moving to multiple studies per patient (or done in a separate script)
     # Creat a folder to include a study (if more than one study)
-    folderID = shNode.CreateFolderItem(subjectItemID, 'Study')
+    # check if the folder exists and if not create it (avoid recreating a new one when reloading a mask)
+    Study_name = 'Study to be updated'
+    folderID = shNode.GetItemChildWithName(subjectItemID, Study_name)
+    if not folderID:
+        folderID = shNode.CreateFolderItem(subjectItemID, Study_name)
     # set under the subject
     shNode.SetItemParent(folderID, subjectItemID)
 
@@ -1114,6 +1121,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msg_no_such_case = qt.QMessageBox()
           msg_no_such_case.setText('There are no mask for this case in the directory that you chose!')
           msg_no_such_case.exec()
+
+      # update subject hierarchy
+      self.subjectHierarchy()
 
 
   def convert_nifti_header_Segment(self):
