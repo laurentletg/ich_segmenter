@@ -1008,7 +1008,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msg4.exec()
 
           # saving the slicerio corrected version
-          self.onTestButton()
+          self.check_match_label_name_value()
 
       # If annotator_name empty or timer not started.
       else:
@@ -1300,7 +1300,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       except:
         pass
 
-  def onTestButton(self):
+  def check_match_label_name_value(self):
       """"
       Check match between lable name and values
       # seg.nrrd file = outputSegmFile
