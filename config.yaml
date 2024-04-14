@@ -3,7 +3,7 @@ volume_extension: "*.nrrd"
 regex_format_volume_load: 'Volume_pt_id_(ID_[a-zA-Z0-9]+)*'
 regex_format_volume_save: "Volume_pt_id_(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*"
 
-default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/Delphine_annotations_to_review/volume/Labels_ANW_1'
+default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/Delphine_annotations_to_review/volume/Labels_ANW_1 copy'
 segmentation_extension:  "*.seg.nrrd"
 regex_format_segmentation_load:  '(ID_.*?)_instUid'
 # regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""

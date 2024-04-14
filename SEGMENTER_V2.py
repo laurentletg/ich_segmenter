@@ -20,7 +20,6 @@ import numpy as np
 import nrrd
 import nibabel as nib
 
-
 # TODO: add all constants to the config file
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yaml")
 
@@ -282,7 +281,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
     self.ui.testButton.connect('clicked(bool)', self.save_statistics)
-    self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.onPushButton_check_errors_labels)
+    self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.check_for_outlier_labels)
     self.ui.pushButton_test1.connect('clicked(bool)', self.subjectHierarchy)
     self.ui.pushButton_test2.connect('clicked(bool)', self.onpushbuttonttest2)
 
@@ -832,26 +831,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           if timer_index != self.current_label_index:
               timer.stop()
           timer_index = timer_index + 1
-            
-  def createFolders(self):
-      self.revision_step = self.ui.RevisionStep.currentText
-      if len(self.revision_step) != 0:
-          self.output_dir_labels= os.path.join(self.CurrentFolder, f'Labels_{self.annotator_name}_{self.revision_step[0]}') # only get the number
-          os.makedirs(self.output_dir_labels, exist_ok=True)
-          # add a subfolder with nifti segmentations
-          self.output_dir_labels_nii = os.path.join(self.CurrentFolder, f'Labels_nii_{self.annotator_name}_{self.revision_step[0]}')
-          os.makedirs(self.output_dir_labels_nii, exist_ok=True)
-          # Create separate folder
-          self.output_dir_time= os.path.join(self.CurrentFolder, f'Time_{self.annotator_name}_{self.revision_step[0]}')
-          os.makedirs(self.output_dir_time, exist_ok=True)
-    
-          self.output_dir_vol_nii= os.path.join(self.CurrentFolder, f'Volumes_nii')
-          os.makedirs(self.output_dir_vol_nii, exist_ok=True)
-          
-      else:
-          msgboxtime = qt.QMessageBox()
-          msgboxtime.setText("Segmentation not saved : revision step is not defined!  \n Please save again with revision step!")
-          msgboxtime.exec()
 
   def checkboxChanged(self):
       self.checked_ichtype = []
@@ -883,44 +862,87 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.ichtype_other.clear()
       self.ui.EM_comments.clear()
 
+
+  #### SAVING FILES ####
+  def createFolders(self):
+      """
+      Create the top output directory
+      """
+      self.revision_step = self.ui.RevisionStep.currentText
+      if len(self.revision_step) != 0:
+          self.output_dir = os.path.join(self.CurrentFolder,
+                                         f'Output_{self.annotator_name}_{self.revision_step[0]}')  # only get the number
+          if not os.path.exists(self.output_dir):
+              os.makedirs(self.output_dir)
+
+      else:
+          msgboxtime = qt.QMessageBox()
+          msgboxtime.setText(
+              "Segmentation not saved : revision step is not defined!  \n Please save again with revision step!")
+          msgboxtime.exec()
+
+  def save_node_with_isfile_check_qt_msg_box(self, file_path, node):
+      """
+      Create folder if it does not exist and save the node to the file_path.
+      If the file already exists, a qt message box will ask the user if they want to replace the file.
+      """
+      folder_path = os.path.dirname(file_path)
+      if not os.path.exists(folder_path):
+          os.makedirs(folder_path)
+
+      if not os.path.isfile(file_path):
+          slicer.util.saveNode(node, file_path)
+      else:
+          msg = qt.QMessageBox()
+          msg.setWindowTitle('Save As')
+          msg.setText(f'The file {file_path} already exists \n Do you want to replace the existing file?')
+          msg.setIcon(qt.QMessageBox.Warning)
+          msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+          msg.exec()
+          if msg.clickedButton() == msg.button(qt.QMessageBox.Ok):
+              slicer.util.saveNode(node, file_path)
+              return f'File saved as {file_path}'
+          else:
+              return "File not saved"
+
   def onSaveSegmentationButton(self):
-      # By default creates a new folder in the volume directory 
-      # Stop the timer when the button is pressed
+      #TODO: refactor this methods and it is way too long
       self.time = self.stopTimer()
-      # Stop timer of the Timer class
       for timer in self.timers:
             timer.stop()
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
       output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,os.path.basename(self.currentCasePath))[0]
 
-    
+
+      #### CHECKBOX SAVING - TO BE REFACTORED ####
       # get ICH types and locations
-      self.checked_ichtype, self.checked_ichloc, self.checked_ems = self.checkboxChanged()
+      self.checked_ichtype, self.checked_icvhloc, self.checked_ems = self.checkboxChanged()
       self.ichtype_other = self.ui.ichtype_other.text
       self.em_comments = self.ui.EM_comments.text
 
-      
       # Create folders if not exist
       self.createFolders()
       
       # Run the code to remove outliers
       print('*** Running outlier removal ***')
-      self.onPushButton_check_errors_labels()
+      self.check_for_outlier_labels()
       
       # Get the segmentation node (the current one)
       self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
 
-     
+      #### SAVING CSV TIME #####
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None: 
-          # Save time to csv 
+          # Save time to csv
+          print("Saving time to csv")
           tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time" 
           for label in self.config_yaml["labels"]:
                 tag_str = tag_str + ", " + label["name"] + " time"
           if self.flag_ICH_in_labels:
                 tag_str = tag_str + ", ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
-            
+          print('constructing data string')
+          # TODO: refactor this to be more generic and use the config file values.
           data_str = self.currentCase 
           data_str = data_str + ", " + self.annotator_name
           data_str = data_str + ", " + self.annotator_degree
@@ -934,9 +956,16 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 data_str = data_str + ", " + self.checked_ems
                 data_str = data_str + ", " + self.ichtype_other
                 data_str = data_str + ", " + self.em_comments
-          
-          self.outputTimeFile = os.path.join(self.output_dir_time,
+
+          self.outputTimeFile = os.path.join(self.output_dir, 'annotation times',
                                              '{}_Case_{}_time_{}.csv'.format(self.annotator_name, output_file_pt_id_instanceUid, self.revision_step[0]))
+          print(f'line 961 - outputTimeFile: {self.outputTimeFile}')
+          time_folder = os.path.dirname(self.outputTimeFile)
+
+          if not os.path.exists(time_folder):
+              print("Creating directory: ", time_folder)
+              os.makedirs(time_folder)
+
           if not os.path.isfile(self.outputTimeFile):
               with open(self.outputTimeFile, 'w') as f:
                   f.write(tag_str)
@@ -947,67 +976,23 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   f.write("\n")
                   f.write(data_str)
 
-          # Save .seg.nrrd file
+
+          ### SAVING SEGMENTATION FILES ####
           
-          
-          self.outputSegmFile = os.path.join(self.output_dir_labels,
+          self.outputSegmFile = os.path.join(self.output_dir,'segmentations',
                                                  "{}_{}_{}.seg.nrrd".format(output_file_pt_id_instanceUid, self.annotator_name, self.revision_step[0]))
+          print(f'line 980 - outputTimeFile: {self.outputTimeFile}')
+          print(f'Saving segmentation to {self.outputSegmFile}')
 
-          if not os.path.isfile(self.outputSegmFile):
-              slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
+          # get the directory of the output segmentation file (needed in the method to check for remaining labels)
+          self.output_seg_dir = os.path.dirname(self.outputSegmFile)
+          print(f'output_seg_dir: {self.output_seg_dir}')
+          if not self.output_seg_dir:
+              os.makedirs(self.output_seg_dir)
 
-          else:
-              msg2 = qt.QMessageBox()
-              msg2.setWindowTitle('Save As')
-              msg2.setText(
-                  f'The file {output_file_pt_id_instanceUid}_{self.annotator_name}_{self.revision_step[0]}.seg.nrrd already exists \n Do you want to replace the existing file?')
-              msg2.setIcon(qt.QMessageBox.Warning)
-              msg2.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-              msg2.buttonClicked.connect(self.msg2_clicked)
-              msg2.exec()
+          self.save_node_with_isfile_check_qt_msg_box(self.outputSegmFile, self.segmentationNode)
 
-          # Save alternative nitfi segmentation
-          # Export segmentation to a labelmap volume
-          # Note to save to nifti you need to convert to labelmapVolumeNode
-          self.labelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
-          slicer.modules.segmentations.logic().ExportVisibleSegmentsToLabelmapNode(self.segmentationNode,
-                                                                                   self.labelmapVolumeNode,
-                                                                                   self.VolumeNode)
-
-          self.outputSegmFileNifti = os.path.join(self.output_dir_labels_nii,
-                                                  "{}_{}_{}.nii.gz".format(output_file_pt_id_instanceUid, self.annotator_name, self.revision_step[0]))
-
-          if not os.path.isfile(self.outputSegmFileNifti):
-              slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
-          else:
-              msg3 = qt.QMessageBox()
-              msg3.setWindowTitle('Save As')
-              msg3.setText(
-                  f'The file {output_file_pt_id_instanceUid}_{self.annotator_name}_{self.revision_step[0]}.nii.gz already exists \n Do you want to replace the existing file?')
-              msg3.setIcon(qt.QMessageBox.Warning)
-              msg3.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-              msg3.buttonClicked.connect(self.msg3_clicked)
-              msg3.exec()
-
-          # Saving messages
-          self.ui.CurrentSegmenationLabel.setText(f'Case {self.VolumeNode.GetName()} saved !')
-          
-          # Saving a nii.gz version of the volume
-          self.outputVolfile = os.path.join(self.output_dir_vol_nii,"{}.nii.gz".format(output_file_pt_id_instanceUid))
-          
-          if not os.path.isfile(self.outputVolfile):
-              slicer.util.saveNode(self.VolumeNode, self.outputVolfile)
-          else:
-              msg4 = qt.QMessageBox()
-              msg4.setWindowTitle('Save As')
-              msg4.setText(
-                  f'The file {output_file_pt_id_instanceUid}.nii.gz already exists \n Do you want to replace the existing file?')
-              msg4.setIcon(qt.QMessageBox.Warning)
-              msg4.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-              msg4.buttonClicked.connect(self.msg4_clicked)
-              msg4.exec()
-
-          # saving the slicerio corrected version
+          # reloading the .seg.nrrd file and check if the label name : value match
           self.check_match_label_name_value()
 
       # If annotator_name empty or timer not started.
@@ -1017,13 +1002,15 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
               msgboxtime.exec()
           elif self.time is None:
-              print("Error: timer is not started for some unknown reason.")
+              msgboxtime2 = qt.QMessageBox()
+              msgboxtime2.setText("Error: timer is not started for some unknown reason. Restart and save again. File not saved!")
+              msgboxtime2.exec()
 
 
+      # Save volumes
       self.save_statistics()
       # Update the color of the segment
       self.update_current_case_paths_by_segmented_volumes()
-
 
 
 
@@ -1137,8 +1124,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def update_current_case_paths_by_segmented_volumes(self):
       print('test')
-      print(self.output_dir_labels)
-      segmentations = glob(os.path.join(self.output_dir_labels, '*.seg.nrrd'))
+      print(self.output_seg_dir)
+      segmentations = glob(os.path.join(self.output_seg_dir, '*.seg.nrrd'))
       print(len(segmentations))
       print(self.SEGM_REGEX_PATTERN)
       print(os.path.basename(segmentations[0]))
@@ -1156,9 +1143,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               item.setForeground(qt.QColor('green'))
           self.ui.SlicerDirectoryListView.addItem(item)
 
-
   def onpushbuttonttest2(self):
     print('you clicked on pushButton_test2')
+    segm_utils.hello_slicer()
 
   def onSegmendEditorPushButton(self):
 
@@ -1404,18 +1391,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           print(f'Corrected: changed the  segmentation labels and names matches for case {ID}')
       
 
-
-      # Test on nifti
-      # read with nibabel
-      # print('-' * 20)
-      # print('Testing nifti')
-      # print('-' * 20)
-      # print('self.currentCase')
-      # # load header
-      # nifti_header = nib.load(self.outputSegmFileNifti).header
-      # print(nifti_header)
-
-  def onPushButton_check_errors_labels(self):
+  def check_for_outlier_labels(self):
       # Create a label map from the segmentation
       # Get the volume node and segmentation node
       volumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
@@ -1451,6 +1427,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           # Cleanup this temporary node
           slicer.mrmlScene.RemoveNode(labelMapVolumeNode.GetDisplayNode().GetColorNode())
           slicer.mrmlScene.RemoveNode(labelMapVolumeNode)
+          # Make sure the segmentation node matches the reference volume geometry
+          self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
 
   def save_statistics(self):
       volumeNode=slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
@@ -1468,11 +1446,26 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       segStatLogic.computeStatistics()
       output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE, os.path.basename(self.currentCasePath))[0]
 
-      output_dir_volumes_csv = os.path.join(self.CurrentFolder, 'csv_volumes')
+      outputFilename = 'Volumes_{}_{}_{}.{}'.format(output_file_pt_id_instanceUid, self.annotator_name, self.revision_step[0], 'csv')
+      print('segment statistics output file name: ', outputFilename)
+      output_dir_volumes_csv = os.path.join(self.output_dir, 'csv_volumes')
       if not os.path.exists(output_dir_volumes_csv):
           os.makedirs(output_dir_volumes_csv)
-      outputFilename = f'Volumes_{output_file_pt_id_instanceUid}.csv'
       outputFilename = os.path.join(output_dir_volumes_csv, outputFilename)
+      if not os.path.isfile(outputFilename):
+          segStatLogic.exportToCSVFile(outputFilename)
+          print(f'Wrote segmentation file here {outputFilename}')
+      else:
+          msg = qt.QMessageBox()
+          msg.setWindowTitle('Save As')
+          msg.setText(f'The file {outputFilename} already exists \n Do you want to replace the existing file?')
+          msg.setIcon(qt.QMessageBox.Warning)
+          msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+          msg.exec()
+          if msg.clickedButton() == msg.button(qt.QMessageBox.Ok):
+              segStatLogic.exportToCSVFile(outputFilename)
+              print(f'Wrote segmentation file here {outputFilename}')
+
 
       segStatLogic.exportToCSVFile(outputFilename)
       stats = segStatLogic.getStatistics()
@@ -1485,7 +1478,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       df['ID'] = df['Segment'].str.extract("(ID_[a-zA-Z0-90]+)_")
       df['Category'] = df['Segment'].str.extract("_([A-Z]+)$")
       df.to_csv(outputFilename, index=False)
-      print(f'Wrote segmentation file here {outputFilename}')
 
 
 
