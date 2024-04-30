@@ -29,8 +29,18 @@ Corresponds to section in `SEGMENTER_V2Widget.setup()` immediately after the wid
         shortcut.connect("activated()", callback)
 ```
 For buttons that 'toggles' this method was created:
+- [ ] create a more general method that can be used for all buttons that toggle on and off.
+```py
+  def keyboard_toggle_fill(self):
+      print('keyboard_toggle_fill')
+      if self.ui.pushButton_ToggleFill.isChecked():
+          self.ui.pushButton_ToggleFill.toggle()
+          self.toggleFillButton()
+      else:
+          self.ui.pushButton_ToggleFill.toggle()
+          self.toggleFillButton()
 
-
+```
 
 ## [2.1.1] - 2024-04-12
 
