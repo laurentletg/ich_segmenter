@@ -28,6 +28,9 @@ Corresponds to section in `SEGMENTER_V2Widget.setup()` immediately after the wid
         shortcut.setKey(qt.QKeySequence(shortcutKey))
         shortcut.connect("activated()", callback)
 ```
+For buttons that 'toggles' this method was created:
+
+
 
 ## [2.1.1] - 2024-04-12
 

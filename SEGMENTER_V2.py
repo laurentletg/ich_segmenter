@@ -282,7 +282,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
     self.ui.testButton.connect('clicked(bool)', self.save_statistics)
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.check_for_outlier_labels)
-    self.ui.pushButton_test1.connect('clicked(bool)', self.test_keyboard_shortcuts)
+    self.ui.pushButton_test1.connect('clicked(bool)', lambda: print('hello'))
     self.ui.pushButton_test2.connect('clicked(bool)', self.onpushbuttonttest2)
 
 
@@ -304,23 +304,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 
-    # shortcuts = [
-    #     (
-    #     "Ctrl+b", lambda: slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)),
-    #     ("Ctrl+n",
-    #      lambda: slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)),
-    #     ("Ctrl+m",
-    #      lambda: slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)),
-    #     ("Ctrl+,", lambda: slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView))
-    # ]
-    # #
-    # # for (shortcutKey, callback) in shortcuts:
-    # #     shortcut = qt.QShortcut(slicer.util.mainWindow())
-    # #     shortcut.setKey(qt.QKeySequence(shortcutKey))
-    # #     shortcut.connect("activated()", callback)
-    # #
-    #
-    #
     #
     for label in self.config_yaml["labels"]:
         self.ui.dropDownButton_label_select.addItem(label["name"])
@@ -381,17 +364,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.SemiAutomaticPHELabel.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
-
-  def test_keyboard_shortcuts(self):
-    print("test keyboard shortcuts")
-    shortcuts = []
-    print(type(self.config_yaml["KEYBOARD_SHORTCUTS"]))
-    for i in self.config_yaml["KEYBOARD_SHORTCUTS"]:
-        name = i.get("name")
-        method_name = i.get("method")
-        method = getattr(self, method_name)
-        method()
-
 
 
   def setUpperAndLowerBoundHU(self, inputLB_HU, inputUB_HU):
