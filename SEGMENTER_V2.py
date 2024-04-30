@@ -284,7 +284,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.check_for_outlier_labels)
     self.ui.pushButton_test1.connect('clicked(bool)', self.subjectHierarchy)
     self.ui.pushButton_test2.connect('clicked(bool)', self.onpushbuttonttest2)
-
+    
 
 
     
@@ -1144,8 +1144,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.SlicerDirectoryListView.addItem(item)
 
   def onpushbuttonttest2(self):
-    print('you clicked on pushButton_test2')
-    segm_utils.hello_slicer()
+      pass
 
   def onSegmendEditorPushButton(self):
 
