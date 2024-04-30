@@ -311,7 +311,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 
-    #
+    #LABELS
     for label in self.config_yaml["labels"]:
         self.ui.dropDownButton_label_select.addItem(label["name"])
 
@@ -1236,6 +1236,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           self.ui.pushButton_ToggleFill.toggle()
           self.toggleFillButton()
+
 
   def toggleFillButton(self):
       if  self.ui.pushButton_ToggleFill.isChecked():
