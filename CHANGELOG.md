@@ -3,6 +3,8 @@
 **All notable changes to this project will be documented in this file.**
 
 ## [2.1.2] - 2024-04-30
+
+![images/slicertogglefill.gif](https://github.com/laurentletg/ICH_SEGMENTER_V2/blob/main/images/slicertogglefill.gif)
 - Possibility to add keyboard shortcuts from the configuration file. Currently only the toggle fill on off is implemente
 - Pass the method name (without 'self.' and '()' and the keyboard shortcut. Make sure this does not conflict with the default shortcuts.
 ```yaml
