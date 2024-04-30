@@ -5,6 +5,8 @@
 
 ### [Change log](CHANGELOG.md)
 
+![image](https://github.com/laurentletg/ICH_SEGMENTER_V2/blob/main/images/animated_ICH_slice_sweep.gif)
+
 ### Overview
 This module is currently targeted at the segmentation of intracerebral hemorrhage (ICH), intraventricular hemorrhage (IVH) and perihematomal edema (PHE) in CT scans. It can be adapted to other tasks. 
 Among other things, it allows the user to:
