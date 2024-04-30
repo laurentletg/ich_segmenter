@@ -8,6 +8,11 @@ segmentation_extension:  "*.seg.nrrd"
 regex_format_segmentation_load:  '(ID_.*?)_instUid'
 # regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
 
+KEYBOARD_SHORTCUTS:
+  - method: "keyboard_toggle_fill"
+    shortcut: "d"
+
+
 OUTLIER_THRESHOLD:
   LOWER_BOUND: -50
   UPPER_BOUND: 150

@@ -2,6 +2,32 @@
 
 **All notable changes to this project will be documented in this file.**
 
+## [2.1.2] - 2024-04-30
+- Possibility to add keyboard shortcuts from the configuration file. Currently only the toggle fill on off is implemente
+- Pass the method name (without 'self.' and '()' and the keyboard shortcut. Make sure this does not conflict with the default shortcuts.
+```yaml
+KEYBOARD_SHORTCUTS: 
+  - method: "keyboard_toggle_fill"
+    shortcut: "d"
+```
+Corresponds to section in `SEGMENTER_V2Widget.setup()` immediately after the widget connections. Adapted from the [3D Slicer script repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html#customize-keyboard-shortcuts)
+```py
+    # KEYBOARD SHORTCUTS
+    keyboard_shortcuts = []
+    for i in self.config_yaml["KEYBOARD_SHORTCUTS"]:
+        shortcutKey = i.get("shortcut")
+        callback_name = i.get("method")
+        callback = getattr(self, callback_name)
+        keyboard_shortcuts.append((shortcutKey, callback))
+
+    print(f'keyboard_shortcuts: {keyboard_shortcuts}')
+
+
+    for (shortcutKey, callback) in keyboard_shortcuts:
+        shortcut = qt.QShortcut(slicer.util.mainWindow())
+        shortcut.setKey(qt.QKeySequence(shortcutKey))
+        shortcut.connect("activated()", callback)
+```
 
 ## [2.1.1] - 2024-04-12
 
