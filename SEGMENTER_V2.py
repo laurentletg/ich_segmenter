@@ -138,7 +138,7 @@ class SEGMENTER_V2(ScriptedLoadableModule):
     self.parent.title = "SEGMENTER_V2"  # TODO: make this more human readable by adding spaces
     self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
     self.parent.dependencies = []  # TODO: add here list of module names that this module requires
-    self.parent.contributors = ["John Doe (AnyWare Corp.)"]  # TODO: replace with "Firstname Lastname (Organization)"
+    self.parent.contributors = ["Delphine Pilon, An Ni Wu, Emmanuel Montagnon, Laurent Letourneau-Guillon"]  # TODO: replace with "Firstname Lastname (Organization)"
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
 This is an example of scripted loadable module bundled in an extension.
@@ -146,8 +146,15 @@ See more information in <a href="https://github.com/organization/projectname#SEG
 """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
-This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc., Andras Lasso, PerkLab,
-and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
+Module supported by funding from : 
+1. Fonds de Recherche du Québec en Santé and Fondation de l’Association des Radiologistes du Québec
+Radiology Research funding (299979) and Clinical Research Scholarship–Junior 1 Salary Award (311203)
+2. Foundation of the Radiological Society of North America - Seed Grant (RSD2122)
+3. Quebec Bio-Imaging Network, 2022 pilot project grant (Project no 21.24)
+4. Support professoral du Département de radiologie, radio-oncologie et médecine nucléaire de l’Université de Montréal, Radiology departement  Centre Hospitalier de l’Université de Montréal (CHUM) and CHUM Research Center (CRCHUM) start-up funds
+
+Thanks to the Slicer community for the support and the development of the software.
+
 """
 
 class Timer():
