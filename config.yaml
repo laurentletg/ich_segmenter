@@ -10,7 +10,7 @@ regex_format_segmentation_load:  '(ID_.*?)_instUid'
 
 KEYBOARD_SHORTCUTS:
   - method: "keyboard_toggle_fill"
-    shortcut: "d"
+    shortcut: "e"
 
 
 OUTLIER_THRESHOLD:

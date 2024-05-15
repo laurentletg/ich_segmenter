@@ -241,9 +241,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
     self.logic = SEGMENTER_V2Logic()
+
+
+    # CONFIG - could be removed
     self.get_config_values()
-    
-    self.DefaultDir = self.config_yaml['default_volume_directory']
+    self.DEFAULT_VOLUME_DIR = self.config_yaml['default_volume_directory']
     self.DEFAULT_SEGMENTATION_DIR = self.config_yaml['default_segmentation_directory']
     print(f'Default directory location: {self.DEFAULT_SEGMENTATION_DIR}')
     self.VOLUME_FILE_TYPE = self.config_yaml['volume_extension']
@@ -258,7 +260,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
     self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
     
-  
+    # CONNECTION
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.pushButton_uint8casting.connect('clicked(bool)', self.onPushButton_uint8casting)
     self.ui.getDefaultDir.connect('clicked(bool)', self.getDefaultDir)
@@ -289,7 +291,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
     self.ui.testButton.connect('clicked(bool)', self.save_statistics)
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.check_for_outlier_labels)
-    self.ui.pushButton_test1.connect('clicked(bool)', lambda: print('hello'))
+    self.ui.pushButton_test1.connect('clicked(bool)', self.keyboard_toggle_fill)
     self.ui.pushButton_test2.connect('clicked(bool)', self.onpushbuttonttest2)
 
 
@@ -391,7 +393,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Erase.setEnabled(False)
     
   def getDefaultDir(self):
-      self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+      self.DEFAULT_VOLUME_DIR = qt.QFileDialog.getExistingDirectory(None, "Open default directory", self.DEFAULT_VOLUME_DIR, qt.QFileDialog.ShowDirsOnly)
 
   def onPushButton_uint8casting(self):
       """
@@ -400,6 +402,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       """
       # message box to confirm overwriting
+      print(self.predictions_paths[0])
       reply = qt.QMessageBox.question(None, 'Message', 'Casiting to uint8. Do you want to overwrite the original segmentation files?', qt.QMessageBox.Yes | qt.QMessageBox.No, qt.QMessageBox.No)
       if reply == qt.QMessageBox.No:
           raise ValueError('The segmentation files were not overwritten.')
@@ -407,7 +410,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.cast_segmentation_to_uint8()
 
   def cast_segmentation_to_uint8(self):
-      for case in self.CasesPaths:
+    
+      for case in self.predictions_paths:
           # Load the segmentation
           input_path = os.path.basename(case)
           if input_path.endswith('.nii') or input_path.endswith('.nii.gz'):
@@ -419,7 +423,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   segm_nii = nib.Nifti1Image(segm_data, segm.affine)
                   nib.save(segm_nii, case)
                   print(f'converted file {input_path} to uint8')
-          elif input_path.endswith('.nrrd'):
+          elif input_path.endswith('seg.nrrd'):
               segm_data, header = nrrd.read(case)
               print(f'infile: {input_path}, dtype: {segm_data.dtype}')
               if segm_data.dtype != np.uint8:
@@ -433,7 +437,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onBrowseFoldersButton(self):
       # LLG get dialog window to ask for directory
-      self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+      self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DEFAULT_VOLUME_DIR, qt.QFileDialog.ShowDirsOnly)
       self.updateCurrentFolder()
       # LLG GET A LIST OF cases WITHIN CURRENT FOLDERS (SUBDIRECTORIES). List comp to get only the case
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.VOLUME_FILE_TYPE}'))
@@ -1376,7 +1380,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Overwrite the nrrd file
       print(f'Writing a copy of the slicerio corrected segmentation file  {self.outputSegmFile} with the corrected labels and names')  
       output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,os.path.basename(self.currentCasePath))[0]
-      output_dir_segmentation_file_corrected = os.path.join(self.DefaultDir, 'Segmentation_file_corrected_slicerio')
+      output_dir_segmentation_file_corrected = os.path.join(self.DEFAULT_VOLUME_DIR, 'Segmentation_file_corrected_slicerio')
       if not os.path.isdir(output_dir_segmentation_file_corrected):
           os.makedirs(output_dir_segmentation_file_corrected)
       output_path = os.path.join(output_dir_segmentation_file_corrected, f'Slicerio_corrected_segmentation_{output_file_pt_id_instanceUid}.seg.nrrd')      
@@ -1516,8 +1520,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 class SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
- 
     pass
+
 class SEGMENTER_V2Test(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
