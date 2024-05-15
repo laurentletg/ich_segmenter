@@ -434,7 +434,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           else:
               raise ValueError('The input segmentation file must be in nii, nii.gz or nrrd format.')
 
-
   def onBrowseFoldersButton(self):
       # LLG get dialog window to ask for directory
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DEFAULT_VOLUME_DIR, qt.QFileDialog.ShowDirsOnly)
