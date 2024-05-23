@@ -517,6 +517,13 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Vol_displayNode.AutoWindowLevelOff()
       Vol_displayNode.SetWindow(85)
       Vol_displayNode.SetLevel(45)
+
+      # Set to red view
+      slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)
+
+      # Center image
+      slicer.util.setSliceViewerLayers(background=self.VolumeNode, fit=True)
+
       self.newSegmentation()
       self.subjectHierarchy()
   
@@ -524,8 +531,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   @property
   def segmentationNodeName(self):
     return f'{self.currentCase}_segmentation'
-  
-      
+
   def newSegments(self):
       pass
       
@@ -580,7 +586,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget.setActiveEffectByName("No editing")
       
   # Load all segments at once
-  # TODO REMOVE THE NAME IN EACH SEGMENTS SINCE THIS IS NOT REALLY NEED. WOULD NEED TO MODIFY THE QC SCRIPT ALSO    
+  # TODO REMOVE THE NAME IN EACH SEGMENTS SINCE THIS IS NOT REALLY NEEDED. WOULD NEED TO MODIFY THE QC SCRIPT ALSO
   def createNewSegments(self):
         for label in self.config_yaml["labels"]:
             self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
