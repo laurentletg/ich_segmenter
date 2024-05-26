@@ -20,142 +20,52 @@ import numpy as np
 import nrrd
 import nibabel as nib
 
+
+# MB - Required for sct integration and more comprehensive processing
+import sys
+import subprocess
+import csv
+import argparse
+import copy
+import vtk
+from functools import partial
+
 # TODO: add all constants to the config file
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yaml")
 
 TIMER_MUTEX = RLock()
 
-
-class SemiAutoPheToolThresholdWindow(qt.QWidget):
-   def __init__(self, segmenter, parent = None):
-      super(SemiAutoPheToolThresholdWindow, self).__init__(parent)
-      
-      self.segmenter = segmenter
-      self.LB_HU_value = segmenter.LB_HU
-      self.UB_HU_value = segmenter.UB_HU
-
-      layout = qt.QVBoxLayout()
-      self.textLabel = qt.QLabel("Threshold bounds: ")
-      self.textLabel.setStyleSheet("font-weight: bold")
-      layout.addWidget(self.textLabel)
-
-      self.minimumLabel = qt.QLabel("Minimum")
-      layout.addWidget(self.minimumLabel)
-      
-      self.semiAutoPHE_LB_HU_spinbox = qt.QSpinBox()
-      self.semiAutoPHE_LB_HU_spinbox.valueChanged.connect(self.LB_HU_valueChanged)
-      layout.addWidget(self.semiAutoPHE_LB_HU_spinbox)
-      self.semiAutoPHE_LB_HU_spinbox.setMinimum(-32000)
-      self.semiAutoPHE_LB_HU_spinbox.setMaximum(29000)
-      self.semiAutoPHE_LB_HU_spinbox.setValue(self.LB_HU_value)
-
-      self.maximumLabel = qt.QLabel("Maximum")
-      layout.addWidget(self.maximumLabel)
-      
-      self.semiAutoPHE_UB_HU_spinbox = qt.QSpinBox()
-      self.semiAutoPHE_UB_HU_spinbox.valueChanged.connect(self.UB_HU_valueChanged)
-      layout.addWidget(self.semiAutoPHE_UB_HU_spinbox)
-      self.semiAutoPHE_UB_HU_spinbox.setMinimum(-32000)
-      self.semiAutoPHE_UB_HU_spinbox.setMaximum(29000)
-      self.semiAutoPHE_UB_HU_spinbox.setValue(self.UB_HU_value)
-
-      self.continueButton = qt.QPushButton('Continue')
-      self.continueButton.clicked.connect(self.pushContinue)
-      layout.addWidget(self.continueButton)
-
-      self.cancelButton = qt.QPushButton('Cancel')
-      self.cancelButton.clicked.connect(self.pushCancel)
-      layout.addWidget(self.cancelButton)
-
-      self.setLayout(layout)
-      self.setWindowTitle("Semi-automatic PHE Tool")
-      self.resize(400, 200)
-
-   def UB_HU_valueChanged(self):
-      self.UB_HU_value = self.semiAutoPHE_UB_HU_spinbox.value
-      self.segmenter.ApplyThresholdPHE(self.LB_HU_value, self.UB_HU_value)
-
-   def LB_HU_valueChanged(self):
-      self.LB_HU_value = self.semiAutoPHE_LB_HU_spinbox.value
-      self.segmenter.ApplyThresholdPHE(self.LB_HU_value, self.UB_HU_value)
-
-   def pushContinue(self):
-       self.segmenter.setUpperAndLowerBoundHU(self.LB_HU_value, self.UB_HU_value)
-       
-       self.instructionsWindow = SemiAutoPheToolInstructionsWindow(self.segmenter)
-       self.instructionsWindow.show()
-       
-       self.close()
-
-   def pushCancel(self):
-       self.segmenter.ClearPHESegment()
-       self.close()
-
-class SemiAutoPheToolInstructionsWindow(qt.QWidget):
-   def __init__(self, segmenter, parent = None):
-      super(SemiAutoPheToolInstructionsWindow, self).__init__(parent)
-      
-      self.segmenter = segmenter
-
-      layout = qt.QVBoxLayout()
-      self.textLabel = qt.QLabel("Instructions:")
-      self.textLabel.setStyleSheet("font-weight: bold")
-      layout.addWidget(self.textLabel)
-
-      self.minimumLabel = qt.QLabel("Click <b>Continue</b> and draw a generous boundary of the ICH and PHE complex. Note that the boundary may be drawn in multiple views. When you are finished drawing the boundary, click on <b>Show Result</b> in the main extension menu. "
-                                    + "The HU thresholds and manual fine-tuning of included voxels are left to the annotator\'s discretion. "
-                                    + "\n(If a popup message about visibility shows up, click <b>No</b>.)")
-      self.minimumLabel.setWordWrap(True)
-      layout.addWidget(self.minimumLabel)
-
-      self.continueButton = qt.QPushButton('Continue')
-      self.continueButton.clicked.connect(self.pushContinue)
-      layout.addWidget(self.continueButton)
-
-      self.cancelButton = qt.QPushButton('Cancel')
-      self.cancelButton.clicked.connect(self.pushCancel)
-      layout.addWidget(self.cancelButton)
-
-      self.setLayout(layout)
-      self.setWindowTitle("Semi-automatic PHE Tool")
-      self.resize(400, 200)
-
-   def pushContinue(self):
-       self.segmenter.ApplySemiAutomaticThresholdAlgorithm()
-       self.close()
-
-   def pushCancel(self):
-       self.segmenter.ClearPHESegment()
-       self.close()
-
 class SEGMENTER_V2(ScriptedLoadableModule):
-  """Uses ScriptedLoadableModule base class, available at:
-  https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
-  """
+    ###
+    #
+    # Uses ScriptedLoadableModule base class, available at:
+    # https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
+    #
+    ###
 
-  def __init__(self, parent):
-    ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "SEGMENTER_V2"  # TODO: make this more human readable by adding spaces
-    self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
-    self.parent.dependencies = []  # TODO: add here list of module names that this module requires
-    self.parent.contributors = ["Delphine Pilon, An Ni Wu, Emmanuel Montagnon, Laurent Letourneau-Guillon"]  # TODO: replace with "Firstname Lastname (Organization)"
-    # TODO: update with short description of the module and a link to online module documentation
-    self.parent.helpText = """
-This is an example of scripted loadable module bundled in an extension.
-See more information in <a href="https://github.com/organization/projectname#SEGMENTER_V2">module documentation</a>.
-"""
-    # TODO: replace with organization, grant and thanks
-    self.parent.acknowledgementText = """
-Module supported by funding from : 
-1. Fonds de Recherche du Québec en Santé and Fondation de l’Association des Radiologistes du Québec
-Radiology Research funding (299979) and Clinical Research Scholarship–Junior 1 Salary Award (311203)
-2. Foundation of the Radiological Society of North America - Seed Grant (RSD2122)
-3. Quebec Bio-Imaging Network, 2022 pilot project grant (Project no 21.24)
-4. Support professoral du Département de radiologie, radio-oncologie et médecine nucléaire de l’Université de Montréal, Radiology departement  Centre Hospitalier de l’Université de Montréal (CHUM) and CHUM Research Center (CRCHUM) start-up funds
-
-Thanks to the Slicer community for the support and the development of the software.
-
-"""
+    def __init__(self, parent):
+        ScriptedLoadableModule.__init__(self, parent)
+        self.parent.title = "SEGMENTER_V2"  # TODO: make this more human readable by adding spaces
+        self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
+        self.parent.dependencies = []  # TODO: add here list of module names that this module requires
+        self.parent.contributors = ["Delphine Pilon, An Ni Wu, Maxime Bouthillier, "
+                                "Emmanuel Montagnon, Laurent Letourneau-Guillon"]  # TODO: replace with "Firstname Lastname (Organization)"
+        # TODO: update with short description of the module and a link to online module documentation
+        self.parent.helpText = """
+            This is an example of scripted loadable module bundled in an extension.
+            See more information in 
+            <a href="https://github.com/organization/projectname#SEGMENTER_V2">module documentation</a>.
+            """
+        # TODO: replace with organization, grant and thanks
+        self.parent.acknowledgementText = """
+        Module supported by funding from : 
+        1. Fonds de Recherche du Québec en Santé and Fondation de l’Association des Radiologistes du Québec
+        Radiology Research funding (299979) and Clinical Research Scholarship–Junior 1 Salary Award (311203)
+        2. Foundation of the Radiological Society of North America - Seed Grant (RSD2122)
+        3. Quebec Bio-Imaging Network, 2022 pilot project grant (Project no 21.24)
+        4. Support professoral du Département de radiologie, radio-oncologie et médecine nucléaire de l’Université de Montréal, Radiology departement  Centre Hospitalier de l’Université de Montréal (CHUM) and CHUM Research Center (CRCHUM) start-up funds
+        Thanks to the Slicer community for the support and the development of the software.
+        """
 
 class Timer():
     def __init__(self, number=None):
@@ -165,7 +75,6 @@ class Timer():
             self.inter_time = 0
             # counting flag to allow to PAUSE the time
             self.flag = False # False = not counting, True = counting (for pause button)
-
 
     def start(self):
         with TIMER_MUTEX:
@@ -246,17 +155,29 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.DefaultDir = self.config_yaml['default_volume_directory']
     self.DEFAULT_SEGMENTATION_DIR = self.config_yaml['default_segmentation_directory']
     print(f'Default directory location: {self.DEFAULT_SEGMENTATION_DIR}')
+
+    #maxime
+    self.OUTPUT_DIR = self.config_yaml['output_directory']
+    self.EXTENSION_DIR = self.config_yaml['extension_directory']
+
+
     self.VOLUME_FILE_TYPE = self.config_yaml['volume_extension']
     self.SEGM_FILE_TYPE = self.config_yaml['segmentation_extension']
     self.VOL_REGEX_PATTERN = self.config_yaml['regex_format_volume_load']
     self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE = self.config_yaml['regex_format_volume_save']
     self.SEGM_REGEX_PATTERN = self.config_yaml['regex_format_segmentation_load']
-    self.OUTLIER_THRESHOLD_LB = self.config_yaml['OUTLIER_THRESHOLD']['LOWER_BOUND']
-    self.OUTLIER_THRESHOLD_UB = self.config_yaml['OUTLIER_THRESHOLD']['UPPER_BOUND']
+    # self.OUTLIER_THRESHOLD_LB = self.config_yaml['OUTLIER_THRESHOLD']['LOWER_BOUND']
+    # self.OUTLIER_THRESHOLD_UB = self.config_yaml['OUTLIER_THRESHOLD']['UPPER_BOUND']
 
+    ###maxime adding
+    self.CONTRAST = self.config_yaml['contrast']
+    self.FOLDER_FORMAT = self.config_yaml['folder_organization']
+    # slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutSideBySideView)
+    slicer.app.layoutManager().setLayout(
+        slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
 
-    self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
-    self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
+    # self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
+    # self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
     
   
     self.ui.PauseTimerButton.setText('Pause')
@@ -266,6 +187,23 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
     self.ui.SaveSegmentationButton.connect('clicked(bool)', self.onSaveSegmentationButton)
     self.ui.BrowseFolders_2.connect('clicked(bool)', self.onBrowseFolders_2Button)
+    #maxime
+    # self.ui.SelecOutputFolder('clicked(bool)', self.SelecOutputFolder)
+    self.ui.SelectOutputFolder.connect('clicked(bool)', self.onSelectOutputFolder)
+    self.ui.createSegmentationButton.connect('clicked(bool)', self.onCreateSegmentationButton)
+
+    #maxime navigation event
+    # Track if segmentation is modified
+    # Track if segmentation is modified
+    self.segmentationModified = False
+    self.observer_tags = {}
+    # self.get_current_segment_id()
+
+    # Connect segmentation modified event
+    # self.observeSegmentationNode()
+
+
+
     self.ui.LoadPrediction.connect('clicked(bool)', self.load_mask_v2)
     self.ui.Previous.connect('clicked(bool)', self.onPreviousButton)
     self.ui.Next.connect('clicked(bool)', self.onNextButton)
@@ -275,17 +213,21 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
     self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
     self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
-    self.ui.pushButton_SemiAutomaticPHE_Launch.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE_Launch)
-    self.ui.pushButton_SemiAutomaticPHE_ShowResult.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE_ShowResult)
+    # self.ui.pushButton_SemiAutomaticPHE_Launch.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE_Launch)
+    # self.ui.pushButton_SemiAutomaticPHE_ShowResult.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE_ShowResult)
+
+    ###MAXIME THIS FIXES THE SELF CURRENT INDEX VALUE PROBLEM BUT ERASE PAINT
+    # BUTTON
     self.ui.dropDownButton_label_select.currentIndexChanged.connect(self.onDropDownButton_label_select)
+
     self.ui.PauseTimerButton.connect('clicked(bool)', self.togglePauseTimerButton)
     self.ui.StartTimerButton.connect('clicked(bool)', self.toggleStartTimerButton)
     self.ui.pushButton_ToggleFill.connect('clicked(bool)', self.toggleFillButton)
     self.ui.SegmentWindowPushButton.connect('clicked(bool)', self.onSegmendEditorPushButton)
-    self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
-    self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
-    self.ui.pushDefaultMin.connect('clicked(bool)', self.onPushDefaultMin)
-    self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
+    # self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
+    # self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
+    # self.ui.pushDefaultMin.connect('clicked(bool)', self.onPushDefaultMin)
+    # self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
     self.ui.testButton.connect('clicked(bool)', self.save_statistics)
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.check_for_outlier_labels)
@@ -313,6 +255,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     #LABELS
     for label in self.config_yaml["labels"]:
+        print("self config yaml labels", self.config_yaml["labels"] )
+        print("labels", label)
         self.ui.dropDownButton_label_select.addItem(label["name"])
 
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
@@ -333,26 +277,26 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.SegmentWindowPushButton.setStyleSheet("background-color : lightgray")
     self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : lightgreen")
     self.ui.lcdNumber.setStyleSheet("background-color : black")
-    
-    # Change the value of the upper and lower bound of the HU
-    self.ui.UB_HU.setValue(self.UB_HU)
-    self.ui.LB_HU.setValue(self.LB_HU)
-
-    ### ANW ICH TYPE/LOCATION CONNECTIONS
-    self.listichtype = [self.ui.ichtype1, self.ui.ichtype2, self.ui.ichtype3, self.ui.ichtype4, self.ui.ichtype5,
+    #
+    # # # Change the value of the upper and lower bound of the HU
+    # # self.ui.UB_HU.setValue(self.UB_HU)
+    # # self.ui.LB_HU.setValue(self.LB_HU)
+    #
+    # ### ANW ICH TYPE/LOCATION CONNECTIONS
+    self.listichtype= [self.ui.ichtype1, self.ui.ichtype2, self.ui.ichtype3, self.ui.ichtype4, self.ui.ichtype5,
                         self.ui.ichtype6, self.ui.ichtype7, self.ui.ichtype8, self.ui.ichtype9]
     self.listichloc = [self.ui.ichloc1, self.ui.ichloc2, self.ui.ichloc3, self.ui.ichloc4, self.ui.ichloc5,
                        self.ui.ichloc6, self.ui.ichloc7, self.ui.ichloc8, self.ui.ichloc9, self.ui.ichloc10]
 
     self.listEMs = [self.ui.EM_barras_density, self.ui.EM_barras_margins, self.ui.EM_black_hole, self.ui.EM_blend,
                     self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, self.ui.EM_swirl]
-    
-    
+
+
     self.flag_ICH_in_labels = False
     self.flag_PHE_in_labels = False
     for label in self.config_yaml["labels"]:
         if "ICH" in label["name"].upper() or "HEMORRHAGE" in label["name"].upper() or "HÉMORRAGIE" in label["name"].upper() or "HEMORRAGIE" in label["name"].upper() or "HAEMORRHAGE" in label["name"].upper():
-            self.flag_ICH_in_labels = True 
+            self.flag_ICH_in_labels = True
         if "PHE" in label["name"].upper() or "EDEMA" in label["name"].upper() or "OEDEME" in label["name"].upper() or "OEDÈME" in label["name"].upper():
             self.flag_PHE_in_labels = True
     
@@ -373,25 +317,318 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
 
 
-  def setUpperAndLowerBoundHU(self, inputLB_HU, inputUB_HU):
-      self.LB_HU = inputLB_HU
-      self.UB_HU = inputUB_HU
-      self.ui.UB_HU.setValue(self.UB_HU)
-      self.ui.LB_HU.setValue(self.LB_HU)
+
+  # def setUpperAndLowerBoundHU(self, inputLB_HU, inputUB_HU):
+  #     self.LB_HU = inputLB_HU
+  #     self.UB_HU = inputUB_HU
+  #     self.ui.UB_HU.setValue(self.UB_HU)
+  #     self.ui.LB_HU.setValue(self.LB_HU)
   
   def enableSegmentAndPaintButtons(self):
+    print("\n ENTERING enableSegmentAndPaintButtons \n")
     self.ui.pushButton_Paint.setEnabled(True)
     self.ui.pushButton_Erase.setEnabled(True)
     self.ui.pushButton_SemiAutomaticPHE_Launch.setEnabled(True)
 
+
+  def saving_shortcut(self):
+      print("entering sving shortcut pressed")
+      self.onSaveSegmentationButton()
+
+
   def disableSegmentAndPaintButtons(self):
+    print("\n ENTERING disableSegmentAndPaintButtons \n")
     self.ui.pushButton_Paint.setEnabled(False)
     self.ui.pushButton_SemiAutomaticPHE_Launch.setEnabled(False)
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.ui.pushButton_Erase.setEnabled(False)
     
   def getDefaultDir(self):
+      print("\n ENTERING getDefaultDir \n")
       self.DefaultDir = qt.QFileDialog.getExistingDirectory(None,"Open default directory", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+
+
+  #maxime modif
+      # maxime
+
+  # Define a callback function for the observer
+
+  def observeSegmentationNode(self):
+      print("\n ENTERING observeSegmentationNode \n")
+      segmentationNode = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLSegmentationNode')
+      # print("segmentation node", segmentationNode)
+
+      def segmentModifiedCallback(segment, event, segmentation_node):
+          # print("segmentModifiedCallback event", event)
+          print("Segment modified:", segment.GetName())
+          self.segmentationModified = True
+          print("self segmentation modified", self.segmentationModified)
+
+      if segmentationNode:
+          # Get the active segment
+          segments = segmentationNode.GetSegmentation()
+          # print("segments", segments)
+          # Get number of segments
+          num_segments = segments.GetNumberOfSegments()
+          print("num of segments", num_segments)
+
+          # Iterate through segments and collect names
+          segment_names = []
+
+          # Create a dictionary to store observer tags
+          # observer_tags = {}
+
+          for i in range(num_segments):
+              segment = segments.GetNthSegment(i)
+              segment_name = segment.GetName()
+              segment_names.append(segment.GetName())
+
+              # Add observer to the segment
+              observer_tag = segment.AddObserver(
+                  vtk.vtkCommand.ModifiedEvent,
+                  partial(segmentModifiedCallback, segment))
+              self.observer_tags[segment_name] = observer_tag
+
+          print("segment names", segment_names)
+
+
+
+      # segment_id = segmentationNode.GetDisplayNode().GetID()
+      #
+      # active_segment_ids = vtk.vtkStringArray()
+      # segmentationNode.GetActiveSegmentIDs(active_segment_ids)
+          # active_segment_id = active_segment_ids.GetValue(0) if (active_segment_ids.GetNumberOfValues()) else None
+
+      print("setting observer")
+
+      # segment_node = segmentationNode.GetSegmentation().GetSegment(segment_id)
+      # if segment_node:
+      #     observer_tag = segment_node.AddObserver(
+      #         vtk.vtkCommand.ModifiedEvent, self.onSegmentationModified)
+      #     return observer_tag
+      # else:
+      #     print("Segment not found")
+      #     return None
+      # segmentation = segmentationNode.GetSegmentation()
+
+      # segmentationNodeObserverTag = segmentationNode.AddObserver(
+      #     vtk.vtkCommand.ModifiedEvent, self.onSegmentationModified)
+      # segmentationObserverTag = segmentationNode.AddObserver(
+      #     vtk.vtkCommand.ModifiedEvent,
+      #     self.onSegmentationModified)
+      # self.segmentationNodeObserverTag = segmentationNodeObserverTag
+      # self.segmentationObserverTag = segmentationObserverTag
+
+
+
+      # segmentationNodeObserverTag = segmentationNode.AddObserver(
+      #     vtk.vtkCommand.ModifiedEvent, self.onSegmentationModified)
+      # print(f"Observer added with tag: {segmentationNodeObserverTag}")
+      # segmentObserverTag = segmentationNode.AddObserver(
+      #     vtkSegmentation.vtkSegmentationNode.SegmentModifiedEvent,
+      #     onSegmentModified)
+      # print(f"Observer added with tag: {segmentObserverTag}")
+      # Get the event ID for SegmentModifiedEvent
+      # segmentModifiedEvent = vtk.vtkCommand.ModifiedEvent  # Assuming general ModifiedEvent
+      #
+      # # Add an observer to the segmentation node
+      # segmentObserverTag = segmentationNode.AddObserver(
+      #     segmentModifiedEvent, self.onSegmentationModified)
+      # print(f"Observer added with tag: {segmentObserverTag}")
+
+      print(" MMMMMMMMMM observeSegmentation Node self segmentation modified",
+            self.segmentationModified)
+      print("observer setted")
+
+  # def onSegmentationModified(self, caller, event):
+  #     print(" \n dddddddddddd segmentation modified \n ")
+  #     self.segmentationModified = True
+
+  # def navigateCase(self, segmentModifiedCallback=None):
+  #     print(" entered navigateCase", self.segmentationModified)
+  #     if self.segmentationModified:
+  #         print("segmentation modified to true")
+  #         save = qt.QMessageBox.question(slicer.util.mainWindow(),
+  #                                        'Save Segmentation?',
+  #                                        'Do you want to save the current segmentation before navigating?',
+  #                                        qt.QMessageBox.Yes | qt.QMessageBox.No)
+  #         print("leaving qt message box")
+  #         if save == qt.QMessageBox.Yes:
+  #             print("qt message box save")
+  #             self.onSaveSegmentationButton()
+  #             self.segmentationModified = False
+  #
+  #         for element in self.observer_tags:
+  #             print("element observer tags", element)
+  #             # Add observer to the segment
+  #             del element
+  #
+  #         self.observer_tags = {}
+  #
+  #     return None
+
+  # import slicer
+  # from PySide2 import QtWidgets as qt
+
+  def navigateCase(self, direction):
+      print("Entered navigateCase")
+      print("direction", direction)
+
+      # Check if segmentation is modified
+      if self.segmentationModified:
+          print("Segmentation modified")
+
+          # # Ask user to save segmentation
+          # save = qt.QMessageBox.question(slicer.util.mainWindow(),
+          #                                'Save Segmentation?',
+          #                                'Do you want to save the current segmentation before navigating?',
+          #                                qt.QMessageBox.Yes | qt.QMessageBox.No)
+          # print("Message box closed")
+
+          def show_message_box():
+              # Create a QMessageBox
+              message_box = qt.QMessageBox(slicer.util.mainWindow())
+              message_box.setWindowTitle('Save Segmentation?')
+              message_box.setText(
+                  'Do you want to save the current segmentation before navigating?')
+
+              # Add Yes and No buttons
+              message_box.addButton(qt.QMessageBox.Yes)
+              message_box.addButton(qt.QMessageBox.No)
+
+              # Show the message box as modal
+              result = message_box.exec_()
+
+              # After the message box is closed, further code execution resumes
+              print("Dialog closed. Continuing with the code...")
+
+              # Determine which button was clicked and act accordingly
+              if result == qt.QMessageBox.Yes:
+                  print("User clicked Yes")
+                  self.onSaveSegmentationButton(direction)
+                  self.segmentationModified = False
+                  print("done")
+                  # Do something when user clicks Yes
+              elif result == qt.QMessageBox.No:
+                  print("User clicked No")
+                  self.segmentationModified = False
+                  if direction == "Next":
+                    self.onNextButton()
+                  else :
+                      self.onPreviousButton()
+                  # Do something when user clicks No
+
+          # Call the function to show the message box
+          show_message_box()
+
+          # Code execution will pause at the message box until the user closes it.
+          # After closing the message box, the code execution will resume.
+
+          #remove observers
+          self.cleanup_observers()
+
+          print("Continuing with the rest of the code...")
+
+
+          # def show_message_box():
+          #     # Create a modal dialog
+          #     dialog = qt.QDialog(slicer.util.mainWindow())
+          #     dialog.setWindowTitle('Save Segmentation?')
+          #
+          #     # Create a layout for the dialog
+          #     layout = qt.QVBoxLayout()
+          #
+          #     # Add a label with the message
+          #     label = qt.QLabel("Do you want to save the current segmentation before navigating?.")
+          #     layout.addWidget(label)
+          #
+          #     # Add Ok button
+          #     ok_button = qt.QPushButton("OK")
+          #     layout.addWidget(ok_button)
+          #
+          #     # Set the layout for the dialog
+          #     dialog.setLayout(layout)
+          #
+          #     # Connect the button to close the dialog
+          #     def close_dialog():
+          #         dialog.accept()
+          #
+          #     ok_button.clicked.connect(close_dialog)
+          #
+          #     # Show the dialog as modal
+          #     dialog.exec_()
+          #
+          #     # After the dialog is closed, further code execution resumes
+          #     print("Dialog closed. Continuing with the code...")
+          #
+          # # Call the function to show the message box
+          # show_message_box()
+          #
+          # # Code execution will pause at the message box until the user closes it.
+          # # After closing the message box, the code execution will resume.
+          # print("Continuing with the rest of the code...")
+
+
+
+          # # # Ask user to save segmentation
+          # # Create a QMessageBox
+          # message_box = qt.QMessageBox(slicer.util.mainWindow())
+          # message_box.setWindowTitle('Save Segmentation?')
+          # message_box.setText('Do you want to save the current segmentation before navigating?')
+          # message_box.setStandardButtons(
+          #     qt.QMessageBox.Yes | qt.QMessageBox.No)
+          #
+          # # Show the message box
+          # message_box.show()
+          #
+          # # Use event handling to determine when to close it
+          # def close_message_box(result):
+          #     if result == qt.QMessageBox.Ok:
+          #         print(" ACCEPTTED ***")
+          #
+          #         self.onSaveSegmentationButton()
+          #         self.segmentationModified = False
+          #         message_box.accept()
+          #         print("completed accepeted")
+          #         # Accept the message box
+          #     elif result == qt.QMessageBox.Cancel:
+          #         print(" REJECTED ***")
+          #         message_box.reject()  # Reject the message box
+          #
+          # message_box.finished.connect(close_message_box)
+          print("Message box closed")
+
+
+
+
+          # # Check user response
+          # if save == qt.QMessageBox.Yes:
+          #     print("User selected to save segmentation")
+          #     self.onSaveSegmentationButton()
+          #     self.segmentationModified = False
+          # else:
+          #     print("User selected not to save segmentation")
+
+
+
+      return None
+
+  def cleanup_observers(self):
+      # Remove observers
+      for observer_tag in self.observer_tags.values():
+          slicer.mrmlScene.RemoveObserver(observer_tag)
+
+      self.observer_tags = {}
+
+  # def cleanup(self):
+  #     segmentationNode = slicer.mrmlScene.GetFirstNodeByClass(
+  #         'vtkMRMLSegmentationNode')
+  #     if segmentationNode:
+  #         segmentationNode.RemoveObserver(self.segmentationNodeObserverTag)
+  #         segmentation = segmentationNode.GetSegmentation()
+  #         if segmentation:
+  #             segmentation.RemoveObserver(self.segmentationObserverTag)
+
 
   def onPushButton_uint8casting(self):
       """
@@ -399,6 +636,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       in Slicer 5.6 (vector error). Segmentation file should anyway be uint8, not float.
 
       """
+      print("\n ENTERING onPushButton_uint8casting \n")
       # message box to confirm overwriting
       reply = qt.QMessageBox.question(None, 'Message', 'Casiting to uint8. Do you want to overwrite the original segmentation files?', qt.QMessageBox.Yes | qt.QMessageBox.No, qt.QMessageBox.No)
       if reply == qt.QMessageBox.No:
@@ -407,6 +645,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.cast_segmentation_to_uint8()
 
   def cast_segmentation_to_uint8(self):
+      print("\n ENTERING cast_segmentation_to_uint8 \n")
       for case in self.CasesPaths:
           # Load the segmentation
           input_path = os.path.basename(case)
@@ -432,15 +671,75 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def onBrowseFoldersButton(self):
+      print("\n You have just clicked onBrowseFoldersButton.\n")
       # LLG get dialog window to ask for directory
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
       self.updateCurrentFolder()
       # LLG GET A LIST OF cases WITHIN CURRENT FOLDERS (SUBDIRECTORIES). List comp to get only the case
-      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.VOLUME_FILE_TYPE}'))
-      self.Cases = sorted([re.findall(self.VOL_REGEX_PATTERN,os.path.split(i)[-1])[0] for i in self.CasesPaths])
+      # self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.VOLUME_FILE_TYPE}'))
+      #this line below works well for the brats dataset
+      # self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.FOLDER_FORMAT}*{os.sep}*{self.CONTRAST}{self.VOLUME_FILE_TYPE}'))
+      #this line below works well for bids dataset
+      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.FOLDER_FORMAT}*{os.sep}anat{os.sep}*{self.CONTRAST}{self.VOLUME_FILE_TYPE}'))
+      #trying with bids only t1raw
+      ###HERE
+      # self.CasesPaths = glob(f'{self.CurrentFolder}{os.sep}')
+      # print("test debug maxime")
+      print("Cases Paths printed", self.CasesPaths)
+      print("current folder", self.CurrentFolder)
+      print("self Volume file type", self. VOLUME_FILE_TYPE)
+      print("self regex", self.VOL_REGEX_PATTERN)
+      print("folder format", self.FOLDER_FORMAT)
+      # self.Cases = sorted([re.findall(self.VOL_REGEX_PATTERN,os.path.split(i)[-1])[0] for i in self.CasesPaths])
+      # self.Cases = sorted([re.findall(f'/{self.VOL_REGEX_PATTERN}',
+      #                                 os.path.split(
+      #     i)[1]) for i in self.CasesPaths])
+      # test_split = os.path.split(self.CasesPaths[0])
+      # good_name = test_split[1]
+      # print("good name", good_name)
+      # print("test slpit", test_split)
+      # print("test split 0", test_split[0])
+      # print("test split 1", test_split[1])
+
+      # jacques = os.path.split(self.CasesPaths[0])[1]
+      # print ("jacques ", jacques)
+      self.Cases = []
+      for i in range(len(self.CasesPaths)):
+          self.Cases.append(os.path.split(self.CasesPaths[i])[1])
+
+      print("self cases", self.Cases)
+      print()
+
+      # self.Cases = sorted([re.findall("/",os.path.split(
+      #     i)[-1])[0] for i in self.CasesPaths])
+      # print("self vol regex i o path")
+      # print("os path path .split", os.path.split(self.CasesPaths))
+
+      # self.Cases =  re.findall(self.VOL_REGEX_PATTERN, str(self.CasesPaths))
+      # print("self cases", self.Cases)
       self.update_UI_case_list()
+      print("\n leaving browse folder button \n")
+
+      # print("checking if previous segmentation exists")
+      # print("self current directory", self.CurrentFolder)
+      # # remainingCasesPath = os.path
+
+
+      # ####modif maxime starting from scrath
+      # self.CurrentFolder = qt.QFileDialog.getExistingDirectory(None,
+      #                                                          "Open a folder",
+      #                                                          self.DefaultDir,
+      #                                                          qt.QFileDialog.ShowDirsOnly)
+      # self.updateCurrentFolder()
+      # self.CasesPaths = glob(f'{self.CurrentFolder}{os.sep}')
+      # print("current folder printed", self.CurrentFolder)
+      # print("Cases Paths printed", self.CasesPaths)
+      # print("Volume file type", self.VOLUME_FILE_TYPE)
+      # print("self yaml volume load ", self.config_yaml['regex_format_volume_load'])
+
 
   def update_UI_case_list(self):
+      print("\n ENTERING UPDATE_UI_CASE_LIST \n")
       self.ui.SlicerDirectoryListView.clear()
       # Populate the SlicerDirectoryListView
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
@@ -449,7 +748,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.loadPatient()
 
   def updateCaseAll(self):
-      # All below is dependent on self.currentCase_index updates, 
+      print("\n ENTERING UPDATECASEALL \n")
+      # All below is dependent on self.currentCase_index updates,
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
       self.updateCurrentPatient()
@@ -457,9 +757,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
       
   def getCurrentTableItem(self):
+      print("\n ENTERING UPDATE_UI_CASE_LIST \n")
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
       self.resetTimer()
-      self.uncheckAllBoxes()
+      # self.uncheckAllBoxes()
       self.clearTexts()
 
       # When an item in SlicerDirectroyListView is selected the case number is printed
@@ -478,20 +779,31 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.resetTimer()
 
   def updateCaseIndex(self, index):
+      print("\n ENTERING UPDATECASEINDEX \n")
       # ----- ANW Modification ----- : Numerator on UI should start at 1 instead of 0 for coherence
       self.ui.FileIndex.setText('{} / {}'.format(index+1, len(self.Cases)))
 
   def updateCurrentFolder(self):
+      print("\n ENTERING UPDATECASE \n")
       self.ui.CurrentFolder.setText('Current folder : \n...{}'.format(self.CurrentFolder[-80:]))
       
   def updateCurrentPatient(self):
+      print("\n ENTERING updateCurrentPatient \n")
+      print("self current patient", self.currentCase)
+
       self.ui.CurrentPatient.setText(f'Current case : {self.currentCase}')
+
+      print("self current index", self.currentCase_index)
+
       self.updateCaseIndex(self.currentCase_index)
   
   def updateCurrentSegmenationLabel(self):
+      print("\n ENTERING updateCurrentSegmenationLabel \n")
       self.ui.CurrentSegmenationLabel.setText('Current segment : {}'.format(self.segment_name))
       
   def loadPatient(self):
+      print("\n ENTERING loadPatient \n")
+      print("IN LOAD PATIENT")
       timer_index = 0
       self.timers = []
       for label in self.config_yaml["labels"]:
@@ -499,7 +811,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           timer_index = timer_index + 1
       
       # reset dropbox to index 0
-      self.ui.dropDownButton_label_select.setCurrentIndex(0)
+      #initially was to 0 -- maxime modified
+      # self.ui.dropDownButton_label_select.setCurrentIndex(0)
+      self.ui.dropDownButton_label_select.setCurrentIndex(self.currentCase_index)
       
       # timer reset if we come back to same case
       self.called = False
@@ -512,38 +826,70 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Adjust windowing (no need to use self. since this is used locally)
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(85)
-      Vol_displayNode.SetLevel(45)
+      # MB - WW removed since MRI may also be loaded
+      # Vol_displayNode.SetWindow(85)
+      # Vol_displayNode.SetLevel(45)
       self.newSegmentation()
       self.subjectHierarchy()
   
   # Getter method to get the segmentation node name    - Not sure if this is really useful here. 
   @property
   def segmentationNodeName(self):
+    print("\n ENTERING segmentationNodeName \n")
     return f'{self.currentCase}_segmentation'
   
       
   def newSegments(self):
+      print("\n ENTERING newSegments \n")
       pass
       
   def onPushButton_NewMask(self):
+      print("\n ENTERING onPushButton_NewMask \n")
       self.newSegments()
             
   def onPreviousButton(self):
+      print("\n ENTERING onPreviousButton \n")
+      if self.segmentationModified:
+        self.navigateCase("Previous")
+        return None
+      else:
+          self.cleanup_observers()
+
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
       self.resetTimer()
-      self.uncheckAllBoxes()
+      # self.uncheckAllBoxes()
       self.clearTexts()
 
       #Code below avoid getting in negative values. 
       self.currentCase_index = max(0, self.currentCase_index-1)
       self.updateCaseAll()
       self.loadPatient()
+
+      if self.currentCase_index == 0:
+          print("*** This is the first case of the list. ***")
+          self.show_message_box("This is the first case of the list.")
+
+      print("*** in on next button self currentCase_index", self.currentCase_index)
+      print("*** in on next button len(self.Cases-1", len(self.Cases)-1)
+      print("*** in on next button self current in+1", self.currentCase_index+1)
+
   
   def onNextButton(self):
+      print("\n ENTERING onNextButton \n")
+      # print(" self segmentation Modified: ", self.SegmentationModified)
+      print(" MMMMMMMMMM onNexButton self segmentation modified",
+            self.segmentationModified)
+      if self.segmentationModified:
+        self.navigateCase("Next")
+        return None
+      else:
+          self.cleanup_observers()
+      # self.observeSegmentationNode()
+
+
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
       self.resetTimer()
-      self.uncheckAllBoxes()
+      # self.uncheckAllBoxes()
       self.clearTexts()
 
       # ----- ANW Modification ----- : Since index starts at 0, we need to do len(cases)-1 (instead of len(cases)+1).
@@ -553,8 +899,18 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCaseAll()
       self.loadPatient()
 
+      if self.currentCase_index == (len(self.Cases)-1):
+          print("*** This is the last case of the list. ***")
+          self.show_message_box("This is the last case of the list.")
+
+      print("*** in on next button self currentCase_index", self.currentCase_index)
+      print("*** in on next button len(self.Cases-1", len(self.Cases)-1)
+      print("*** in on next button self current in+1", self.currentCase_index+1)
+
 
   def newSegmentation(self):
+      print("IN NEW SEGMENTATION")
+      # for creating new segmentation node to allow creation of segenation mask
       # Create segment editor widget and node
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
@@ -569,34 +925,116 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
       segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      self.createNewSegments() 
+      self.createNewSegments()
 
-      # restart the current timer 
+      # restart the current timer
       self.timers[self.current_label_index] = Timer(number=self.current_label_index)
-      # reset tool 
+      # reset tool
+      print("ABOUT TO SET ACTIVE ")
       self.segmentEditorWidget.setActiveEffectByName("No editing")
-      
-  # Load all segments at once
-  # TODO REMOVE THE NAME IN EACH SEGMENTS SINCE THIS IS NOT REALLY NEED. WOULD NEED TO MODIFY THE QC SCRIPT ALSO    
+
+
+      # self.onPushButton_Paint()
+      # self.segmentEditorWidget.setSegmentationNode(segmentationNode)
+      # print(" segmentation node", segmentationNode)
+
+      # # Assuming `segmentEditorWidget` is the Segment Editor widget
+      # currentSegmentID = self.segmentEditorWidget.currentSegmentID
+      # print("Current segment ID:", currentSegmentID)
+      #
+      # # Get the segmentation node
+      # segmentationNode = slicer.mrmlScene.GetFirstNodeByName(
+      #     "vtkMRMLSegmentationNode1")
+      #
+      # # Assuming segment ID is stored in the subject hierarchy node attributes
+      # segmentationHierarchyNode = segmentationNode.GetSubjectHierarchyNode()
+      # currentSegmentHierarchyNode = segmentationHierarchyNode.GetItemByDataNode(
+      #     segmentationNode.GetSegmentation().GetSegment(0))
+      #
+      # # Get segment ID from attributes
+      # segmentID = currentSegmentHierarchyNode.GetAttribute("SegmentID")
+      # print("Current segment ID:", segmentID)
+
+      # self.segmentEditorWidget.setCurrentSegmentID(segmentationNode)
+      self.segmentEditorWidget.setActiveEffectByName("No editing")
+
+
+  # # Load all segments at once
+  # # TODO REMOVE THE NAME IN EACH SEGMENTS SINCE THIS IS NOT REALLY NEED. WOULD NEED TO MODIFY THE QC SCRIPT ALSO
   def createNewSegments(self):
+        print("IN CREATE NEW SEGMENTS!!!!")
+        # create the number of required segments
+        # for label in self.config_yaml["labels"]:
+        #     self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
+
         for label in self.config_yaml["labels"]:
-            self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
-        
+            print("******* ****** *****")
+            print(" label yaml data", label)
+            print("label yaml name", label["name"])
+            print(" rgb", label["color_r"], label["color_g"], label["color_b"])
+
+            self.onNewLabelSegm(label["name"], label["color_r"],
+                                label["color_g"], label["color_b"])
+                                # label["lower_bound_HU"],
+                                # label["upper_bound_HU"])
+            # print("sel on NewlabelSegm", self.onNewLabelSegm())
+
         first_label_name = self.config_yaml["labels"][0]["name"]
-        first_label_segment_name = f"{self.currentCase}_{first_label_name}"
-        self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
+
+        print(f" test get name {self.currentCase}")
+
+        string = f"{self.currentCase}"
+        regex = ".nii.gz"
+        print(string)
+        cleaned = re.sub(regex, "", string)
+        print(cleaned)
+
+        self.first_label_segment_name = f"{cleaned}_{first_label_name}{regex}"
+        print("first label segment name", self.first_label_segment_name)
+
+        currentSegmentID = self.segmentEditorWidget.currentSegmentID
+        print("Current segment ID in new segment creation:", currentSegmentID)
+
+        ###ATTENTION! NEVER COMMENT THIS LINE BELOW SINCE IT WILL CAUSE
+        # TROUBLE ++++ TO CORRECT (PAINTING AND SEGMENTATION)
+
+        self.onPushButton_select_label(self.first_label_segment_name)
+
+        # self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
+        # self.onPushButton_select_label(self.first_label_segment_name)
+
 
   def newSegment(self, segment_name=None):
-    
-      self.segment_name = f"{self.currentCase}_{segment_name}"
+      print("IN NEW SEGMENT")
+      print(" MMMMMMMMMM newSegment self segmentation modified",
+            self.segmentationModified)
+
+      #to adjust since already this method used in previous
+      string = f"{self.currentCase}"
+      regex = ".nii.gz"
+      # print(string)
+      cleaned = re.sub(regex, "", string)
+      # print(cleaned)
+
+      #maxime add clean observer
+      self.cleanup_observers()
+      self.segmentationModified = False
+
+
+      # first_label_name = self.config_yaml["labels"][0]["name"]
+      # label_name = self.config_yaml["labels"]["name"]
+      # jacques = segment_name
+      # print("** jacques", jacques)
+
+      self.segment_name = f"{cleaned}_{segment_name}{regex}"
       srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       self.srcSegmentation = srcNode.GetSegmentation()
-      
+
       # Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
       if not self.srcSegmentation.GetSegmentIDs(): # if there are no segments in the segmentation node
         self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
         self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
-      
+
       # if there are segments in the segmentation node, check if the segment name is already in the segmentation node
       if any([self.segment_name in i for i in self.srcSegmentation.GetSegmentIDs()]):
             pass
@@ -604,24 +1042,64 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
             self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
 
+      print("MMMMMMMMMM newSegment after else become true",
+            self.segmentationModified)
+
+
+      print("self segment name", self.segment_name)
+
+      # Make the new segment active for editing
+      print("new segment editor widget \n")
+      print("self segment name", self.segment_name)
+      # print("self segmentationNode", self.segmentationNode)
+      # self.segmentationNode.GetSegmentation().SetActiveSegmentID(self.segment_name)
+
+      # Refresh the 3D view to visualize the changes
+      # slicer.app.processEvents()
+
+      #maxime add
+      # segmentationNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLSegmentationNode")
+
+      # # Set the segmentation node to the Segment Editor widget
+
+      self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+
+      self.segmentEditorWidget.setCurrentSegmentID(self.segmentationNode)
+
+      # print("segmentation id", segmentationNode.GetSegmentID())
+
       return self.segment_name
 
+
   def subjectHierarchy(self):
+
+    print("IN SUBJECT HIERARCHY")
+
     # Get the subject hierarchy node
     shNode = slicer.mrmlScene.GetSubjectHierarchyNode()
-
+    # print(shNode)
+    #
+    # # print(" ** shNode", shNode)
+    #
     # Get scene item ID first because it is the root item:
     sceneItemID = shNode.GetSceneItemID()
+
+    # print("scene item ID", sceneItemID)
+
     # Get the scene item ID (check if the scene item exists)
     subjectItemID = shNode.GetItemChildWithName(shNode.GetSceneItemID(), self.currentCase)
     if not subjectItemID:
         subjectItemID = shNode.CreateSubjectItem(shNode.GetSceneItemID(), self.currentCase)
+
+    print("subject item ID", subjectItemID)
 
     # TODO: this will need to be updated when moving to multiple studies per patient (or done in a separate script)
     # Creat a folder to include a study (if more than one study)
     # check if the folder exists and if not create it (avoid recreating a new one when reloading a mask)
     Study_name = 'Study to be updated'
     folderID = shNode.GetItemChildWithName(subjectItemID, Study_name)
+    print("subject item id", subjectItemID)
+    print("folder id", folderID)
     if not folderID:
         folderID = shNode.CreateFolderItem(subjectItemID, Study_name)
     # set under the subject
@@ -630,6 +1108,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # get all volume nodes
     VolumeNodes = slicer.util.getNodesByClass('vtkMRMLVolumeNode')
     VolumeNodeNames = [i.GetName() for i in VolumeNodes]
+
+    print("VOlume node names", VolumeNodeNames)
+
     # Get all child (itemID = CT or MR series/sequences)
     for i in VolumeNodeNames:
         itemID = shNode.GetItemChildWithName(sceneItemID, i)
@@ -637,64 +1118,157 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # same thing for segmentation nodes
     SegmentationNodes = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')
     SegmentationNodeNames = [i.GetName() for i in SegmentationNodes]
-    # move all segmentation nodes to the subject
-    for i in SegmentationNodeNames:
-        itemID = shNode.GetItemChildWithName(sceneItemID, i)
-        shNode.SetItemParent(itemID, folderID)
+
+    # print("segmentation node names", SegmentationNodeNames)
+    #
+    # print("segmentation node", )
+    #
+    # childItemIDs = vtk.vtkIdList().GetNumberOfIds()
+    # print("child item ids", childItemIDs)
+
+
+    #TO SET THE SEGMENTAITON NODE AND SEGMENT
+    # self.segmentEditorWidget.setSegmentationNode(segmentNode)
+    # self.segmentEditorWidget.setCurrentSegmentID(segmentNodeName)
+
+
+    print(" *****TESTING")
+    # print(shNode)
+    # print("SEGMENTATION NODES", SegmentationNodes[0].GetSegmentation())
+    # print("SEGMENTATION NODES", SegmentationNodes[0].GetName())
+    # print("SEGMENTATION IDS", SegmentationNodes[0].GetIDs())
+    # print("SEGMENTATION IDS", SegmentationNodes[0].GetIDs())
+    self.segmentEditorWidget.setCurrentSegmentID(SegmentationNodes[0])
+
+
+    ###RENDU ICI
+    ##ESSENTIELLEMENT = LOAD L'IMAGE  MAIS QUAND JANNOTE = MET
+
+
+
+
+
+    # umIds = idList.GetNumberOfIds()
+    # ids = [idList.GetId(i) for i in range(numIds)]
+    # print("vtkIdList contains:", ids)
+
+
+    # # move all segmentation nodes to the subject
+    # for i in SegmentationNodeNames:
+    #     itemID = shNode.GetItemChildWithName(sceneItemID, i)
+    #     shNode.SetItemParent(itemID, folderID)
+    # # print("shnode modif", shNode)
+
 
 
   def onPushButton_segmeditor(self):
+      print("IN PUSH BUTTON")
       slicer.util.selectModule("SegmentEditor")
+      #mb testing
+      print("module selection")
+      # slicer.util.selectModule("Models")
 
-  def onNewLabelSegm(self, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
-      segment_name = self.newSegment(label_name)  
-      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+  # def onNewLabelSegm(self, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
+  #     segment_name = self.newSegment(label_name)
+  #     self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+  #     self.segmentationNode.UndoEnabledOn()
+  #     Segmentation = self.segmentationNode.GetSegmentation()
+  #     self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
+  #     segment = Segmentation.GetSegment(self.SegmentID)
+  #     segment.SetColor(label_color_r/255,label_color_g/255,label_color_b/255)
+  #     self.onPushButton_select_label(segment_name, label_LB_HU, label_UB_HU)
+
+  #maxime modif
+
+  def onNewLabelSegm(self, label_name, label_color_r, label_color_g, label_color_b):
+      print("IN ON NEW LABEL SEG")
+      print("label name", label_name)
+
+
+
+      segment_name = self.newSegment(label_name)
+
+      print("segment name", segment_name)
+      print("rgb dans newlabel segm", label_color_r, label_color_g, label_color_b)
+
+      self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       self.segmentationNode.UndoEnabledOn()
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
+
+      print(" xxxxxxxxxxx new label seg id", self.SegmentID)
+
       segment = Segmentation.GetSegment(self.SegmentID)
-      segment.SetColor(label_color_r/255,label_color_g/255,label_color_b/255) 
-      self.onPushButton_select_label(segment_name, label_LB_HU, label_UB_HU)
-   
-  def onPushButton_select_label(self, segment_name, label_LB_HU, label_UB_HU):  
-      self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      segment.SetColor(label_color_r/255,label_color_g/255,label_color_b/255)
+      # self.onPushButton_select_label(segment_name)
+
+  #maxime
+  def onPushButton_select_label(self, segment_name):
+      print("\n ENTERING oN PUSH BUTTON SELECT LABEL segment name")
+      print(f"segment label select name: {segment_name}")
+      self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
+      print(" *** pusb ubutotn selec tlabel segment id", self.SegmentID)
+      print(" *** segment name in pusb butotn selct labewl", segment_name)
       self.updateCurrentSegmenationLabel()
-      self.LB_HU = label_LB_HU
-      self.UB_HU = label_UB_HU
+      # self.LB_HU = label_LB_HU
+      # self.UB_HU = label_UB_HU
       self.onPushButton_Paint()
-  
-      if (self.MostRecentPausedCasePath != self.currentCasePath and self.MostRecentPausedCasePath != ""):
-        self.timers[self.current_label_index] = Timer(number=self.current_label_index) # new path, new timer
-      
+
+
+      ###NEVER COMMENT THOSE LINES SINCE IT AFFECTS SELECTING LABEL BUTOTN
+      # FUNCITON (makes the icon become unclickable)
+
+      if (
+              self.MostRecentPausedCasePath != self.currentCasePath and self.MostRecentPausedCasePath != ""):
+          self.timers[self.current_label_index] = Timer(
+              number=self.current_label_index)  # new path, new timer
+
       self.timer_router()
 
-  def onPushButton_SemiAutomaticPHE_Launch(self):
-      flag_PHE_label_exists = False
-      PHE_label = None
-      PHE_label_index = 0
-      for label in self.config_yaml["labels"]:
-          if label["name"] == "PHE":
-              flag_PHE_label_exists = True 
-              PHE_label = label
-              break
-          PHE_label_index = PHE_label_index + 1
-      assert flag_PHE_label_exists
+  # def onPushButton_select_label(self, segment_name, label_LB_HU, label_UB_HU):
+  #     self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+  #     Segmentation = self.segmentationNode.GetSegmentation()
+  #     self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
+  #     self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
+  #     self.updateCurrentSegmenationLabel()
+  #     self.LB_HU = label_LB_HU
+  #     self.UB_HU = label_UB_HU
+  #     self.onPushButton_Paint()
+  #
+  #     if (self.MostRecentPausedCasePath != self.currentCasePath and self.MostRecentPausedCasePath != ""):
+  #       self.timers[self.current_label_index] = Timer(number=self.current_label_index) # new path, new timer
+  #
+  #     self.timer_router()
 
-      PHE_segment_name = f"{self.currentCase}_PHE"
-      self.onPushButton_select_label(PHE_segment_name, PHE_label["lower_bound_HU"], PHE_label["upper_bound_HU"])
-      self.ui.dropDownButton_label_select.setCurrentIndex(PHE_label_index)
-      toolWindow = SemiAutoPheToolThresholdWindow(self)
-      toolWindow.show()
+  # def onPushButton_SemiAutomaticPHE_Launch(self):
+  #     flag_PHE_label_exists = False
+  #     PHE_label = None
+  #     PHE_label_index = 0
+  #     for label in self.config_yaml["labels"]:
+  #         if label["name"] == "PHE":
+  #             flag_PHE_label_exists = True
+  #             PHE_label = label
+  #             break
+  #         PHE_label_index = PHE_label_index + 1
+  #     assert flag_PHE_label_exists
+  #
+  #     PHE_segment_name = f"{self.currentCase}_PHE"
+  #     self.onPushButton_select_label(PHE_segment_name, PHE_label["lower_bound_HU"], PHE_label["upper_bound_HU"])
+  #     self.ui.dropDownButton_label_select.setCurrentIndex(PHE_label_index)
+  #     toolWindow = SemiAutoPheToolThresholdWindow(self)
+  #     toolWindow.show()
       
   def onPushButton_SemiAutomaticPHE_ShowResult(self):
+      print("\n ENTERING SEMI AUTOMATIC PHE SHOW RESULT \n")
       self.segmentationNode.GetDisplayNode().SetVisibility(True)
       self.onPushButton_Erase()
       self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
 
   def ApplyThresholdPHE(self, inLB_HU, inUB_HU):
+      print("\n ENTERING applyThreshold \n")
       self.segmentEditorWidget.setActiveEffectByName("Threshold")
       effect = self.segmentEditorWidget.activeEffect()
       effect.setParameter("MinimumThreshold",f"{inLB_HU}")
@@ -702,6 +1276,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.self().onApply()
 
   def ApplySemiAutomaticThresholdAlgorithm(self):
+      print("\n ENTERING applySemiAutomaticThresholdAlgorithm \n")
       self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(True)
       
       self.segmentationNode.GetDisplayNode().SetVisibility(False)
@@ -717,21 +1292,21 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.setParameter("Operation","EraseOutside")
       effect.setParameter("Shape","FreeForm")
 
-  def ClearPHESegment(self):
-      flag_PHE_label_exists = False
-      PHE_label = None
-      PHE_label_index = 0
-      for label in self.config_yaml["labels"]:
-          if label["name"] == "PHE":
-              flag_PHE_label_exists = True 
-              PHE_label = label
-              break
-          PHE_label_index = PHE_label_index + 1
-      assert flag_PHE_label_exists
-
-      segm_name = f"{self.currentCase}_PHE"
-      self.srcSegmentation.RemoveSegment(segm_name)
-      self.onNewLabelSegm(PHE_label["name"], PHE_label["color_r"], PHE_label["color_g"], PHE_label["color_b"], PHE_label["lower_bound_HU"], PHE_label["upper_bound_HU"])
+  # def ClearPHESegment(self):
+  #     flag_PHE_label_exists = False
+  #     PHE_label = None
+  #     PHE_label_index = 0
+  #     for label in self.config_yaml["labels"]:
+  #         if label["name"] == "PHE":
+  #             flag_PHE_label_exists = True
+  #             PHE_label = label
+  #             break
+  #         PHE_label_index = PHE_label_index + 1
+  #     assert flag_PHE_label_exists
+  #
+  #     segm_name = f"{self.currentCase}_PHE"
+  #     self.srcSegmentation.RemoveSegment(segm_name)
+  #     self.onNewLabelSegm(PHE_label["name"], PHE_label["color_r"], PHE_label["color_g"], PHE_label["color_b"], PHE_label["lower_bound_HU"], PHE_label["upper_bound_HU"])
 
   def startTimer(self):
       with TIMER_MUTEX:
@@ -847,41 +1422,47 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.enableSegmentAndPaintButtons()
 
   # for the timer Class not the LCD one
+  # MB DO NOT COMMENT THIS FUNCTION THIS SCRAPS SELECTING NODE
   def timer_router(self):
+      #maxime
+      # self.current_label_index = 0
+      # print(" tes timer self curent label index : ", self.current_label_index)
+      # print(" self timers", self.timers)
+      # self.timers[0].start()
       self.timers[self.current_label_index].start()
       self.flag = True
-      
+
       timer_index = 0
       for timer in self.timers:
           if timer_index != self.current_label_index:
               timer.stop()
           timer_index = timer_index + 1
 
-  def checkboxChanged(self):
-      self.checked_ichtype = []
-      self.checked_ichloc = []
-      self.checked_ems = []
-      for i in self.listichtype:
-          if i.isChecked():
-              ichtype = i.text
-              self.checked_ichtype.append(ichtype)
-      for j in self.listichloc:
-          if j.isChecked():
-              ichloc = j.text
-              self.checked_ichloc.append(ichloc)
-      for k in self.listEMs :
-          if k.isChecked():
-              em = k.text
-              self.checked_ems.append(em)
-      self.checked_ichtype = ';'.join(self.checked_ichtype)
-      self.checked_ichloc = ';'.join(self.checked_ichloc)
-      self.checked_ems = ';'.join(self.checked_ems)
-      return self.checked_ichtype, self.checked_ichloc, self.checked_ems
+  # def checkboxChanged(self):
+  #     self.checked_ichtype = []
+  #     self.checked_ichloc = []
+  #     self.checked_ems = []
+  #     for i in self.listichtype:
+  #         if i.isChecked():
+  #             ichtype = i.text
+  #             self.checked_ichtype.append(ichtype)
+  #     for j in self.listichloc:
+  #         if j.isChecked():
+  #             ichloc = j.text
+  #             self.checked_ichloc.append(ichloc)
+  #     for k in self.listEMs :
+  #         if k.isChecked():
+  #             em = k.text
+  #             self.checked_ems.append(em)
+  #     self.checked_ichtype = ';'.join(self.checked_ichtype)
+  #     self.checked_ichloc = ';'.join(self.checked_ichloc)
+  #     self.checked_ems = ';'.join(self.checked_ems)
+  #     return self.checked_ichtype, self.checked_ichloc, self.checked_ems
 
-  def uncheckAllBoxes(self):
-      self.allcheckboxes = self.listichtype + self.listichloc + self.listEMs
-      for i in self.allcheckboxes:
-          i.setChecked(False)
+  # def uncheckAllBoxes(self):
+  #     self.allcheckboxes = self.listichtype + self.listichloc + self.listEMs
+  #     for i in self.allcheckboxes:
+  #         i.setChecked(False)
 
   def clearTexts(self):
       self.ui.ichtype_other.clear()
@@ -893,10 +1474,21 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       """
       Create the top output directory
       """
+      print("\n ENTERING createFolders \n")
       self.revision_step = self.ui.RevisionStep.currentText
       if len(self.revision_step) != 0:
-          self.output_dir = os.path.join(self.CurrentFolder,
-                                         f'Output_{self.annotator_name}_{self.revision_step[0]}')  # only get the number
+          # self.output_dir = os.path.join(self.CurrentFolder,
+          #                                f'Output_{self.annotator_name}_{self.revision_step[0]}')  # only get the number
+
+          #maxime
+          ## add here to us this function to save a file csv or yaml in
+          # output directory instead
+
+          print("***SELF OUTPUT FOLDER PRINTED**", self.OutputFolder)
+
+          #PUT A FUNCTION THAT CREATE A FILE INSTEAD!
+
+
           if not os.path.exists(self.output_dir):
               os.makedirs(self.output_dir)
 
@@ -930,113 +1522,373 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           else:
               return "File not saved"
 
-  def onSaveSegmentationButton(self):
-      #TODO: refactor this methods and it is way too long
-      self.time = self.stopTimer()
-      for timer in self.timers:
-            timer.stop()
+  def onSaveSegmentationButton(self, direction=None):
+      print("Save segmentation button clicked.")
+
+      # Get the segmentation node (the current one)
+      self.SegmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      # print("self segmentationNode", self.segmentationNode)
+
+      # Get the volume node (the current one)
+      self.VolumeNode = slicer.util.getNodesByClass('vtkMRMLVolumeNode')[0]
+
+      # Get the label mal (signification? - mb added by chatgpt and works!
+      self.labelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
+      # print("self label mao", self.labelmap_volume_node)
+      slicer.modules.segmentations.logic().ExportVisibleSegmentsToLabelmapNode(
+          self.SegmentationNode, self.labelmapVolumeNode, self.VolumeNode)
+
+      # Get the segments name
+      self.SegmentsNames = self.SegmentationNode.GetSegmentation().GetSegmentIDs()
+      print("self segment names", self.SegmentsNames)
+
+      print("output folder", self.OutputFolder)
+
+      # Save each segmentation mask in the output folder
+      for element in self.SegmentsNames:
+          print("elenent", element)
+          print("path", f'{self.OutputFolder}{os.sep}{element}')
+          slicer.util.saveNode(self.labelmapVolumeNode,
+                               f'{self.OutputFolder}{os.sep}{element}')
+
+      #here some adjustements will be needed since when load it considers as
+      # volume and to put in derivatives
+
+      # # ON HOLD FOR NOW generate qc report
+      # print("qc report to be generated")
+      # print("self extension directory", self.EXTENSION_DIR)
+      # shell_script = (f"{self.EXTENSION_DIR}{os.sep}bin/from_sct_qc.sh")
+      # # shell_script = (f"{self.EXTENSION_DIR}{os.sep}bin/from_sct_qc.sh 'jacques' ")
+      # #make sure you have the permission to execute the shell script
+      # # Execute the shell script
+      # # result = subprocess.run([shell_script], capture_output=True, text=True)
+      #
+      # # background_image
+      # # volumeNode = slicer.util.getNode('MRHead')
+      # print("******volume node: ", self.VolumeNode)
+      # # background_image_path = self.VolumeNode.GetStorageNode().GetFileName()
+      # print("storage node:", self.VolumeNode.GetStorageNode().GetFileName())
+      # bg_image = self.VolumeNode.GetStorageNode().GetFileName()
+      #
+      # #name of the current segment
+      # segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+      # selectedSegmentID = segmentEditorWidget.mrmlSegmentEditorNode().GetSelectedSegmentID()
+      # print("name of the current segment:", selectedSegmentID)
+      # # current segment node path (mask)
+      # current_segment_path = f'{self.OutputFolder}{os.sep}{selectedSegmentID}.nii.gz'
+      # print("current segment path", current_segment_path)
+      #
+      # #path of the current roi segmentation
+      # #please note that this works only for bids (always 10 characters for
+      # # subject naming)
+      # labels_path = f'{self.CurrentFolder}{os.sep}derivatives{os.sep}labels'
+      #
+      #
+      # ##ATTENTION! INSTEAD OF USING :10 WE COULD USE PARSE FUNCTION TO
+      # # DELIMITATE WITH THE SUBJECT NAME
+      # subject_name = f'{self.currentCase}'[:10]
+      # print("subject name", subject_name)
+      # print("type subject name", type(subject_name))
+      # current_roi = (f'{labels_path}{os.sep}{subject_name}{os.sep}anat'
+      #                f'{os.sep}{self.VolumeNode.GetName()}_seg.nii.gz')
+      # print("path current roi segmentation:", current_roi)
+
+
+      # #path of output file (from the shell script to run)
+      # output_folder = self.OutputFolder
+      # print("path output file", output_folder)
+      #
+      # result = subprocess.run([shell_script, bg_image,
+      #                          current_segment_path, current_roi, output_folder],
+      #                         capture_output=True,
+      #                         text=True)
+      #
+      # # Print the output and error (if any)
+      # print("stdout:", result.stdout)
+      # print("stderr:", result.stderr)
+      # print("Return code:", result.returncode)
+
+      # save a csv file with statistics
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
-      output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,os.path.basename(self.currentCasePath))[0]
+      self.revision_step = self.ui.RevisionStep.currentText
+
+      print("about to write csv function")
+      print(" get segmentation name", self.SegmentationNode.GetName())
+      print(" get annotator_name", self.annotator_name)
+      print(" get annotator_degree", self.annotator_degree)
+      print("get revision step", self.revision_step)
 
 
-      #### CHECKBOX SAVING - TO BE REFACTORED ####
-      # get ICH types and locations
-      self.checked_ichtype, self.checked_icvhloc, self.checked_ems = self.checkboxChanged()
-      self.ichtype_other = self.ui.ichtype_other.text
-      self.em_comments = self.ui.EM_comments.text
+      # helped by ChatGPT
+      # Actual variables [formated in list for convenient purposes].
+      Case_number = [self.SegmentationNode.GetName()]
+      Annotator_name = [self.annotator_name]
+      Annotator_degree = [self.annotator_degree]
+      Revision_step = [self.revision_step]
+      csv_name = 'metadata.csv' #by default. Can be changed by user.
 
-      # Create folders if not exist
-      self.createFolders()
-      
-      # Run the code to remove outliers
-      print('*** Running outlier removal ***')
-      self.check_for_outlier_labels()
-      
-      # Get the segmentation node (the current one)
-      self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      # Combine data into rows using zip
+      data = list(
+          zip(Case_number, Annotator_name, Annotator_degree, Revision_step))
 
-      #### SAVING CSV TIME #####
-      # Save if annotator_name is not empty and timer started:
-      if self.annotator_name and self.time is not None: 
-          # Save time to csv
-          print("Saving time to csv")
-          tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time" 
-          for label in self.config_yaml["labels"]:
-                tag_str = tag_str + ", " + label["name"] + " time"
-          if self.flag_ICH_in_labels:
-                tag_str = tag_str + ", ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
-          print('constructing data string')
-          # TODO: refactor this to be more generic and use the config file values.
-          data_str = self.currentCase 
-          data_str = data_str + ", " + self.annotator_name
-          data_str = data_str + ", " + self.annotator_degree
-          data_str = data_str + ", " + self.revision_step[0]
-          data_str = data_str + ", " + str(self.ui.lcdNumber.value)
-          for timer in self.timers:
-                data_str = data_str + ", " + str(timer.total_time)
-          if self.flag_ICH_in_labels:
-                data_str = data_str + ", " + self.checked_ichtype
-                data_str = data_str + ", " + self.checked_ichloc
-                data_str = data_str + ", " + self.checked_ems
-                data_str = data_str + ", " + self.ichtype_other
-                data_str = data_str + ", " + self.em_comments
+      # Create the folder if it does not exist
+      os.makedirs(self.OutputFolder, exist_ok=True)
+      # Define the complete file path
+      csv_path = os.path.join(self.OutputFolder, csv_name)
+      # Check if the file already exists
+      csv_exists = os.path.isfile(csv_path)
 
-          self.outputTimeFile = os.path.join(self.output_dir, 'annotation times',
-                                             '{}_Case_{}_time_{}.csv'.format(self.annotator_name, output_file_pt_id_instanceUid, self.revision_step[0]))
-          print(f'line 961 - outputTimeFile: {self.outputTimeFile}')
-          time_folder = os.path.dirname(self.outputTimeFile)
+      # Write in csv file or add new data
+      with open(csv_path, mode='a', newline='', encoding='utf-8') as file:
+          writer = csv.writer(file)
+          # Write header only if the file does not already exist
+          if not csv_exists:
+              writer.writerow(
+                  ['Case number', 'Annotator Name', 'Annotator Degree',
+                   'Revision Step'])
 
-          if not os.path.exists(time_folder):
-              print("Creating directory: ", time_folder)
-              os.makedirs(time_folder)
+          # Write data rows
+          for row in data:
+              writer.writerow(row)
 
-          if not os.path.isfile(self.outputTimeFile):
-              with open(self.outputTimeFile, 'w') as f:
-                  f.write(tag_str)
-                  f.write("\n")
-                  f.write(data_str)
-          else:
-              with open(self.outputTimeFile, 'a') as f:
-                  f.write("\n")
-                  f.write(data_str)
+      # add a comment box
+
+      # #Get the remaining cases and save them in a yaml file (copied in select
+      # # output folder ufnction)
+
+      #go to next case to segment
+
+      print("going to the next case")
+      self.segmentationModified = False
+      if direction == "Previous":
+          if self.currentCase_index == 0:
+              print("*** This is the first case of the list. ***")
+              self.show_message_box("This is the first case of the list.")
+          else :
+              self.onPreviousButton()
+      else :
+          if self.currentCase_index == (len(self.Cases) - 1):
+              print("*** This is the last case of the list. ***")
+              self.show_message_box("This is the last case of the list.")
+          else :
+            self.onNextButton()
+
+      # Update the remainingCasesYAML
+
+      # Load the YAML file
+      # with open(self.RemainingCases, 'r') as file:
+      #     remainingCasesYAML = yaml.safe_load(file)
+      #     print(remainingCasesYAML['FILES_SEG'])
+      #     remainingCasesYAML['FILES_SEG'].pop(0)
+      #     print(remainingCasesYAML['FILES_SEG'])
+      # self.RemainingCases
+
+      with open(self.RemainingCases, 'r') as file:
+          data = yaml.safe_load(file)
+          print("data, data", data)
+
+      if 'FILES_SEG' in data and isinstance(data['FILES_SEG'], list) and data['FILES_SEG']:
+          data['FILES_SEG'].pop(0)
+
+      with open(self.RemainingCases, 'w') as file:
+          yaml.dump(data, file, default_flow_style=False)
+
+      print("Should be completed")
+
+      # Open a new segmentation editor optimizedd
+
+      self.onCreateSegmentationButton()
+
+      #NOW HERE
+      #NEXT STEPS ARE TO MANAGE SEGMENTATION MASKS ACCORDING TO CONFIG FILE
+      # RE-ARRANGE TO MAKE THE MASK LOADING OK AND NOT HAVING TO RE-ARRANGE
+      #INPUT SOME CONFIG PARAMETERS IN CONFIG FILE
+      # MANAGE COMMENT BOX
+      # MANAGE TIMER FOR EACH CASE
+      # MAKE MANDATORY TO WRITE ANNOTATOR NAME ETC.
+      # RE-ORGANIZE THE GUI
+      # MAKE A BUTTON TO LOAD MASKS AND ASSOCIATE THEM TO VOLUME
+      # CREATE KEYBOARD SHORTCUT AND AUTOMATIC DISPLAY OF SCREEN
+      # TRY TO RE-ARRANGE THE GUI
+      #CORRET EXTENSION NAME AND CODE ASSOCIATED
+
+      # print("remainingCasesYAML", remainingCasesYAML)
+      # print("type", type(remainingCasesYAML))
+      #
+      # # Extract the first element from the 'FILES_SEG' list
+      # nextCase = remainingCasesYAML['FILES_SEG'][0] if ('FILES_SEG' in remainingCasesYAML and remainingCasesYAML['FILES_SEG']) else None
+      # print("next case", nextCase)
 
 
-          ### SAVING SEGMENTATION FILES ####
-          
-          self.outputSegmFile = os.path.join(self.output_dir,'segmentations',
-                                                 "{}_{}_{}.seg.nrrd".format(output_file_pt_id_instanceUid, self.annotator_name, self.revision_step[0]))
-          print(f'line 980 - outputTimeFile: {self.outputTimeFile}')
-          print(f'Saving segmentation to {self.outputSegmFile}')
 
-          # get the directory of the output segmentation file (needed in the method to check for remaining labels)
-          self.output_seg_dir = os.path.dirname(self.outputSegmFile)
-          print(f'output_seg_dir: {self.output_seg_dir}')
-          if not self.output_seg_dir:
-              os.makedirs(self.output_seg_dir)
+      #pay attention to not rewrite csv file with data
 
-          self.save_node_with_isfile_check_qt_msg_box(self.outputSegmFile, self.segmentationNode)
+      #add a box to put ocmments an save it in csv
+      #add a button to falg the case
+      #consider if case not flaged if revision step is 2 or 3
 
-          # reloading the .seg.nrrd file and check if the label name : value match
-          self.check_match_label_name_value()
+      # #test execute python file
+      # script_path = '/Users/maximebouthillier/gitmax/code/dr_letourneau/ICH_SEGMENTER_V2/testingmaxime/test_script_other.py'
+      # # Get the path to the Slicer Python executable
+      # python_executable = sys.executable
+      # def execute_script_in_folder(script_path):
+      #     # Execute the script in the specified folder
+      #     print("now in the executive function")
+      #     result = subprocess.run([python_executable, script_path],
+      #                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      #     if result.stdout:
+      #         print("Standard output:")
+      #         print(result.stdout.decode())  # Decode bytes to string
+      #     if result.stderr:
+      #         print("Standard error:")
+      #         print(result.stderr.decode())  # Decode bytes to string
+      #
+      # execute_script_in_folder(script_path)
+      #
+      # self.createFolders()
+      #
+      #
+      #
+      # #TODO: refactor this methods and it is way too long
+      # self.time = self.stopTimer()
+      # for timer in self.timers:
+      #       timer.stop()
+      # self.annotator_name = self.ui.Annotator_name.text
+      # self.annotator_degree = self.ui.AnnotatorDegree.currentText
+      #
+      # #maxime
+      # output_file_pt_id_instanceUid = \
+      # re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,
+      #            os.path.basename(self.currentCasePath))[0]
+      # print("*********************output file pt id instance Uid ******",
+      #       output_file_pt_id_instanceUid)
+      # # output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,os.path.basename(self.currentCasePath))[0]
+      #
+      #
+      # #### CHECKBOX SAVING - TO BE REFACTORED ####
+      # # get ICH types and locations
+      # # self.checked_ichtype, self.checked_icvhloc, self.checked_ems = self.checkboxChanged()
+      # # self.ichtype_other = self.ui.ichtype_other.text
+      # # self.em_comments = self.ui.EM_comments.text
+      #
+      # # Create folders if not exist
+      # self.createFolders()
+      #
+      # # Run the code to remove outliers
+      # print('*** Running outlier removal ***')
+      # self.check_for_outlier_labels()
+      #
+      # # Get the segmentation node (the current one)
+      # self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      #
+      # #### SAVING CSV TIME #####
+      # # Save if annotator_name is not empty and timer started:
+      # if self.annotator_name and self.time is not None:
+      #     # Save time to csv
+      #     print("Saving time to csv")
+      #     tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time"
+      #     for label in self.config_yaml["labels"]:
+      #           tag_str = tag_str + ", " + label["name"] + " time"
+      #     if self.flag_ICH_in_labels:
+      #           tag_str = tag_str + ", ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
+      #     print('constructing data string')
+      #     # TODO: refactor this to be more generic and use the config file values.
+      #     data_str = self.currentCase
+      #     data_str = data_str + ", " + self.annotator_name
+      #     data_str = data_str + ", " + self.annotator_degree
+      #     data_str = data_str + ", " + self.revision_step[0]
+      #     data_str = data_str + ", " + str(self.ui.lcdNumber.value)
+      #     for timer in self.timers:
+      #           data_str = data_str + ", " + str(timer.total_time)
+      #     if self.flag_ICH_in_labels:
+      #           data_str = data_str + ", " + self.checked_ichtype
+      #           data_str = data_str + ", " + self.checked_ichloc
+      #           data_str = data_str + ", " + self.checked_ems
+      #           data_str = data_str + ", " + self.ichtype_other
+      #           data_str = data_str + ", " + self.em_comments
+      #
+      #     self.outputTimeFile = os.path.join(self.output_dir, 'annotation times',
+      #                                        '{}_Case_{}_time_{}.csv'.format(self.annotator_name, output_file_pt_id_instanceUid, self.revision_step[0]))
+      #     print(f'line 961 - outputTimeFile: {self.outputTimeFile}')
+      #     time_folder = os.path.dirname(self.outputTimeFile)
+      #
+      #     if not os.path.exists(time_folder):
+      #         print("Creating directory: ", time_folder)
+      #         os.makedirs(time_folder)
+      #
+      #     if not os.path.isfile(self.outputTimeFile):
+      #         with open(self.outputTimeFile, 'w') as f:
+      #             f.write(tag_str)
+      #             f.write("\n")
+      #             f.write(data_str)
+      #     else:
+      #         with open(self.outputTimeFile, 'a') as f:
+      #             f.write("\n")
+      #             f.write(data_str)
+      #
+      #
+      #     ### SAVING SEGMENTATION FILES ####
+      #
+      #     # self.outputSegmFile = os.path.join(self.output_dir,'segmentations',
+      #     #                                        "{}_{}_{}.seg.nrrd".format(output_file_pt_id_instanceUid, self.annotator_name, self.revision_step[0]))
+      #
+      #     #maxime
+      #     self.outputSegmFile = self.OutputFolder
+      #     print("output file worked")
+      #
+      #     print(f'line 980 - outputTimeFile: {self.outputTimeFile}')
+      #     print(f'Saving segmentation to {self.outputSegmFile}')
+      #
+      #     # get the directory of the output segmentation file (needed in the method to check for remaining labels)
+      #     self.output_seg_dir = os.path.dirname(self.outputSegmFile)
+      #     print(f'output_seg_dir: {self.output_seg_dir}')
+      #     if not self.output_seg_dir:
+      #         os.makedirs(self.output_seg_dir)
+      #
+      #     self.save_node_with_isfile_check_qt_msg_box(self.outputSegmFile, self.segmentationNode)
+      #
+      #     # reloading the .seg.nrrd file and check if the label name : value match
+      #     self.check_match_label_name_value()
+      #
+      # # If annotator_name empty or timer not started.
+      # else:
+      #     if not self.annotator_name:
+      #         msgboxtime = qt.QMessageBox()
+      #         msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
+      #         msgboxtime.exec()
+      #     elif self.time is None:
+      #         msgboxtime2 = qt.QMessageBox()
+      #         msgboxtime2.setText("Error: timer is not started for some unknown reason. Restart and save again. File not saved!")
+      #         msgboxtime2.exec()
+      #
+      #
+      # # Save volumes
+      # self.save_statistics()
+      # # Update the color of the segment
+      # self.update_current_case_paths_by_segmented_volumes()
 
-      # If annotator_name empty or timer not started.
-      else:
-          if not self.annotator_name:
-              msgboxtime = qt.QMessageBox()
-              msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
-              msgboxtime.exec()
-          elif self.time is None:
-              msgboxtime2 = qt.QMessageBox()
-              msgboxtime2.setText("Error: timer is not started for some unknown reason. Restart and save again. File not saved!")
-              msgboxtime2.exec()
+  def show_message_box(self, messageText=None):
+      # Create a modal dialog
+      dialog = qt.QMessageBox(slicer.util.mainWindow())
+      dialog.setWindowTitle('Important Message')
+      dialog.setText(f'{messageText}')
 
+      # Add a single "OK" button
+      dialog.addButton(qt.QMessageBox.Ok)
 
-      # Save volumes
-      self.save_statistics()
-      # Update the color of the segment
-      self.update_current_case_paths_by_segmented_volumes()
+      # Show the message box as modal
+      dialog.exec_()
 
+      # After the message box is closed, further code execution resumes
+      print("Dialog closed. Continuing with the code...")
+
+  # # Call the function to show the message box
+  # show_message_box()
+
+  # Code execution will pause at the message box until the user clicks "OK".
+  # After closing the message box, the code execution will resume.
+  print("Continuing with the rest of the code...")
 
 
   def msg2_clicked(self, msg2_button):
@@ -1062,6 +1914,309 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.predictions_paths = sorted(glob(os.path.join(self.predictionFolder, f'{self.SEGM_FILE_TYPE}')))
 
+      print("test click browse maak")
+
+    #maxime
+  def onSelectOutputFolder(self):
+      print("***You have just clicked to select the output folder.")
+      self.OutputFolder = qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.OUTPUT_DIR)
+      print("***self.OutputFolder", self.OutputFolder)
+
+      # Get the remaining cases files and save their name in a yaml file
+      # Helped by ChatGPT
+      print("***self.Cases", self.Cases)
+      print("***self.VolumeNode.GetName()", self.VolumeNode.GetName())
+      # Original list with nested objects
+      original_list = self.Cases
+
+      checkingRemainingCases = f'{self.OutputFolder}{os.sep}remainingCases.yaml'
+      # Example usage
+      self.RemainingCases = checkingRemainingCases
+      print("***yaml file path", self.RemainingCases)
+      if os.path.exists(checkingRemainingCases):
+          print(f"***The path '{checkingRemainingCases}' exists.")
+          def extract_first_list_element_from_yaml(checkingRemainingCases):
+              # Load the YAML file
+              with open(checkingRemainingCases, 'r') as file:
+                  yaml_data = yaml.safe_load(file)
+
+              # Check if 'FILES_SEG' key exists in the YAML data
+              if 'FILES_SEG' in yaml_data:
+                  # Return the first element of the 'FILES_SEG' list
+                  return yaml_data['FILES_SEG'][0]
+              else:
+                  # Handle the case where 'FILES_SEG' key is not found
+                  print("'FILES_SEG' key not found in the YAML file.")
+                  return None
+
+          first_element = extract_first_list_element_from_yaml(checkingRemainingCases)
+          print("First element in the 'FILES_SEG' list:", first_element)
+          print("       ********* EXTRACTED!!! ")
+          print("self case path", self.CasesPaths)
+
+          # Find the path of the case to be loaded.
+          search_directory = self.CurrentFolder
+          def find_file_by_name(search_directory, first_element):
+              for root, dirs, files in os.walk(search_directory):
+                  if first_element in files:
+                      return os.path.join(root, first_element)
+              return None
+
+          PathToLoad = find_file_by_name(search_directory, first_element)
+
+          for i in range(len(self.CasesPaths)):
+              print(" self case path i ", self.CasesPaths[i])
+              print(" first element", PathToLoad)
+
+              if f'{PathToLoad}' == self.CasesPaths[i]:
+                  print("there we go")
+                  print("self cases path i,", self.CasesPaths[i])
+                  # print("self current index", self.current_index)
+                  print("self current index", self.currentCase_index)
+                  print("i", i)
+                  while self.currentCase_index < i:
+                      print("current case is less than i", i)
+                      self.onNextButton()
+                  break
+
+      else:
+          print(f"The path '{checkingRemainingCases}' does not exist.")
+
+          # # Shallow copy
+          # shallow_copied_list = copy.copy(original_list)
+          #
+          # # Deep copy
+          # deep_copied_list = copy.deepcopy(original_list)
+          #
+          # print("Original list after deep copy modification:",
+          #       original_list)  # Output: [['a', 2, 3], [4, 5, 6]]
+          # print("Deep copied list:",
+          #       deep_copied_list)  # Output: [['a', 2, 3], ['b', 5, 6]]
+          #
+          # volume_name = self.VolumeNode.GetName()
+          # extension = '.nii.gz'  # TO MODIFY ACCORDING TO YAML FILE
+          # remaining_cases = deep_copied_list
+          # target_case = volume_name + extension
+          #
+          # # remaining_cases = [item for item in remaining_cases if
+          # #                    item != target_case]
+
+          # print("remaining cases", remaining_cases)
+
+          # saving remaining cases in yaml file
+          # file_paths = self.RemainingCases
+          # directory = self.OutputFolder
+          file_name = 'remainingCases.yaml'
+          # file_path = os.path.join(directory, file_name)
+
+          def save_files_seg_to_yaml(file_paths=self.RemainingCases, directory=self.OutputFolder,
+                                     file_name=file_name):
+              # Ensure the directory exists
+              os.makedirs(directory, exist_ok=True)
+
+              # Define the complete file path
+
+              # Create a dictionary with the 'FILES_SEG' key
+              data = {
+                  'FILES_SEG': self.Cases
+              }
+
+              # Write the dictionary to the YAML file
+              with open((os.path.join(directory, file_name)), 'w') as file:
+                  yaml.dump(data, file, default_flow_style=False)
+
+          save_files_seg_to_yaml()
+
+      # maxime
+
+  def onCreateSegmentationButtonClicked(self):
+      print("\n ENTERING onCreateSegmentationButton \n")
+
+      ###MAGICAL LINE this makes working the paint button and node in seg
+      segment_name = self.segment_name
+      print("segment name on createsegmentaitn button", segment_name)
+      self.onPushButton_select_label(segment_name)
+      print("segment name on createsegmentaitn button", segment_name)
+
+      #TO REMOVE
+      # segment_name_initial = self.config_yaml["labels"][0]["name"]
+      # print("segment name initial", segment_name_initial)
+      # self.onPushButton_select_label(segment_name_initial)
+      # Create a new segmentation node
+      # segmentationNode = slicer.mrmlScene.AddNewNodeByClass(
+      #     'vtkMRMLSegmentationNode')
+      # print("segmentationNode", segmentationNode)
+      # segmentationNode.CreateDefaultDisplayNodes()  # Create the display node as well
+      # segmentationNode.SetName('NewSegmentation')
+      #
+      # # Create a new segmentation mask
+      # segmentId = segmentationNode.GetSegmentation().AddEmptySegment(
+      #     'NewSegment')
+      # print("segment ID", segmentId)
+      # logging.info(f"New segmentation mask created with ID: {segmentId}")
+      print("**************segmentation created!!!!!")
+      # segmentationNode = slicer.mrmlScene.GetNodeByID(
+      #     "vtkMRMLSegmentationNode1")
+      # print("segmentation node", segmentationNode)
+
+
+
+
+
+      # # Get the current scene
+      # scene = slicer.mrmlScene
+      #
+      # # Initialize lists to hold the names of volume and segmentation nodes
+      # volume_node_names = []
+      # segmentation_node_names = []
+      #
+      # # Iterate through all nodes in the scene
+      # for i in range(scene.GetNumberOfNodes()):
+      #     node = scene.GetNthNode(i)
+      #
+      #     # Check if the node is a volume node
+      #     if node.IsA("vtkMRMLScalarVolumeNode"):
+      #         volume_node_names.append(node.GetName())
+      #
+      #     # Check if the node is a segmentation node
+      #     elif node.IsA("vtkMRMLSegmentationNode"):
+      #         segmentation_node_names.append(node.GetName())
+      #
+      # # Print the list of volume node names
+      # print("Volume Nodes:")
+      # for name in volume_node_names:
+      #     print(name)
+      #
+      # # Print the list of segmentation node names
+      # print("\nSegmentation Nodes:")
+      # for name in segmentation_node_names:
+      #     print(name)
+      #
+      # print("volume nodes name list", volume_node_names)
+      #
+      # print("semgentation nodes name list", segmentation_node_names)
+      #
+      # # Names of the volume and segmentation nodes
+      # volume_name = volume_node_names[0]
+      # segmentation_name = segmentation_node_names[0]
+      #
+      # # Get the volume node and segmentation node
+      # volumeNode = slicer.util.getNode(volume_name)
+      # segmentationNode = slicer.util.getNode(segmentation_name)
+      #
+      # if segmentationNode:
+      #     segmentation = segmentationNode.GetSegmentation()
+      #     segmentIDs = segmentation.GetSegmentIDs()
+      #
+      #     for segmentID in segmentIDs:
+      #         print("Segment ID:", segmentID)
+      # else:
+      #     print("Segmentation node not found.")
+      #
+      # # segmentID = slicer.util.getNode(segmentIDs[0])
+      # print("segment ID ****", segmentID)
+      #
+      # segmentationNode = slicer.util.getNode(segmentation_name)
+      # print("segmentationNode ****", segmentationNode)
+      #
+
+
+      # # Get the segmentation node (the current one)
+      # self.SegmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      # print("self segmentationNode", self.segmentationNode)
+      #
+      # # Get the volume node (the current one)
+      # self.VolumeNode = slicer.util.getNodesByClass('vtkMRMLVolumeNode')[0]
+      #
+      # # Get the label mal (signification? - mb added by chatgpt and works!
+      # self.labelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
+      # # print("self label mao", self.labelmap_volume_node)
+      # slicer.modules.segmentations.logic().ExportVisibleSegmentsToLabelmapNode(
+      #     self.SegmentationNode, self.labelmapVolumeNode, self.VolumeNode)
+      #
+      # slicer.app.processEvents()
+
+
+      # # Get the geometry information of the volume node
+      # spacing = volumeNode.GetSpacing()
+      # origin = volumeNode.GetOrigin()
+      # directionMatrix = vtk.vtkMatrix4x4()
+      # volumeNode.GetIJKToRASMatrix(directionMatrix)
+      #
+      # # Get the binary labelmap representation of the segmentation
+      # segmentationBinaryLabelmap = (
+      #     segmentationNode.GetBinaryLabelmapRepresentation(volume_name,
+      #                                                      segmentation_name))
+      #
+      # # Create a resampling filter
+      # resampleFilter = vtk.vtkImageResample()
+      # resampleFilter.SetInputData(segmentationBinaryLabelmap)
+      # resampleFilter.SetOutputSpacing(spacing)
+      # resampleFilter.SetOutputOrigin(origin)
+      # resampleFilter.SetResliceAxes(directionMatrix)
+      #
+      # # Perform the resampling
+      # resampleFilter.Update()
+      #
+      # # Convert the resampled image data back to a segmentation node
+      # resampledImageData = slicer.util.arrayFromVolume(
+      #     resampleFilter.GetOutput())
+      # slicer.util.updateVolumeFromArray(resampledImageData, segmentationNode)
+
+      # Display both volume and segmentation node in Segment Editor for annotation
+
+
+      # # Get the current scene
+      # scene = slicer.mrmlScene
+      #
+      # # Find the volume node by name
+      # volume_node = scene.GetFirstNodeByName(volume_name)
+      # if volume_node is None:
+      #     raise RuntimeError(
+      #         f"Volume node with name '{volume_name}' not found.")
+      #
+      # # Find the segmentation node by name
+      # segmentation_node = scene.GetFirstNodeByName(segmentation_name)
+      # if segmentation_node is None:
+      #     raise RuntimeError(
+      #         f"Segmentation node with name '{segmentation_name}' not found.")
+      #
+      # # Create a Segment Editor to link the segmentation and volume nodes
+      # segment_editor_widget = slicer.qMRMLSegmentEditorWidget()
+      # segment_editor_widget.setMRMLScene(slicer.mrmlScene)
+      #
+      # # Create and set up a Segment Editor node
+      # segment_editor_node = slicer.mrmlScene.AddNewNodeByClass(
+      #     "vtkMRMLSegmentEditorNode")
+      # segment_editor_widget.setMRMLSegmentEditorNode(segment_editor_node)
+      #
+      # # Set the segmentation node in the Segment Editor
+      # segment_editor_widget.setSegmentationNode(segmentation_node)
+      #
+      # # Set the volume node as the source volume
+      # segment_editor_widget.setSourceVolumeNode(volume_node)
+      #
+      # # Ensure the segmentation geometry matches the volume geometry
+      # segmentation_logic = slicer.modules.segmentations.logic()
+      # segmentation_logic.SetReferenceImageGeometryParameterFromVolumeNode(
+      #     segmentation_node, volume_node)
+      #
+      # # Optional: Update the views
+      # slicer.app.processEvents()
+
+      # print("segmentation node", segmentationNode)
+      # print("segmentation id ****", segmentationNode)
+
+
+
+    #maxime
+  def onCreateSegmentationButton(self):
+      print("\n ENTERING onCreateSegmentationButton \n")
+      print("it works creation segmentation ")
+      self.onCreateSegmentationButtonClicked()
+      self.onPushButton_segmeditor()
+      self.observeSegmentationNode()
+      print("opened segm editor")
 
   def msg_warnig_delete_segm_node_clicked(self):
       if slicer.util.getNodesByClass('vtkMRMLSegmentationNode'):
@@ -1069,6 +2224,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     
   def load_mask_v2(self):
+      print("\n LOADING MASK V2 \n")
+      print("IN LOADING MASK")
       # Get list of prediction names
       msg_warning_delete_segm_node =qt.QMessageBox() # Typo correction
       msg_warning_delete_segm_node.setText('This will delete the current segmentation. Do you want to continue?')
@@ -1148,7 +2305,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                                                         label["color_b"] / 255)
 
   def update_current_case_paths_by_segmented_volumes(self):
-      print('test')
+      print('\n ENTERINE update_current_case_paths_by_segmented_volumes \n')
       print(self.output_seg_dir)
       segmentations = glob(os.path.join(self.output_seg_dir, '*.seg.nrrd'))
       print(len(segmentations))
@@ -1173,6 +2330,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onSegmendEditorPushButton(self):
 
+      print("\n ENTERING onSegmendEditorPushButton \n")
+
       if self.ui.SegmentWindowPushButton.isChecked():
           self.ui.SegmentWindowPushButton.setStyleSheet("background-color : gray")
           self.ui.SegmentWindowPushButton.setText('Undock Segment Editor')
@@ -1185,34 +2344,56 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.SegmentWindowPushButton.setText('Dock Segment Editor')
           slicer.modules.segmenteditor.widgetRepresentation().setParent(slicer.util.mainWindow())
 
-  def onPushDefaultMin(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
-        fresh_config = yaml.safe_load(file)
-        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
-        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+  # def onPushDefaultMin(self):
+  #     with open(CONFIG_FILE_PATH, 'r') as file:
+  #       fresh_config = yaml.safe_load(file)
+  #       self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
+  #       self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
-  def onPushDefaultMax(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
-        fresh_config = yaml.safe_load(file)
-        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]     
-        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+  # def onPushDefaultMax(self):
+  #     with open(CONFIG_FILE_PATH, 'r') as file:
+  #       fresh_config = yaml.safe_load(file)
+  #       self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]
+  #       self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPushButton_undo(self):
       self.segmentEditorWidget.undo()
 
   def onDropDownButton_label_select(self, value):
+      print('\n ENTERING onDropDownButton_label_select \n')
+      print("value ", value)
+
+
       self.current_label_index = value
       label = self.config_yaml["labels"][value]
-      self.setUpperAndLowerBoundHU(label["lower_bound_HU"], label["upper_bound_HU"])
+
+      print("label", label)
+
+      # self.setUpperAndLowerBoundHU(label["lower_bound_HU"], label["upper_bound_HU"])
 
       label_name = label["name"]
+      print("label_name", label_name)
+
       try:
+        print(" try test")
+        volumeNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLScalarVolumeNode")
+        # print("volume node", volumeNode)
+
+
+        print("self current case", self.currentCase)
+        print("label name", label_name)
         segment_name = f"{self.currentCase}_{label_name}"
-        self.onPushButton_select_label(segment_name, label["lower_bound_HU"], label["upper_bound_HU"])
+        # self.onPushButton_select_label(segment_name, label["lower_bound_HU"], label["upper_bound_HU"])
+        self.onPushButton_select_label(segment_name)
+        print("try passed")
       except:
-        pass 
+        print(" raised except")
+        pass
       
   def onPushButton_Paint(self):
+        print('\n ENTERING onPushButton_Paint \n')
+        print(" MMMMMMMMMM onPushButton_Paint self segmentation modified",
+              self.segmentationModified)
         self.segmentEditorWidget.setActiveEffectByName("Paint")
         # Note it seems that sometimes you need to activate the effect first with :
         # Assign effect to the segmentEditorWidget using the active effect
@@ -1223,9 +2404,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
         self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
         #Set if using Editable intensity range (the range is defined below using object.setParameter)
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-        self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-        self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
+        # self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        # self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+        # self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
         
 
   def keyboard_toggle_fill(self):
@@ -1239,6 +2420,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def toggleFillButton(self):
+      print('toggleFillButton')
       if  self.ui.pushButton_ToggleFill.isChecked():
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : lightgreen")
           self.ui.pushButton_ToggleFill.setText('Fill: ON')
@@ -1249,6 +2431,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
 
   def onPushButton_ToggleVisibility(self):
+      print('onPushButton_ToggleVisibility')
       if self.ui.pushButton_ToggleVisibility.isChecked():
           self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : indianred")
           self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
@@ -1259,6 +2442,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
 
   def togglePaintMask(self):
+        print('togglePaintMask')
         if self.ui.pushButton_TogglePaintMask.isChecked():
             self.ui.pushButton_TogglePaintMask.setStyleSheet("background-color : lightgreen")
             self.ui.pushButton_TogglePaintMask.setText('Paint Mask ON')
@@ -1266,7 +2450,13 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def onPushButton_segmeditor(self):
+      print('onPushButton_segmeditor')
+      print(" MMMMMMMMMM onPushButton_segmeditor self segmentation modified",
+            self.segmentationModified)
       slicer.util.selectModule("SegmentEditor")
+      first_segment_name = self.first_label_segment_name
+      print("on push button segm editor", first_segment_name)
+      self.onPushButton_select_label(first_segment_name)
 
   def onPushButton_Erase(self):
       self.segmentEditorWidget.setActiveEffectByName("Erase")
@@ -1303,23 +2493,23 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.setParameter("KernelSizeMm", 3)
       effect.self().onApply()
 
-  def onLB_HU(self):
-      try:
-        self.LB_HU=self.ui.LB_HU.value
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-        self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = self.LB_HU
-      except:
-        pass
+  # def onLB_HU(self):
+  #     try:
+  #       self.LB_HU=self.ui.LB_HU.value
+  #       self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+  #       self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+  #       self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = self.LB_HU
+  #     except:
+  #       pass
       
-  def onUB_HU(self):
-      try:
-        self.UB_HU=self.ui.UB_HU.value
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-        self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
-      except:
-        pass
+  # def onUB_HU(self):
+  #     try:
+  #       self.UB_HU=self.ui.UB_HU.value
+  #       self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+  #       self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
+  #       self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
+  #     except:
+  #       pass
 
   def check_match_label_name_value(self):
       """"
@@ -1329,6 +2519,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # volume nifti file = outputVolfile
       #
       """
+      print("\n ENTERING check_match_label_name_value  \n")
       # get the current label name
       # read with slicerio
       print('-'*20)
@@ -1426,6 +2617,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
 
   def check_for_outlier_labels(self):
+      print("Checking for outlier labels")
       # Create a label map from the segmentation
       # Get the volume node and segmentation node
       volumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
@@ -1512,6 +2704,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       df['ID'] = df['Segment'].str.extract("(ID_[a-zA-Z0-90]+)_")
       df['Category'] = df['Segment'].str.extract("_([A-Z]+)$")
       df.to_csv(outputFilename, index=False)
+
+
 
 
 

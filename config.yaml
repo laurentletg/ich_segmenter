@@ -1,16 +1,33 @@
-default_volume_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/Delphine_annotations_to_review/volume' # adjust to your default volume directory
-volume_extension: "*.nrrd"
-regex_format_volume_load: 'Volume_pt_id_(ID_[a-zA-Z0-9]+)*'
-regex_format_volume_save: "Volume_pt_id_(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*"
+default_volume_directory: '/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data/site_003' # adjust to your default volume directory
+volume_extension: ".nii.gz"
+regex_format_volume_load: '.nii.gz'
+regex_format_volume_save: ""
 
-default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/Delphine_annotations_to_review/volume/Labels_ANW_1 copy'
-segmentation_extension:  "*.seg.nrrd"
+###maxime modif bids format
+folder_organization: "sub-"
+#If modality has multiple contrasts (ex MRI T1w, T2w ...) and you want to
+  #filter them, you may indicate it here. By default, all contrasts will be
+   #                    loaded.
+contrast: "T2w"
+
+output_directory: ""
+
+extension_directory: "/Users/maximebouthillier/gitmax/code/dr_letourneau/ICH_SEGMENTER_V2"
+
+
+#to make load yaml file of case to segment!! to do
+
+default_segmentation_directory: '/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data/output'
+segmentation_extension:  "*.seg.nii.gz"
 regex_format_segmentation_load:  '(ID_.*?)_instUid'
 # regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
 
 KEYBOARD_SHORTCUTS:
-  - method: "keyboard_toggle_fill"
-    shortcut: "d"
+#  - method: "keyboard_toggle_fill"
+#    shortcut: "d"
+  - method: "saving_shortcut"
+    shortcut: "Shift+S"
+
 
 
 OUTLIER_THRESHOLD:
@@ -18,27 +35,29 @@ OUTLIER_THRESHOLD:
   UPPER_BOUND: 150
 
 labels: # !!!make sure that PHE and ICH have no gap between bounds!!!
-  - name: "ICH"
+  - name: "seg-L-manual"
     value: 1
     color_r: 255
     color_g: 10
     color_b: 10
-    lower_bound_HU: 33
-    upper_bound_HU: 90
-  - name: "IVH"
+#    lower_bound_HU: 33
+#    upper_bound_HU: 90
+
+  #HERE !! THAT MESS ALL OTHER
+  - name: "seg-L2-manual"
     value: 2
     color_r: 230
     color_g: 230
     color_b: 70
-    lower_bound_HU: 33
-    upper_bound_HU: 90
+#    lower_bound_HU: 33
+#    upper_bound_HU: 90
   - name: "PHE"
     value: 3
     color_r: 11
     color_g: 80
     color_b: 255
-    lower_bound_HU: 5
-    upper_bound_HU: 33
+#    lower_bound_HU: 5
+#    upper_bound_HU: 33
 #  - name: "ventricular_drain"
 #    value: 4
 #    color_r: 0
