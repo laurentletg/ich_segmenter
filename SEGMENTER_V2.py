@@ -29,6 +29,8 @@ import argparse
 import copy
 import vtk
 from functools import partial
+# from render_manager import RenderManager
+# from PyQt5.QtWidgets import QApplication, QMainWindow
 
 # TODO: add all constants to the config file
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yaml")
@@ -175,6 +177,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutSideBySideView)
     slicer.app.layoutManager().setLayout(
         slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
+    self.file_extension = self.config_yaml['volume_extension']
 
     # self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
     # self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
@@ -198,6 +201,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.segmentationModified = False
     self.observer_tags = {}
     # self.get_current_segment_id()
+    self.loadMask = False
 
     # Connect segmentation modified event
     # self.observeSegmentationNode()
@@ -740,6 +744,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def update_UI_case_list(self):
       print("\n ENTERING UPDATE_UI_CASE_LIST \n")
+      # print("update_UI_case_list self.Cases", self.Cases)
       self.ui.SlicerDirectoryListView.clear()
       # Populate the SlicerDirectoryListView
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
@@ -826,13 +831,160 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Adjust windowing (no need to use self. since this is used locally)
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
+
       # MB - WW removed since MRI may also be loaded
       # Vol_displayNode.SetWindow(85)
       # Vol_displayNode.SetLevel(45)
+
+      #mb addind
+
       self.newSegmentation()
+      if self.loadMask :
+          self.load_segmentation()
+
+      # if self.loadMask :
+      #     self.load_segmentation()
+      #     self.createNewSegments()
+      # else :
+      #     self.newSegmentation()
       self.subjectHierarchy()
-  
-  # Getter method to get the segmentation node name    - Not sure if this is really useful here. 
+
+  # def loadPatient(self):
+  #     print("\n ENTERING loadPatient \n")
+  #     print("IN LOAD PATIENT")
+  #     timer_index = 0
+  #     self.timers = []
+  #     for label in self.config_yaml["labels"]:
+  #         self.timers.append(Timer(number=timer_index))
+  #         timer_index = timer_index + 1
+  #
+  #     # reset dropbox to index 0
+  #     # initially was to 0 -- maxime modified
+  #     # self.ui.dropDownButton_label_select.setCurrentIndex(0)
+  #     self.ui.dropDownButton_label_select.setCurrentIndex(
+  #         self.currentCase_index)
+  #
+  #     # timer reset if we come back to same case
+  #     self.called = False
+  #
+  #     slicer.mrmlScene.Clear()
+  #     slicer.util.loadVolume(self.currentCasePath)
+  #     self.VolumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[
+  #         0]
+  #     self.updateCaseAll()
+  #     self.ui.CurrentSegmenationLabel.setText(
+  #         'New patient loaded - No segmentation created!')
+  #     # Adjust windowing (no need to use self. since this is used locally)
+  #     Vol_displayNode = self.VolumeNode.GetDisplayNode()
+  #     Vol_displayNode.AutoWindowLevelOff()
+  #     # MB - WW removed since MRI may also be loaded
+  #     # Vol_displayNode.SetWindow(85)
+  #     # Vol_displayNode.SetLevel(45)
+  #     self.newSegmentation()
+  #     self.subjectHierarchy()
+
+
+  def load_segmentation(self):
+      if self.loadMask :
+          name = self.Cases[self.currentCase_index]
+          filename = self.remove_file_extension(name)
+          print("load_segmentation name", filename)
+          version = self.get_latest_version(filename)
+          str_version = f"_v{version:02d}"
+          print("version", version)
+          print("str_version", str_version)
+          listfile = []
+          dictTupleFileInfo = {}
+          for i in range(len(self.config_yaml["labels"])):
+              labelName = self.config_yaml["labels"][i]["name"]
+              # reconstruct the path of the file_mask
+              maskFilePath = (f'{self.OutputFolder}{os.sep}versions{os.sep}'
+                              f'{filename}_'
+                              f'{labelName}{str_version}{self.file_extension}')
+              print("maskFilePath", maskFilePath)
+              listfile.append(maskFilePath)
+              print("load_segmentation listfile should have 3", listfile)
+              file_info = (f"{filename}_{labelName}", str_version)
+              # dictTupleFileInfo[f"{filename}_{labelName}"] = file_info
+              dictTupleFileInfo[f"{maskFilePath}"] = file_info
+
+
+          #tuple id for associating file label to file version
+          print("load_segmentation( dictTupleFileInfo", dictTupleFileInfo)
+
+          # #load each segment in the display zone
+          # for segment in listfile:
+          #     print("for loop in segment listfile", segment)
+          #     name = dictTupleFileInfo[segment][0]
+          #     if os.path.exists(segment):
+          #         segmentationNode = slicer.util.loadSegment(segment)
+          #         segmentationNode.SetName(f"{name}{self.file_extension}")
+          #         print("in for segment in listfile segmentationNode",
+          #               segmentationNode)
+
+          # load each segment in the display zone
+          for segment in listfile:
+              print("for loop in segment listfile", segment)
+              name = dictTupleFileInfo[segment][0]
+              labelName = self.config_yaml["labels"][0]["name"]
+
+              if os.path.exists(segment):
+                  [success, labelmap_node] = slicer.util.loadLabelVolume(
+                      segment, returnNode=True)
+                  print("labelmap node in os path exist segment", labelmap_node)
+
+
+                  if success: #RENDU ICI 27 MAI 2024
+                      # Load the labelmap volume
+                      labelmap_node = slicer.util.loadLabelVolume(segment)
+
+                      # The labelmap volume will automatically be converted to a segmentation node
+                      # segmentation_node = labelmap_node.GetSegmentationNode()
+
+
+                      # Step 1: Retrieve the source segmentation node and the segment you want to convert
+                      source_segmentation_node = labelmap_node.GetSegmentationNode()
+                      source_segment_id = "SourceSegmentID"
+
+                      # Step 2: Retrieve the target segmentation node
+                      target_segmentation_node = slicer.util.getNode(
+                          "sub-ott002_acq-sag_T2w.nii.gz_segmentation")
+
+                      # Step 3: Create a new segment in the target segmentation node
+                      target_segmentation_node.CreateEmptySegment(
+                          "NewSegmentID", "NewSegmentName")
+
+                      # Step 4: Copy the binary labelmap representation of the source segment to the new segment in the target segmentation node
+                      source_segmentation_node.GetSegmentation().CopySegmentFromSegmentation(
+                          source_segment_id,
+                          target_segmentation_node.GetSegmentation(),
+                          "NewSegmentID")
+
+                      # # Optionally, remove the temporary loaded segmentation node
+                      # slicer.mrmlScene.RemoveNode(loadedSegmentationNode)
+
+
+                  # if success:
+                  #     segmentation = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0].GetSegmentation()
+                  #     print("segmentation", segmentation)
+                  #     new_segment_id = segmentation.AddEmptySegment(f'{filename}_'
+                  #             f'{labelName}{str_version}{self.file_extension}')
+                  #     print("new segment id", new_segment_id)
+                  #     # slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(
+                  #     #     labelmap_node, segmentation, new_segment_id)
+                  #     nodeMapLoaded = slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(
+                  #         labelmap_node, segmentation)
+                  #     segmentation.CreateClosedSurfaceRepresentation()
+                  #     print("  nodeMapLoaded", nodeMapLoaded)
+                  #
+                  #     # # Optionally, remove the temporary loaded segmentation node
+                  #     # slicer.mrmlScene.RemoveNode(loadedSegmentationNode)
+
+
+
+
+
+  # Getter method to get the segmentation node name    - Not sure if this is really useful here.
   @property
   def segmentationNodeName(self):
     print("\n ENTERING segmentationNodeName \n")
@@ -961,7 +1113,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   # # Load all segments at once
   # # TODO REMOVE THE NAME IN EACH SEGMENTS SINCE THIS IS NOT REALLY NEED. WOULD NEED TO MODIFY THE QC SCRIPT ALSO
-  def createNewSegments(self):
+  def createNewSegments(self, listfile=None):
         print("IN CREATE NEW SEGMENTS!!!!")
         # create the number of required segments
         # for label in self.config_yaml["labels"]:
@@ -984,7 +1136,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         print(f" test get name {self.currentCase}")
 
         string = f"{self.currentCase}"
-        regex = ".nii.gz"
+        regex = self.config_yaml["volume_extension"]
         print(string)
         cleaned = re.sub(regex, "", string)
         print(cleaned)
@@ -1002,6 +1154,48 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
         # self.onPushButton_select_label(self.first_label_segment_name)
+
+  # def createNewSegments(self):
+  #     print("IN CREATE NEW SEGMENTS!!!!")
+  #     # create the number of required segments
+  #     # for label in self.config_yaml["labels"]:
+  #     #     self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
+  #
+  #     for label in self.config_yaml["labels"]:
+  #         print("******* ****** *****")
+  #         print(" label yaml data", label)
+  #         print("label yaml name", label["name"])
+  #         print(" rgb", label["color_r"], label["color_g"], label["color_b"])
+  #
+  #         self.onNewLabelSegm(label["name"], label["color_r"],
+  #                             label["color_g"], label["color_b"])
+  #         # label["lower_bound_HU"],
+  #         # label["upper_bound_HU"])
+  #         # print("sel on NewlabelSegm", self.onNewLabelSegm())
+  #
+  #     first_label_name = self.config_yaml["labels"][0]["name"]
+  #
+  #     print(f" test get name {self.currentCase}")
+  #
+  #     string = f"{self.currentCase}"
+  #     regex = ".nii.gz"
+  #     print(string)
+  #     cleaned = re.sub(regex, "", string)
+  #     print(cleaned)
+  #
+  #     self.first_label_segment_name = f"{cleaned}_{first_label_name}{regex}"
+  #     print("first label segment name", self.first_label_segment_name)
+  #
+  #     currentSegmentID = self.segmentEditorWidget.currentSegmentID
+  #     print("Current segment ID in new segment creation:", currentSegmentID)
+  #
+  #     ###ATTENTION! NEVER COMMENT THIS LINE BELOW SINCE IT WILL CAUSE
+  #     # TROUBLE ++++ TO CORRECT (PAINTING AND SEGMENTATION)
+  #
+  #     self.onPushButton_select_label(self.first_label_segment_name)
+  #
+  #     # self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
+  #     # self.onPushButton_select_label(self.first_label_segment_name)
 
 
   def newSegment(self, segment_name=None):
@@ -1212,6 +1406,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
       print(" *** pusb ubutotn selec tlabel segment id", self.SegmentID)
       print(" *** segment name in pusb butotn selct labewl", segment_name)
+      # self.segment_name = segment_name
       self.updateCurrentSegmenationLabel()
       # self.LB_HU = label_LB_HU
       # self.UB_HU = label_UB_HU
@@ -1544,12 +1739,111 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       print("output folder", self.OutputFolder)
 
-      # Save each segmentation mask in the output folder
-      for element in self.SegmentsNames:
-          print("elenent", element)
-          print("path", f'{self.OutputFolder}{os.sep}{element}')
-          slicer.util.saveNode(self.labelmapVolumeNode,
-                               f'{self.OutputFolder}{os.sep}{element}')
+      # # Save each segmentation mask in the output folder
+      # for element in self.SegmentsNames:
+      #     print("elenent", element)
+      #     print("path", f'{self.OutputFolder}{os.sep}{element}')
+      #     slicer.util.saveNode(self.labelmapVolumeNode,
+      #                          f'{self.OutputFolder}{os.sep}{element}')
+
+      # # Save each segmentation mask in the versions output folder
+      # for element in self.SegmentsNames:
+      #     print("elenent", element)
+      #     print("path", f'{self.OutputFolder}{os.sep}versions{os.sep}{element}')
+      #     slicer.util.saveNode(self.labelmapVolumeNode,
+      #                          f'{self.OutputFolder}{os.sep}versions{os.sep}{element}')
+
+      segmentation_node = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      segmentation = segmentation_node.GetSegmentation()
+      segment_ids = vtk.vtkStringArray()
+      segmentation.GetSegmentIDs(segment_ids)
+
+      for i in range(segment_ids.GetNumberOfValues()):
+          filename = self.remove_file_extension(self.SegmentsNames[i])
+          version = self.check_version(filename)
+          version = self.increment_latest_version(filename)
+          print("Check if folder version exists.", version)
+          print("file name oN SAVE SEGMENTATION ", filename)
+
+
+          segment_id = segment_ids.GetValue(i)
+
+          print("\n onSaveSegmentationButton segment_id", segment_id)
+
+
+          segment_name = segmentation.GetSegment(segment_id).GetName()
+          print("\n onSaveSegmentationButton segment_name", segment_name)
+
+          # Create a new labelmap volume node
+          labelmap_volume_node = slicer.mrmlScene.AddNewNodeByClass(
+              "vtkMRMLLabelMapVolumeNode", segment_name + "_labelmap")
+
+          print("\n onSaveSegmentationButton label_map_volumenode",
+                labelmap_volume_node)
+
+          # print("\n onSaveSegmentationButton [segment_id]", vtk.vtkStringArray(segment_id)
+          segment_id_array = vtk.vtkStringArray()
+          segment_id_array.InsertNextValue(segment_id)
+          print("segment id array", segment_id_array)
+
+
+
+
+          # Export the segment to the labelmap volume node
+          # slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(
+          #     segmentation_node, vtk.vtkStringArray(segment_id),
+          #     labelmap_volume_node)
+
+          slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(
+              segmentation_node, segment_id_array, labelmap_volume_node)
+
+          #remove file extension to optimise the saving with a vesion control
+
+
+          # # Construct the file path
+          # file_path = os.path.join(f"{self.OutputFolder}{os.sep}versions{os.sep}",
+          #                          f"{segment_name}")
+
+          # # Construct the file path
+          file_path = os.path.join(f"{self.OutputFolder}{os.sep}versions{os.sep}",
+                                   f"{filename}{version}"
+                                   f"{self.file_extension}")
+
+          # Save the labelmap volume node
+          slicer.util.saveNode(labelmap_volume_node, file_path)
+
+          # Optionally, remove the labelmap volume node from the scene to free up memory
+          slicer.mrmlScene.RemoveNode(labelmap_volume_node)
+
+          print(f"Saved segment '{segment_name}' to file: {file_path}")
+
+      print("onSaveSegmentationButton new saved worked!!!!")
+
+
+
+      # # Save each segmentation mask in the versions output folder
+      # for element in self.SegmentsNames:
+      #     print("elenent", element)
+      #     filename = self.remove_file_extension(element)
+      #
+      #     # version = self.check_version(filename)
+      #     version = self.increment_latest_version(filename)
+      #     print("Check if folder version exists.", version)
+      #
+      #     print("file name oN SAVE SEGMENTATION ", filename)
+      #
+      #     print("path", f'{self.OutputFolder}{os.sep}versions{os.sep}{element}')
+      #
+      #
+      #
+      #
+      #     slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(
+      #         segmentation_node, vtk.vtkStringArray([segment_id]),
+      #         labelmap_volume_node)
+
+          # slicer.util.saveNode(self.labelmapVolumeNode,
+          #                      f'{self.OutputFolder}{os.sep}versions{os.sep}'
+          #                      f'{filename}{version}{self.file_extension}')
 
       #here some adjustements will be needed since when load it considers as
       # volume and to put in derivatives
@@ -1867,6 +2161,93 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # self.save_statistics()
       # # Update the color of the segment
       # self.update_current_case_paths_by_segmented_volumes()
+
+  def remove_file_extension(self, file_path):
+      print(" ENTERING remove file extension")
+      filename = file_path.split('.')[0]
+      print("filename=", filename)
+      return filename
+
+  def check_version_folder(self):
+      if os.path.exists(f'{self.OutputFolder}{os.sep}versions'):
+          print("folder version exists")
+          return True
+      else :
+          print("folder version does not exist")
+          return False
+
+  def check_version(self, filename):
+      folder_version = self.check_version_folder()
+      version = "_v01"
+      if folder_version:
+          print("\n ttttt NEEDS SCAN FOR VERSION \n")
+          version = self.get_latest_version(filename)
+
+      return version
+
+  # def get_latest_version(self, filename):
+  #     elements = os.listdir(f'{self.OutputFolder}{os.sep}versions')
+  #     list_version = []
+  #     version = "01"
+  #     for element in elements:
+  #         element = element[:-len(self.config_yaml["volume_extension"])]
+  #         print(" filename in get_latest_version", filename)
+  #         print(" get latest version element", element)
+  #         if filename in element:
+  #             list_version.append(int(element[-2:]))
+  #
+  #     print(" ttttt list version", list_version)
+  #
+  #     if list_version == []:
+  #         return f"_v{version}"
+  #     else :
+  #         max_version = max(list_version)
+  #         print("max list_version before increment", max_version)
+  #         return f"_v{(max_version + 1):02d}"
+  #
+
+  #Return an integer
+  def get_latest_version(self, filename):
+
+      #could implement the paragraph below in new function to get all
+      # versions of a specific file
+
+      list_version = []
+      version = 0
+      if os.path.exists(f'{self.OutputFolder}{os.sep}versions'):
+        elements = os.listdir(f'{self.OutputFolder}{os.sep}versions')
+        for element in elements:
+          element = element[:-len(self.config_yaml["volume_extension"])]
+          print(" filename in get_latest_version", filename)
+          print(" get latest version element", element)
+          if filename in element:
+              list_version.append(int(element[-2:]))
+
+      print(" ttttt list version", list_version)
+
+      #for list of all verison of a file = return list_version
+
+      if list_version == []:
+          return version
+      else :
+          max_version = max(list_version)
+          max_version = min(max_version, 98) #to prevent exceeding 99 versions.
+          print("max list_version before increment", max_version)
+          return max_version
+
+  def increment_latest_version(self, filename):
+      latest_version = self.get_latest_version(filename)
+      return f"_v{(latest_version + 1):02d}"
+
+
+
+      # print(" in get_latest_version", elements)
+      # for element in elements:
+      #     if filename == element:
+
+
+
+
 
   def show_message_box(self, messageText=None):
       # Create a modal dialog
@@ -2222,66 +2603,141 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if slicer.util.getNodesByClass('vtkMRMLSegmentationNode'):
         slicer.mrmlScene.RemoveNode(slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0])
     
-    
+  #load version maxime adapt
   def load_mask_v2(self):
       print("\n LOADING MASK V2 \n")
       print("IN LOADING MASK")
-      # Get list of prediction names
-      msg_warning_delete_segm_node =qt.QMessageBox() # Typo correction
-      msg_warning_delete_segm_node.setText('This will delete the current segmentation. Do you want to continue?')
-      msg_warning_delete_segm_node.setIcon(qt.QMessageBox.Warning)
-      msg_warning_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-      # if clikc ok, then delete the current segmentatio
-      msg_warning_delete_segm_node.setDefaultButton(qt.QMessageBox.Cancel)
-      response = msg_warning_delete_segm_node.exec() # calls remove node if ok is clicked
-      if response == qt.QMessageBox.Ok:
-          self.msg_warnig_delete_segm_node_clicked()
+      print("self cases", self.Cases)
+      self.loadMask = not self.loadMask
+      print(" self load mask,", self.loadMask)
 
-      else:
-          return
+      # for element in  self.Cases:
+      #     print("elenent", element)
+      #     filename = self.remove_file_extension(element)
+      #     version = self.get_version(filename)
 
-      try:
-            self.predictions_names = sorted([re.findall(self.SEGM_REGEX_PATTERN,os.path.split(i)[-1]) for i in self.predictions_paths])
-            self.called = False # restart timer
-      except AttributeError as e:
-            msgnopredloaded=qt.QMessageBox() # Typo correction
-            msgnopredloaded.setText('Please select the prediction directory!')
-            msgnopredloaded.exec()
-            # Then load the browse folder thing for the user
-            self.onBrowseFolders_2Button()
 
-      self.currentPredictionPath = ""
-      for p in self.predictions_paths:
-          if self.currentCase in p:
-              self.currentPredictionPath = p
-              break
 
-      if self.currentPredictionPath != "":
-          # Then load the prediction segmentation
-          slicer.util.loadSegmentation(self.currentPredictionPath)
-          self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-          self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-          self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
-          self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-          self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
-          # set refenrence geometry to Volume node
-          self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-          nn = self.segmentationNode.GetDisplayNode()
-          # set Segmentation visible:
-          nn.SetAllSegmentsVisibility(True)
-          self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
 
-          self.convert_nifti_header_Segment()
 
-          #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
-
-      else:
-          msg_no_such_case = qt.QMessageBox()
-          msg_no_such_case.setText('There are no mask for this case in the directory that you chose!')
-          msg_no_such_case.exec()
+      # # Get list of prediction names
+      # msg_warning_delete_segm_node =qt.QMessageBox() # Typo correction
+      # msg_warning_delete_segm_node.setText('This will delete the current segmentation. Do you want to continue?')
+      # msg_warning_delete_segm_node.setIcon(qt.QMessageBox.Warning)
+      # msg_warning_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+      # # if clikc ok, then delete the current segmentatio
+      # msg_warning_delete_segm_node.setDefaultButton(qt.QMessageBox.Cancel)
+      # response = msg_warning_delete_segm_node.exec() # calls remove node if ok is clicked
+      # if response == qt.QMessageBox.Ok:
+      #     self.msg_warnig_delete_segm_node_clicked()
+      #
+      # else:
+      #     return
+      #
+      # try:
+      #       self.predictions_names = sorted([re.findall(self.SEGM_REGEX_PATTERN,os.path.split(i)[-1]) for i in self.predictions_paths])
+      #       self.called = False # restart timer
+      # except AttributeError as e:
+      #       msgnopredloaded=qt.QMessageBox() # Typo correction
+      #       msgnopredloaded.setText('Please select the prediction directory!')
+      #       msgnopredloaded.exec()
+      #       # Then load the browse folder thing for the user
+      #       self.onBrowseFolders_2Button()
+      #
+      # self.currentPredictionPath = ""
+      # for p in self.predictions_paths:
+      #     if self.currentCase in p:
+      #         self.currentPredictionPath = p
+      #         break
+      #
+      # if self.currentPredictionPath != "":
+      #     # Then load the prediction segmentation
+      #     slicer.util.loadSegmentation(self.currentPredictionPath)
+      #     self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      #     self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+      #     self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
+      #     self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+      #     self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+      #     # set refenrence geometry to Volume node
+      #     self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+      #     nn = self.segmentationNode.GetDisplayNode()
+      #     # set Segmentation visible:
+      #     nn.SetAllSegmentsVisibility(True)
+      #     self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
+      #
+      #     self.convert_nifti_header_Segment()
+      #
+      #     #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
+      #
+      # else:
+      #     msg_no_such_case = qt.QMessageBox()
+      #     msg_no_such_case.setText('There are no mask for this case in the directory that you chose!')
+      #     msg_no_such_case.exec()
 
       # update subject hierarchy
-      self.subjectHierarchy()
+      # self.subjectHierarchy()
+
+  #dr letourneau load mask function
+  # def load_mask_v2(self):
+  #     print("\n LOADING MASK V2 \n")
+  #     print("IN LOADING MASK")
+  #     # Get list of prediction names
+  #     msg_warning_delete_segm_node =qt.QMessageBox() # Typo correction
+  #     msg_warning_delete_segm_node.setText('This will delete the current segmentation. Do you want to continue?')
+  #     msg_warning_delete_segm_node.setIcon(qt.QMessageBox.Warning)
+  #     msg_warning_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+  #     # if clikc ok, then delete the current segmentatio
+  #     msg_warning_delete_segm_node.setDefaultButton(qt.QMessageBox.Cancel)
+  #     response = msg_warning_delete_segm_node.exec() # calls remove node if ok is clicked
+  #     if response == qt.QMessageBox.Ok:
+  #         self.msg_warnig_delete_segm_node_clicked()
+  #
+  #     else:
+  #         return
+  #
+  #     try:
+  #           self.predictions_names = sorted([re.findall(self.SEGM_REGEX_PATTERN,os.path.split(i)[-1]) for i in self.predictions_paths])
+  #           self.called = False # restart timer
+  #     except AttributeError as e:
+  #           msgnopredloaded=qt.QMessageBox() # Typo correction
+  #           msgnopredloaded.setText('Please select the prediction directory!')
+  #           msgnopredloaded.exec()
+  #           # Then load the browse folder thing for the user
+  #           self.onBrowseFolders_2Button()
+  #
+  #     self.currentPredictionPath = ""
+  #     for p in self.predictions_paths:
+  #         if self.currentCase in p:
+  #             self.currentPredictionPath = p
+  #             break
+  #
+  #     if self.currentPredictionPath != "":
+  #         # Then load the prediction segmentation
+  #         slicer.util.loadSegmentation(self.currentPredictionPath)
+  #         self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+  #         self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+  #         self.segmentEditorNode =  self.segmentEditorWidget.mrmlSegmentEditorNode()
+  #         self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+  #         self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
+  #         # set refenrence geometry to Volume node
+  #         self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+  #         nn = self.segmentationNode.GetDisplayNode()
+  #         # set Segmentation visible:
+  #         nn.SetAllSegmentsVisibility(True)
+  #         self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
+  #
+  #         self.convert_nifti_header_Segment()
+  #
+  #         #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
+  #
+  #     else:
+  #         msg_no_such_case = qt.QMessageBox()
+  #         msg_no_such_case.setText('There are no mask for this case in the directory that you chose!')
+  #         msg_no_such_case.exec()
+  #
+  #     # update subject hierarchy
+  #     self.subjectHierarchy()
+
 
 
   def convert_nifti_header_Segment(self):
@@ -2706,6 +3162,73 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       df.to_csv(outputFilename, index=False)
 
 
+class MySlicerModule(ScriptedLoadableModule):
+    def __init__(self, parent):
+        ScriptedLoadableModule.__init__(self, parent)
+        self.parent.title = "My Slicer Module"
+        self.parent.categories = ["Examples"]
+        self.parent.dependencies = []
+        self.parent.contributors = ["Your Name (Your Institution)"]
+        self.parent.helpText = """This is an example module to demonstrate integrating RenderManager."""
+        self.parent.acknowledgementText = """This file was originally developed by Your Name, Your Institution."""
+
+
+##errror is still present with code below [Qt] virtual int ctkVTKAbstractView::resumeRender() Cannot resume rendering, pause render count is already 0!
+# class MySlicerModuleWidget(ScriptedLoadableModuleWidget):
+#     def setup(self):
+#         ScriptedLoadableModuleWidget.setup(self)
+#
+#         # Create a RenderManager instance
+#         self.render_manager = RenderManager()
+#
+#         # Add a button to pause rendering
+#         self.pauseButton = qt.QPushButton("Pause Rendering")
+#         self.pauseButton.toolTip = "Pause rendering"
+#         self.pauseButton.connect('clicked(bool)', self.onPauseRender)
+#         self.layout.addWidget(self.pauseButton)
+#
+#         # Add a button to resume rendering
+#         self.resumeButton = qt.QPushButton("Resume Rendering")
+#         self.resumeButton.toolTip = "Resume rendering"
+#         self.resumeButton.connect('clicked(bool)', self.onResumeRender)
+#         self.layout.addWidget(self.resumeButton)
+#
+#     def onPauseRender(self):
+#         render_window = slicer.app.layoutManager().threeDWidget(
+#             0).threeDView().renderWindow()
+#         self.render_manager.pause_render(render_window)
+#
+#     def onResumeRender(self):
+#         render_window = slicer.app.layoutManager().threeDWidget(
+#             0).threeDView().renderWindow()
+#         self.render_manager.resume_render(render_window)
+#
+#
+# class MySlicerModuleLogic(ScriptedLoadableModuleLogic):
+#     def __init__(self):
+#         pass
+#
+# class RenderManager:
+#     def __init__(self):
+#         self._pause_count = 0
+#
+#     def pause_render(self, render_window):
+#         if self._pause_count == 0:
+#             render_window.SetAbortRender(1)  # Pause rendering
+#         self._pause_count += 1
+#         print(f"Render paused, current pause count: {self._pause_count}")
+#
+#     def resume_render(self, render_window):
+#         if self._pause_count > 0:
+#             self._pause_count -= 1
+#             if self._pause_count == 0:
+#                 render_window.SetAbortRender(0)  # Resume rendering
+#             print(f"Render resumed, current pause count: {self._pause_count}")
+#         else:
+#             print("Cannot resume rendering, pause render count is already 0!")
+#
+#     def is_rendering_paused(self):
+#         return self._pause_count > 0
 
 
 
