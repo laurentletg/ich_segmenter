@@ -69,6 +69,10 @@ class SEGMENTER_V2(ScriptedLoadableModule):
         Thanks to the Slicer community for the support and the development of the software.
         """
 
+
+
+
+
 class Timer():
     def __init__(self, number=None):
         with TIMER_MUTEX:
@@ -116,6 +120,15 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.called = False
     self.called_onLoadPrediction = False
     self.segmentationNode = None
+
+    # mb adding for mouse customized at startup
+    # # Get the interactor from the 'Yellow' slice view
+    self.interactor = slicer.app.layoutManager().sliceWidget(
+        'Yellow').sliceView().interactor()
+    #
+    # # Apply the custom interactor style
+    self.style = CustomInteractorStyle()
+    self.interactor.SetInteractorStyle(self.style)
 
 
 
@@ -262,6 +275,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         print("self config yaml labels", self.config_yaml["labels"] )
         print("labels", label)
         self.ui.dropDownButton_label_select.addItem(label["name"])
+        print("in set up label[name]", label["name"])
 
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.disablePauseTimerButton()
@@ -817,8 +831,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       # reset dropbox to index 0
       #initially was to 0 -- maxime modified
-      # self.ui.dropDownButton_label_select.setCurrentIndex(0)
-      self.ui.dropDownButton_label_select.setCurrentIndex(self.currentCase_index)
+      self.ui.dropDownButton_label_select.setCurrentIndex(0)
+      # self.ui.dropDownButton_label_select.setCurrentIndex(self.currentCase_index)
+
+      print("load patient current index", self.currentCase_index)
+
       
       # timer reset if we come back to same case
       self.called = False
@@ -848,6 +865,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # else :
       #     self.newSegmentation()
       self.subjectHierarchy()
+      self.clean_hierarchy_folder()
 
   # def loadPatient(self):
   #     print("\n ENTERING loadPatient \n")
@@ -935,33 +953,107 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
                   if success: #RENDU ICI 27 MAI 2024
+
+                      #get the segmentation node (the same each time)
+                      segmentation_node = slicer.mrmlScene.GetFirstNodeByClass(
+                          'vtkMRMLSegmentationNode')
+                      print("if success get segmentationNode",
+                            segmentation_node)
+
+                      #get the different segments
+                      segments = segmentation_node.GetSegmentation()
+                      print("if success get segments", segments)
+
+                      # Convert label map to binary label map representation
+                      binary_labelmap_node = slicer.mrmlScene.AddNewNodeByClass(
+                          'vtkMRMLLabelMapVolumeNode')
+                      print("\n \n if success binarylabel_map node",
+                            binary_labelmap_node)
+
+
+                      print("in if succss master representation",
+                            segments.GetNthSegment)
+
+                      print("name in if success", name)
+                      print("name with file extension", f"{name}{self.file_extension}")
+
+                      # segment_id = segmentation_node.GetSegmentation().GetSegmentIdBySegmentName(
+                      #     name)
+                      # print("in if succss segment_id", segment_id)
+                      # Create or get the display node
+                      display_node = slicer.mrmlScene.GetFirstNodeByClass(
+                          'vtkMRMLLabelMapVolumeDisplayNode')
+                      if display_node is None:
+                          display_node = slicer.mrmlScene.AddNewNodeByClass(
+                              'vtkMRMLLabelMapVolumeDisplayNode')
+                      print("display node", display_node)
+
+                      # Set display node reference
+                      print("argument display node get id",
+                            display_node.GetID())
+                      binary_labelmap_node.SetAndObserveDisplayNodeID(
+                          display_node.GetID())
+
+                      # Create or get the storage node
+                      storage_node = slicer.mrmlScene.GetFirstNodeByClass(
+                          'vtkMRMLStorageNode')
+                      print("storage node", storage_node)
+                      if storage_node is None:
+                          storage_node = slicer.mrmlScene.AddNewNodeByClass(
+                              'vtkMRMLStorageNode')
+
+                      # Set storage node reference
+                      binary_labelmap_node.SetAndObserveStorageNodeID(
+                          storage_node.GetID())
+                      print("storage node.get id", storage_node.GetID() )
+
+                      # Create or get the transform node
+                      transform_node = slicer.mrmlScene.GetFirstNodeByClass(
+                          'vtkMRMLTransformNode')
+                      if transform_node is None:
+                          transform_node = slicer.mrmlScene.AddNewNodeByClass(
+                              'vtkMRMLTransformNode')
+                      print("transform_node", transform_node)
+
+                      # Set transform node reference
+                      binary_labelmap_node.SetAndObserveTransformNodeID(
+                          transform_node.GetID())
+                      print("transform_node get id", transform_node.GetID())
+
+                      print("aaaaaa")
+
+                      # segmentation_node.SetBinaryLabelmapRepresentation(
+                      #     segment_id, labelmap_node)
+
+                      print("in if success it worked for labelmapping")
                       # Load the labelmap volume
-                      labelmap_node = slicer.util.loadLabelVolume(segment)
+                      # labelmap_node = slicer.util.loadLabelVolume(segment)
 
                       # The labelmap volume will automatically be converted to a segmentation node
                       # segmentation_node = labelmap_node.GetSegmentationNode()
+                      # print("success segmentation_node", segmentation_node)
 
 
-                      # Step 1: Retrieve the source segmentation node and the segment you want to convert
-                      source_segmentation_node = labelmap_node.GetSegmentationNode()
-                      source_segment_id = "SourceSegmentID"
-
-                      # Step 2: Retrieve the target segmentation node
-                      target_segmentation_node = slicer.util.getNode(
-                          "sub-ott002_acq-sag_T2w.nii.gz_segmentation")
-
-                      # Step 3: Create a new segment in the target segmentation node
-                      target_segmentation_node.CreateEmptySegment(
-                          "NewSegmentID", "NewSegmentName")
-
-                      # Step 4: Copy the binary labelmap representation of the source segment to the new segment in the target segmentation node
-                      source_segmentation_node.GetSegmentation().CopySegmentFromSegmentation(
-                          source_segment_id,
-                          target_segmentation_node.GetSegmentation(),
-                          "NewSegmentID")
-
-                      # # Optionally, remove the temporary loaded segmentation node
-                      # slicer.mrmlScene.RemoveNode(loadedSegmentationNode)
+                      # # Step 1: Retrieve the source segmentation node and the segment you want to convert
+                      # source_segmentation_node = labelmap_node.GetSegmentationNode()
+                      # source_segment_id = "SourceSegmentID"
+                      #
+                      # # Step 2: Retrieve the target segmentation node
+                      # target_segmentation_node = slicer.util.getNode(
+                      #     "sub-ott002_acq-sag_T2w.nii.gz_segmentation")
+                      #
+                      # # Step 3: Create a new segment in the target segmentation node
+                      # target_segmentation_node.CreateEmptySegment(
+                      #     "NewSegmentID", "NewSegmentName")
+                      #
+                      # # Step 4: Copy the binary labelmap representation of the source segment to the new segment in the target segmentation node
+                      # source_segmentation_node.GetSegmentation().CopySegmentFromSegmentation(
+                      #     source_segment_id,
+                      #     target_segmentation_node.GetSegmentation(),
+                      #     "NewSegmentID")
+                      #
+                      # # # Optionally, remove the temporary loaded segmentation node
+                      # # slicer.mrmlScene.RemoveNode(loadedSegmentationNode)
 
 
                   # if success:
@@ -979,6 +1071,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   #
                   #     # # Optionally, remove the temporary loaded segmentation node
                   #     # slicer.mrmlScene.RemoveNode(loadedSegmentationNode)
+
 
 
 
@@ -1224,17 +1317,61 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       self.srcSegmentation = srcNode.GetSegmentation()
 
+      #maxime modifications
       # Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
-      if not self.srcSegmentation.GetSegmentIDs(): # if there are no segments in the segmentation node
-        self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-        self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
 
-      # if there are segments in the segmentation node, check if the segment name is already in the segmentation node
-      if any([self.segment_name in i for i in self.srcSegmentation.GetSegmentIDs()]):
-            pass
-      else:
-            self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-            self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+      print("newSegment ELSE any segment exists")
+      if self.loadMask:
+          print("newSegment ELSE any segment exists self load mask",
+                self.loadMask)
+          self.segmentationNode = \
+          slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+          # self.segmentationNode.GetSegmentation().AddEmptySegment(
+          #     self.segment_name)
+          print(" newSegment got segmentation node", self.segmentationNode)
+          # aaa = self.get_existing_segment()
+          # print("aaa", aaa)
+          if self.get_existing_segment():
+              print("new segment to be added")
+              # self.create_vtk_segment()
+
+              # self.segmentationNode.GetSegmentation().AddSegment(
+              #     self.create_vtk_segment())
+
+              self.create_vtk_segment()
+
+
+              # # Add the segment to the segmentation node
+              # self.segmentationNode.GetSegmentation().AddSegment(self.create_vtk_segment())
+
+              # Update the segmentation node
+              self.segmentationNode.Modified()
+              print("should have worked if here")
+
+          else :
+              print("create an empty segment")
+              self.segmentationNode = \
+              slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+              self.segmentationNode.GetSegmentation().AddEmptySegment(
+                  self.segment_name)
+          # print("temp")
+      else :
+          print("newSegment ELSE ELSE")
+          self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+          self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+
+
+      # # Below will create a new segment if there are no segments in the segmentation node, avoid overwriting existing segments
+      # if not self.srcSegmentation.GetSegmentIDs(): # if there are no segments in the segmentation node
+      #   self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      #   self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
+      #
+      # # if there are segments in the segmentation node, check if the segment name is already in the segmentation node
+      # if any([self.segment_name in i for i in self.srcSegmentation.GetSegmentIDs()]):
+      #       pass
+      # else:
+      #       self.segmentationNode=slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      #       self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
 
       print("MMMMMMMMMM newSegment after else become true",
             self.segmentationModified)
@@ -1313,6 +1450,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     SegmentationNodes = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')
     SegmentationNodeNames = [i.GetName() for i in SegmentationNodes]
 
+    self.segmentEditorWidget.setCurrentSegmentID(SegmentationNodes[0])
+
     # print("segmentation node names", SegmentationNodeNames)
     #
     # print("segmentation node", )
@@ -1332,7 +1471,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # print("SEGMENTATION NODES", SegmentationNodes[0].GetName())
     # print("SEGMENTATION IDS", SegmentationNodes[0].GetIDs())
     # print("SEGMENTATION IDS", SegmentationNodes[0].GetIDs())
-    self.segmentEditorWidget.setCurrentSegmentID(SegmentationNodes[0])
+
 
 
     ###RENDU ICI
@@ -1353,6 +1492,33 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     #     shNode.SetItemParent(itemID, folderID)
     # # print("shnode modif", shNode)
 
+  def clean_hierarchy_folder(self):
+      print(" ENTERING CLEAN_HIERARCHY FOLDER")
+      # Get the subject hierarchy node
+      subjectHierarchyNode = slicer.mrmlScene.GetSubjectHierarchyNode()
+
+      # Get the folder item by name (replace 'NameOfFolder' with the actual folder name)
+      folderItemID = subjectHierarchyNode.GetItemByName('Study to be updated')
+
+      # Check if the folder item was found
+      if folderItemID:
+          # Get all child items (nodes) in the folder
+          childItemIDs = vtk.vtkIdList()
+          subjectHierarchyNode.GetItemChildren(folderItemID, childItemIDs)
+
+          # Iterate over each child item and remove the corresponding node
+          for i in range(childItemIDs.GetNumberOfIds()):
+              childItemID = childItemIDs.GetId(i)
+              node = subjectHierarchyNode.GetItemDataNode(childItemID)
+              # volume_node = slicer.util.getNodesByClass('vtkMRMLVolumeNode')
+              # print("volume node", volume_node)
+              print("node", node)
+              # Check if the node is a labelmap volume node
+              if node and node.IsA('vtkMRMLLabelMapVolumeNode'):
+                  # Remove the labelmap volume node
+                  slicer.mrmlScene.RemoveNode(node)
+      else:
+          print("Folder not found")
 
 
   def onPushButton_segmeditor(self):
@@ -1393,6 +1559,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(" xxxxxxxxxxx new label seg id", self.SegmentID)
 
       segment = Segmentation.GetSegment(self.SegmentID)
+      # segment = Segmentation.GetSegment(segment_name) maybe to try if not
+      # working
+
       segment.SetColor(label_color_r/255,label_color_g/255,label_color_b/255)
       # self.onPushButton_select_label(segment_name)
 
@@ -1403,9 +1572,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
+      print("onPushButton_select_labe self segment ID", self.SegmentID)
+      print("onPushButton_select_labe segment name", segment_name)
       self.segmentEditorNode.SetSelectedSegmentID(self.SegmentID)
-      print(" *** pusb ubutotn selec tlabel segment id", self.SegmentID)
-      print(" *** segment name in pusb butotn selct labewl", segment_name)
+      # print(" *** pusb ubutotn selec tlabel segment id", self.SegmentID)
+      # print(" *** segment name in pusb butotn selct labewl", segment_name)
       # self.segment_name = segment_name
       self.updateCurrentSegmenationLabel()
       # self.LB_HU = label_LB_HU
@@ -1849,6 +2020,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # volume and to put in derivatives
 
       # # ON HOLD FOR NOW generate qc report
+      ###mathieu suggestion in sctmeeting : Env pour 3d slcier dans le terminal pour executer sheell scirpt
+      ###go see folder agenda sct meeting for qc
       # print("qc report to be generated")
       # print("self extension directory", self.EXTENSION_DIR)
       # shell_script = (f"{self.EXTENSION_DIR}{os.sep}bin/from_sct_qc.sh")
@@ -1886,8 +2059,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # current_roi = (f'{labels_path}{os.sep}{subject_name}{os.sep}anat'
       #                f'{os.sep}{self.VolumeNode.GetName()}_seg.nii.gz')
       # print("path current roi segmentation:", current_roi)
-
-
+      #
+      #
       # #path of output file (from the shell script to run)
       # output_folder = self.OutputFolder
       # print("path output file", output_folder)
@@ -2185,6 +2358,117 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       return version
 
+  #maxime for loading labelmap
+  def get_existing_segment(self):
+      filename = self.remove_file_extension(self.segment_name)
+      print("get_list_segment filename", filename)
+      version = self.get_latest_version(filename)
+      print("get_list_segment get latest version", version)
+      if version == 0:
+          print("get_list_segment version ==0 ")
+          return False
+      return True
+
+  def create_vtk_segment(self):
+      # Creates a vtk object from an existing already saved segment.
+      # Load Binary Label Map
+      filename = self.remove_file_extension(self.segment_name)
+      print("get_list_segment filename", filename)
+      version = self.format_latest_version(filename)
+      print("create vtk segment , version", version)
+      segment_path = (f"{self.OutputFolder}{os.sep}versions{os.sep}{filename}"
+                      f"{version}{self.file_extension}")
+      print("create_vtk_segmen segment_path", segment_path)
+
+      # # self.segment_name
+      labelmap_node = slicer.util.loadLabelVolume(segment_path)
+      # print("labelmap node in os path exist segment", labelmap_node)
+
+      # if success:  # RENDU ICI 27 MAI 2024
+
+      print("create_vtk_segment labelmap node 1", labelmap_node)
+      print("create_vtk_segment labelmap node type", type(labelmap_node))
+
+      # Create a new segment
+      # segment = slicer.vtkSegment()
+      # segment.SetName('MyLoadedSegment')
+
+      print("create vtk segment segment created and name set")
+
+      # # Convert the label map volume node to a binary labelmap representation
+      # segmentationLogic = slicer.modules.segmentations.logic()
+      #
+      # print("segment logic applied")
+      #
+      # binaryLabelmap = slicer.vtkOrientedImageData()
+
+
+      # print("binary labelmap created", binaryLabelmap)
+
+      slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(
+          labelmap_node, self.segmentationNode)
+
+      # Get the segmentation node
+      segmentation = self.segmentationNode.GetSegmentation()
+
+      # Get the segment IDs
+      segmentIDs = vtk.vtkStringArray()
+      segmentation.GetSegmentIDs(segmentIDs)
+
+      # Set the name for each segment
+      print("set name len of segment", segmentIDs.GetNumberOfValues())
+      segmentID = segmentIDs.GetValue((segmentIDs.GetNumberOfValues()-1))
+      segment = segmentation.GetSegment(segmentID)
+      segmentName = f"{self.segment_name}"
+      print("segmentName", segmentName)# Customize the name as needed
+      segment.SetName(segmentName)
+
+      # slicer.mrmlScene.RemoveNode(labelmap_node)
+
+
+
+
+      # # Set the name for each segment
+      # print("set name len of segment", segmentIDs.GetNumberOfValues())
+      # segmentID = self.segment_name
+      # segment = segmentation.GetSegment(segmentID)
+      # print("segment,", segment)
+      # # segmentName = f"{self.segment_name}"
+      # # print("segmentName", segmentName)# Customize the name as needed
+      # print("self segment_name", self.segment_name)
+      # segment.SetName(self.segment_name)
+
+      # # Set the name for each segment
+      # print("set name len of segment", segmentIDs.GetNumberOfValues())
+      # for i in range(segmentIDs.GetNumberOfValues()):
+      #     segmentID = segmentIDs.GetValue(i)
+      #     segment = segmentation.GetSegment(segmentID)
+      #     segmentName = f"{self.segment_name}"
+      #     print("segmentName", segmentName)# Customize the name as needed
+      #     segment.SetName(segmentName)
+
+      # segmentationLogic.CreateOrientedImageDataFromVolumeNode(
+      #     labelmap_node, transformNode)
+
+      print("segmentation logic applied 2")
+
+      # Add the binary labelmap to the segment
+      # segment.AddRepresentation(
+      #     slicer.vtkSegmentationConverter.GetBinaryLabelmapRepresentationName(),
+      #     binaryLabelmap)
+      #
+      # print("create vtk segment , segment", segment)
+
+      # return segment
+
+
+
+
+
+
+
+
+
   # def get_latest_version(self, filename):
   #     elements = os.listdir(f'{self.OutputFolder}{os.sep}versions')
   #     list_version = []
@@ -2238,6 +2522,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def increment_latest_version(self, filename):
       latest_version = self.get_latest_version(filename)
       return f"_v{(latest_version + 1):02d}"
+
+  def format_latest_version(self, filename):
+      latest_version = self.get_latest_version(filename)
+      return f"_v{(latest_version):02d}"
+
 
 
 
@@ -2836,7 +3125,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # print("volume node", volumeNode)
 
 
-        print("self current case", self.currentCase)
+        print(" DropDownButton_label_select self current case",
+              self.currentCase)
         print("label name", label_name)
         segment_name = f"{self.currentCase}_{label_name}"
         # self.onPushButton_select_label(segment_name, label["lower_bound_HU"], label["upper_bound_HU"])
@@ -3229,6 +3519,170 @@ class MySlicerModule(ScriptedLoadableModule):
 #
 #     def is_rendering_paused(self):
 #         return self._pause_count > 0
+
+### maxime addings : mouse customs
+# import vtk
+# import slicer
+
+class CustomInteractorStyle(vtk.vtkInteractorStyleImage):
+    def __init__(self):
+        self.AddObserver("RightButtonPressEvent", self.onRightButtonPressEvent)
+        self.AddObserver("MouseMoveEvent", self.onMouseMoveEvent)
+        self.AddObserver("RightButtonReleaseEvent", self.onRightButtonReleaseEvent)
+        self.AddObserver("MouseWheelForwardEvent", self.onMouseWheelForwardEvent)
+        self.AddObserver("MouseWheelBackwardEvent", self.onMouseWheelBackwardEvent)
+        self.AddObserver("LeftButtonPressEvent", self.onLeftButtonPressEvent)
+        self.AddObserver("LeftButtonReleaseEvent", self.onLeftButtonReleaseEvent)
+        self.AddObserver("KeyPressEvent", self.onKeyPressEvent)
+        self.AddObserver("KeyReleaseEvent", self.onKeyReleaseEvent)
+        self.startPosition = None
+        self.sliceWidget = slicer.app.layoutManager().sliceWidget('Yellow')
+        self.sliceNode = self.sliceWidget.mrmlSliceNode()
+        self.sliceLogic = slicer.app.applicationLogic().GetSliceLogic(self.sliceNode)
+        self.panning = False
+        self.zooming = False
+        self.adjustingWindowLevel = False
+        self.z_pressed = False
+
+    def onRightButtonPressEvent(self, obj, event):
+        self.startPosition = self.GetInteractor().GetEventPosition()
+        self.panning = True
+        self.OnRightButtonDown()
+        return
+
+    def onMouseMoveEvent(self, obj, event):
+        if self.panning and self.startPosition:
+            currentPosition = self.GetInteractor().GetEventPosition()
+            deltaX = self.startPosition[0] - currentPosition[0]
+            deltaY = self.startPosition[1] - currentPosition[1]
+
+            # Adjust the image position based on mouse movement
+            pan = self.sliceNode.GetXYZOrigin()
+            self.sliceNode.SetXYZOrigin(pan[0] + deltaX, pan[1] + deltaY, pan[2])
+            self.sliceNode.Modified()
+
+            self.startPosition = currentPosition
+        elif self.adjustingWindowLevel and self.startPosition:
+            currentPosition = self.GetInteractor().GetEventPosition()
+            deltaX = currentPosition[0] - self.startPosition[0]
+            deltaY = self.startPosition[1] - currentPosition[1]
+
+            # Adjust the window level and width based on mouse movement
+            volumeNode = self.sliceLogic.GetBackgroundLayer().GetVolumeNode()
+            displayNode = volumeNode.GetDisplayNode()
+            currentWindowLevel = displayNode.GetLevel()
+            currentWindowWidth = displayNode.GetWindow()
+
+            newWindowLevel = currentWindowLevel + deltaY
+            newWindowWidth = currentWindowWidth + deltaX
+
+            displayNode.SetLevel(newWindowLevel)
+            displayNode.SetWindow(newWindowWidth)
+
+            self.startPosition = currentPosition
+
+        elif self.zooming and self.startPosition:
+            self.zoom()
+            self.startPosition = self.GetInteractor().GetEventPosition()
+
+        self.OnMouseMove()
+        return
+
+    def onRightButtonReleaseEvent(self, obj, event):
+        self.startPosition = None
+        self.panning = False
+        self.OnRightButtonUp()
+        return
+
+    def onLeftButtonPressEvent(self, obj, event):
+        self.startPosition = self.GetInteractor().GetEventPosition()
+        self.adjustingWindowLevel = True
+        self.OnLeftButtonDown()
+        return
+
+    def onLeftButtonReleaseEvent(self, obj, event):
+        self.startPosition = None
+        self.adjustingWindowLevel = False
+        self.OnLeftButtonUp()
+        return
+
+    def onKeyPressEvent(self, obj, event):
+        key = self.GetInteractor().GetKeySym()
+        if key == "x":
+            self.z_pressed = True
+            # print("x key pressed")
+        self.OnKeyPress()
+        return
+
+    def onKeyReleaseEvent(self, obj, event):
+        key = self.GetInteractor().GetKeySym()
+        if key == "x":
+            self.z_pressed = False
+            # print("x key released")
+        self.OnKeyRelease()
+        return
+
+    def onMouseWheelForwardEvent(self, obj, event):
+        if self.z_pressed:
+            # print("Mouse scroll")
+            self.zoom_in()
+            # print("self zoom done")
+        else:
+            # Move to the next slice
+            currentOffset = self.sliceLogic.GetSliceOffset()
+            newOffset = currentOffset + self.getSliceSpacing()  # Move one slice forward
+            self.sliceLogic.SetSliceOffset(newOffset)
+            self.OnMouseWheelForward()
+        return
+
+    def onMouseWheelBackwardEvent(self, obj, event):
+        if self.z_pressed:
+            # print("Mouse scroll")
+            self.zoom_out()
+        else:
+            # Move to the previous slice
+            currentOffset = self.sliceLogic.GetSliceOffset()
+            newOffset = currentOffset - self.getSliceSpacing()  # Move one slice backward
+            self.sliceLogic.SetSliceOffset(newOffset)
+            self.OnMouseWheelBackward()
+        return
+
+    def zoom_in(self):
+        fov = self.sliceNode.GetFieldOfView()
+        self.sliceNode.SetFieldOfView(fov[0] * 0.9, fov[1] * 0.9, fov[2])
+        self.sliceNode.Modified()
+
+    def zoom_out(self):
+        fov = self.sliceNode.GetFieldOfView()
+        self.sliceNode.SetFieldOfView(fov[0] / 0.9, fov[1] / 0.9, fov[2])
+        self.sliceNode.Modified()
+
+    def zoom(self):
+        if self.startPosition:
+            fov = self.sliceNode.GetFieldOfView()
+            currentPos = self.GetInteractor().GetEventPosition()
+            deltaY = self.startPosition[1] - currentPos[1]
+            factor = 1.01 if deltaY > 0 else 0.99
+            zoomSpeed = 10
+            factor = factor ** (abs(deltaY) / zoomSpeed)
+            self.sliceNode.SetFieldOfView(fov[0] * factor, fov[1] * factor, fov[2])
+            self.sliceNode.Modified()
+
+    def getSliceSpacing(self):
+        volumeNode = self.sliceLogic.GetBackgroundLayer().GetVolumeNode()
+        if volumeNode:
+            spacing = volumeNode.GetSpacing()
+            return spacing[2]  # Return the spacing along the Z-axis
+        return 1.0  # Default spacing if volumeNode is not available
+
+# # Get the interactor from the 'Yellow' slice view
+# interactor = slicer.app.layoutManager().sliceWidget('Yellow').sliceView().interactor()
+#
+# # Apply the custom interactor style
+# style = CustomInteractorStyle()
+# interactor.SetInteractorStyle(style)
+
+
 
 
 
