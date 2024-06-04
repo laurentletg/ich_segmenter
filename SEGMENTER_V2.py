@@ -207,6 +207,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # self.ui.SelecOutputFolder('clicked(bool)', self.SelecOutputFolder)
     self.ui.SelectOutputFolder.connect('clicked(bool)', self.onSelectOutputFolder)
     self.ui.createSegmentationButton.connect('clicked(bool)', self.onCreateSegmentationButton)
+    self.ui.toggleSegmentationVersions.connect('clicked(bool)', self.onToggleSegmentationVersions)
 
     #maxime navigation event
     # Track if segmentation is modified
@@ -1906,6 +1907,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Get the segments name
       self.SegmentsNames = self.SegmentationNode.GetSegmentation().GetSegmentIDs()
+
       print("self segment names", self.SegmentsNames)
 
       print("output folder", self.OutputFolder)
@@ -1928,9 +1930,20 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       segmentation = segmentation_node.GetSegmentation()
       segment_ids = vtk.vtkStringArray()
       segmentation.GetSegmentIDs(segment_ids)
+      print("segment IDS plus loins", segment_ids)
 
       for i in range(segment_ids.GetNumberOfValues()):
-          filename = self.remove_file_extension(self.SegmentsNames[i])
+
+          segment_id = segment_ids.GetValue(i)
+          segment = segmentation.GetSegment(segment_id)
+          segment_name = segment.GetName()
+
+          filename = self.remove_file_extension(segment_name)
+
+          # filename = self.remove_file_extension(self.SegmentsNames[i])
+
+
+
           version = self.check_version(filename)
           version = self.increment_latest_version(filename)
           print("Check if folder version exists.", version)
@@ -2410,18 +2423,26 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Get the segmentation node
       segmentation = self.segmentationNode.GetSegmentation()
+      print("create vtk ; print segmentation", segmentation)
 
       # Get the segment IDs
       segmentIDs = vtk.vtkStringArray()
+      print("create vtk segment segmentIDs vtk string array", segmentIDs)
       segmentation.GetSegmentIDs(segmentIDs)
+      print("segment get segment ids after adding segments",
+            segmentation)
 
       # Set the name for each segment
       print("set name len of segment", segmentIDs.GetNumberOfValues())
       segmentID = segmentIDs.GetValue((segmentIDs.GetNumberOfValues()-1))
+      print("segmentID after setted", segmentID)
       segment = segmentation.GetSegment(segmentID)
+      print("semgnet affetr setted", segment)
       segmentName = f"{self.segment_name}"
       print("segmentName", segmentName)# Customize the name as needed
       segment.SetName(segmentName)
+      # segment.SetID(segmentName)
+      print("segmentation after renaming", segmentation)
 
       # slicer.mrmlScene.RemoveNode(labelmap_node)
 
@@ -2697,7 +2718,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           save_files_seg_to_yaml()
 
+  def onToggleSegmentationVersions(self):
+      print("test toggle segmentation")
+
       # maxime
+
 
   def onCreateSegmentationButtonClicked(self):
       print("\n ENTERING onCreateSegmentationButton \n")
