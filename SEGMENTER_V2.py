@@ -344,6 +344,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       shortcut.connect("activated()", lambda: self.toggleKeyboardShortcut(button, callback))
       return shortcut
   
+  def toggleKeyboardShortcut(self, button, callback):
+      button.toggle()
+      callback()
+  
   def setUpperAndLowerBoundHU(self, inputLB_HU, inputUB_HU):
       self.LB_HU = inputLB_HU
       self.UB_HU = inputUB_HU
