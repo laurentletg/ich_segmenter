@@ -18,7 +18,8 @@ from threading import RLock
 VOLUME_FILE_TYPE = '*.nrrd' 
 SEGM_FILE_TYPE = '*.seg.nrrd'
 DEFAULT_VOLUMES_DIRECTORY = '' # adjust to your default volume directory
-CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "label_config.yml")
+LABEL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "label_config.yml")
+KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "keyboard_shortcuts_config.yml")
 
 TIMER_MUTEX = RLock()
 
@@ -194,12 +195,16 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.called = False
     self.called_onLoadPrediction = False
   
-  def get_config_values(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
-        self.config_yaml = yaml.safe_load(file)
+  def get_keyboard_shortcuts_config_values(self):
+      with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
+        self.keyboard_config_yaml = yaml.safe_load(file)
+
+  def get_label_config_values(self):
+      with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+        self.label_config_yaml = yaml.safe_load(file)
         
         print("DEBUG configuration values for labels.")
-        for label in self.config_yaml["labels"]:
+        for label in self.label_config_yaml["labels"]:
             print(20*"-")
             print(label)
         print(20*"-")
@@ -227,10 +232,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
     self.logic = SEGMENTER_V2Logic()
-    self.get_config_values()
+    self.get_label_config_values()
+    self.get_keyboard_shortcuts_config_values()
 
-    self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
-    self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
+    self.LB_HU = self.label_config_yaml["labels"][0]["lower_bound_HU"]
+    self.UB_HU = self.label_config_yaml["labels"][0]["upper_bound_HU"]
     
   
     self.ui.PauseTimerButton.setText('Pause')
@@ -261,7 +267,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
 
-    for label in self.config_yaml["labels"]:
+    for label in self.label_config_yaml["labels"]:
         self.ui.dropDownButton_label_select.addItem(label["name"])
 
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
@@ -299,7 +305,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     self.flag_ICH_in_labels = False
     self.flag_PHE_in_labels = False
-    for label in self.config_yaml["labels"]:
+    for label in self.label_config_yaml["labels"]:
         if "ICH" in label["name"].upper() or "HEMORRHAGE" in label["name"].upper() or "HÉMORRAGIE" in label["name"].upper() or "HEMORRAGIE" in label["name"].upper() or "HAEMORRHAGE" in label["name"].upper():
             self.flag_ICH_in_labels = True 
         if "PHE" in label["name"].upper() or "EDEMA" in label["name"].upper() or "OEDEME" in label["name"].upper() or "OEDÈME" in label["name"].upper():
@@ -308,7 +314,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Initialize timers
     self.timers = []
     timer_index = 0
-    for label in self.config_yaml["labels"]:
+    for label in self.label_config_yaml["labels"]:
         self.timers.append(Timer(number=timer_index))
         timer_index = timer_index + 1
     
@@ -320,7 +326,24 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.SemiAutomaticPHELabel.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
+    
+    for i in self.keyboard_config_yaml["KEYBOARD_SHORTCUTS"]:
 
+        shortcutKey = i.get("shortcut")
+        callback_name = i.get("callback")
+        button_name = i.get("button")
+
+        button = getattr(self.ui, button_name)
+        callback = getattr(self, callback_name)
+
+        self.connectShortcut(shortcutKey, button, callback)
+
+  def connectShortcut(self, shortcutKey, button, callback):
+      shortcut = qt.QShortcut(slicer.util.mainWindow())
+      shortcut.setKey(qt.QKeySequence(shortcutKey))
+      shortcut.connect("activated()", lambda: self.toggleKeyboardShortcut(button, callback))
+      return shortcut
+  
   def setUpperAndLowerBoundHU(self, inputLB_HU, inputUB_HU):
       self.LB_HU = inputLB_HU
       self.UB_HU = inputUB_HU
@@ -402,7 +425,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def loadPatient(self):
       timer_index = 0
       self.timers = []
-      for label in self.config_yaml["labels"]:
+      for label in self.label_config_yaml["labels"]:
           self.timers.append(Timer(number = timer_index))
           timer_index = timer_index + 1
       
@@ -490,12 +513,12 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   # Load all segments at once    
   def createNewSegments(self):
-        for label in self.config_yaml["labels"]:
+        for label in self.label_config_yaml["labels"]:
             self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
         
-        first_label_name = self.config_yaml["labels"][0]["name"]
+        first_label_name = self.label_config_yaml["labels"][0]["name"]
         first_label_segment_name = f"{self.currentCase}_{first_label_name}"
-        self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
+        self.onPushButton_select_label(first_label_segment_name, self.label_config_yaml["labels"][0]["lower_bound_HU"], self.label_config_yaml["labels"][0]["upper_bound_HU"])
 
   def newSegment(self, segment_name=None):
     
@@ -546,7 +569,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       flag_PHE_label_exists = False
       PHE_label = None
       PHE_label_index = 0
-      for label in self.config_yaml["labels"]:
+      for label in self.label_config_yaml["labels"]:
           if label["name"] == "PHE":
               flag_PHE_label_exists = True 
               PHE_label = label
@@ -592,7 +615,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       flag_PHE_label_exists = False
       PHE_label = None
       PHE_label_index = 0
-      for label in self.config_yaml["labels"]:
+      for label in self.label_config_yaml["labels"]:
           if label["name"] == "PHE":
               flag_PHE_label_exists = True 
               PHE_label = label
@@ -805,7 +828,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if self.annotator_name and self.time is not None: 
           # Save time to csv 
           tag_str = "Case number, Annotator Name, Annotator degree, Revision step, Time" 
-          for label in self.config_yaml["labels"]:
+          for label in self.label_config_yaml["labels"]:
                 tag_str = tag_str + ", " + label["name"] + " time"
           if self.flag_ICH_in_labels:
                 tag_str = tag_str + ", ICH type, ICH location, Expansion markers, Other ICH type, Other expansion markers"
@@ -982,7 +1005,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           nn.SetAllSegmentsVisibility(True)
           
           #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
-          for label in self.config_yaml["labels"]:
+          for label in self.label_config_yaml["labels"]:
             self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
       else:
           msg_no_such_case = qt.QMessageBox()
@@ -1004,23 +1027,23 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           slicer.modules.segmenteditor.widgetRepresentation().setParent(slicer.util.mainWindow())
 
   def onPushDefaultMin(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
+      with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
         fresh_config = yaml.safe_load(file)
-        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
-        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+        self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
+        self.setUpperAndLowerBoundHU(self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPushDefaultMax(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
+      with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
         fresh_config = yaml.safe_load(file)
-        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]     
-        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+        self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]     
+        self.setUpperAndLowerBoundHU(self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPushButton_undo(self):
       self.segmentEditorWidget.undo()
 
   def onDropDownButton_label_select(self, value):
       self.current_label_index = value
-      label = self.config_yaml["labels"][value]
+      label = self.label_config_yaml["labels"][value]
       self.setUpperAndLowerBoundHU(label["lower_bound_HU"], label["upper_bound_HU"])
 
       label_name = label["name"]
@@ -1044,7 +1067,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
         self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
-        
 
   def toggleFillButton(self):
       if self.ui.pushButton_ToggleFill.isChecked():
@@ -1112,7 +1134,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.LB_HU=self.ui.LB_HU.value
         self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = self.LB_HU
+        self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = self.LB_HU
       except:
         pass
       
@@ -1121,7 +1143,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.UB_HU=self.ui.UB_HU.value
         self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
+        self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
       except:
         pass
       
