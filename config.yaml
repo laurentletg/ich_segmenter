@@ -10,9 +10,11 @@ folder_organization: "sub-"
    #                    loaded.
 contrast: "T2w"
 
-output_directory: ""
+output_directory: "/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data/site_003"
 
 extension_directory: "/Users/maximebouthillier/gitmax/code/dr_letourneau/ICH_SEGMENTER_V2"
+GTReferences_folder: "/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data/site_003"
+slice_view_color: "Yellow" #can be replaced by Red or Yellow to display startup
 
 
 #to make load yaml file of case to segment!! to do

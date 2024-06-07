@@ -29,6 +29,7 @@ import argparse
 import copy
 import vtk
 from functools import partial
+import random
 # from render_manager import RenderManager
 # from PyQt5.QtWidgets import QApplication, QMainWindow
 
@@ -122,13 +123,34 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.segmentationNode = None
 
     # mb adding for mouse customized at startup
-    # # Get the interactor from the 'Yellow' slice view
-    self.interactor = slicer.app.layoutManager().sliceWidget(
+    # Get the interactor from the 'Yellow' slice view
+    self.interactor1 = slicer.app.layoutManager().sliceWidget(
         'Yellow').sliceView().interactor()
-    #
+    self.interactor2 = slicer.app.layoutManager().sliceWidget(
+        'Red').sliceView().interactor()
+
     # # Apply the custom interactor style
-    self.style = CustomInteractorStyle()
-    self.interactor.SetInteractorStyle(self.style)
+    styleYellow = slicer.app.layoutManager().sliceWidget('Yellow')
+    self.styleYellow = CustomInteractorStyle(sliceWidget=styleYellow)
+    self.interactor1.SetInteractorStyle(self.styleYellow)
+
+    styleRed = slicer.app.layoutManager().sliceWidget('Red')
+    self.styleRed = CustomInteractorStyle(sliceWidget=styleRed)
+    self.interactor2.SetInteractorStyle(self.styleRed)
+
+
+
+    # # mb adding for mouse customized at startup
+    # # Get the interactor from the 'Yellow' slice view
+    # self.interactor = slicer.app.layoutManager().sliceWidget(
+    #     'Yellow').sliceView().interactor()
+    # # self.interactor = slicer.app.layoutManager().sliceWidget(
+    # #     'Red').sliceView().interactor()
+    #
+    # # # Apply the custom interactor style
+    # self.style = CustomInteractorStyle()
+    # self.interactor.SetInteractorStyle(self.style)
+
 
 
 
@@ -174,6 +196,15 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     #maxime
     self.OUTPUT_DIR = self.config_yaml['output_directory']
     self.EXTENSION_DIR = self.config_yaml['extension_directory']
+    self.GT_DIR = self.config_yaml['GTReferences_folder']
+
+    #for ui case list
+    # self.yamlListeOfCasesFlag = False
+    self.yamlListName = []
+    self.yamlListPath = []
+    self.lenDirectoryCases = 0
+    self.countAssess = 1
+
 
 
     self.VOLUME_FILE_TYPE = self.config_yaml['volume_extension']
@@ -188,8 +219,13 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.CONTRAST = self.config_yaml['contrast']
     self.FOLDER_FORMAT = self.config_yaml['folder_organization']
     # slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutSideBySideView)
-    slicer.app.layoutManager().setLayout(
-        slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
+    # Displays the selected color view at module startup
+    if self.config_yaml['slice_view_color'] == "Yellow":
+        slicer.app.layoutManager().setLayout(
+            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
+    if self.config_yaml['slice_view_color'] == "Red":
+        slicer.app.layoutManager().setLayout(
+            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)
     self.file_extension = self.config_yaml['volume_extension']
 
     # self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
@@ -208,6 +244,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.SelectOutputFolder.connect('clicked(bool)', self.onSelectOutputFolder)
     self.ui.createSegmentationButton.connect('clicked(bool)', self.onCreateSegmentationButton)
     self.ui.toggleSegmentationVersions.connect('clicked(bool)', self.onToggleSegmentationVersions)
+    self.ui.assessSegmentationButton.connect('clicked(bool)', self.onAssessSegmentationButton)
+    self.ui.getResultButton.connect('clicked(bool)', self.onGetResult)
+    self.ui.selectGTReferences.connect('clicked(bool)', self.selectGTReferences)
 
     #maxime navigation event
     # Track if segmentation is modified
@@ -216,6 +255,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.observer_tags = {}
     # self.get_current_segment_id()
     self.loadMask = False
+    self.itemClicked = False
+    self.toggleSegmentation = False
 
     # Connect segmentation modified event
     # self.observeSegmentationNode()
@@ -700,6 +741,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.FOLDER_FORMAT}*{os.sep}*{self.CONTRAST}{self.VOLUME_FILE_TYPE}'))
       #this line below works well for bids dataset
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.FOLDER_FORMAT}*{os.sep}anat{os.sep}*{self.CONTRAST}{self.VOLUME_FILE_TYPE}'))
+      self.lenDirectoryCases = len(self.CasesPaths)
+
       #trying with bids only t1raw
       ###HERE
       # self.CasesPaths = glob(f'{self.CurrentFolder}{os.sep}')
@@ -754,7 +797,48 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # print("current folder printed", self.CurrentFolder)
       # print("Cases Paths printed", self.CasesPaths)
       # print("Volume file type", self.VOLUME_FILE_TYPE)
-      # print("self yaml volume load ", self.config_yaml['regex_format_volume_load'])
+      # print("self yaml volume load ", self.config_yaml[
+      # 'regex_format_volume_load'])
+
+  def update_UI_from_other_case_list(self):
+      print(" ENTERING UPDATE_from_other_case_list \n")
+      self.ui.SlicerDirectoryListView.clear()
+      self.ui.SlicerDirectoryListView.addItems(self.yamlListName)
+      # print(" in if yamlListofCaseflas", self.yamlListPath)
+      # print("self.yamListof cases", self.yamlListName)
+      print("len selfyamlListName", len(self.yamlListName))
+      print("len selfyamlListPath", len(self.yamlListPath))
+      print("index self currentCase", self.currentCase_index)
+      # self.CasesPaths = self.yamlListPath
+      # self.Cases = self.yamlListName
+      #
+      # print("self cases paths in update ui diff", self.CasesPaths)
+      # print("self cases in yamlListName", self.Cases)
+
+      self.currentCase = self.yamlListName[self.currentCase_index]
+      self.currentCasePath = self.yamlListPath[self.currentCase_index]
+
+  def check_different_list(self):
+      print(" ENTERING check_other_list \n")
+      if (self.yamlListPath != []) and (self.yamlListName != []):
+          print(" IN update_UI_case_list ABOUT TO GO IN SELF YAMLLIST",
+                self.yamlListPath)
+          print(" in if yamlListName", self.yamlListName)
+          self.CasesPaths = self.yamlListPath
+          self.Cases = self.yamlListName
+
+          print("self cases paths in update ui diff", self.CasesPaths)
+          print("self cases in yamlListName", self.Cases)
+          return True
+      return False
+
+  def set_appropriate_index(self):
+      print(" ENTERING set_appropriate_index \n")
+      if self.check_different_list():
+          print(" self check different list in set approiate index")
+          pass
+
+  # def get_current
 
 
   def update_UI_case_list(self):
@@ -762,7 +846,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # print("update_UI_case_list self.Cases", self.Cases)
       self.ui.SlicerDirectoryListView.clear()
       # Populate the SlicerDirectoryListView
-      self.ui.SlicerDirectoryListView.addItems(self.Cases)
+      if self.check_different_list():
+          self.update_UI_from_other_case_list()
+      else :
+          self.ui.SlicerDirectoryListView.addItems(self.Cases)
       self.currentCase_index = 0  # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
       self.updateCaseAll()
       self.loadPatient()
@@ -770,12 +857,24 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def updateCaseAll(self):
       print("\n ENTERING UPDATECASEALL \n")
       # All below is dependent on self.currentCase_index updates,
-      self.currentCase = self.Cases[self.currentCase_index]
-      self.currentCasePath = self.CasesPaths[self.currentCase_index]
+      if self.check_different_list():
+          self.update_UI_from_other_case_list()
+      else :
+          self.currentCase = self.Cases[self.currentCase_index]
+          self.currentCasePath = self.CasesPaths[self.currentCase_index]
       self.updateCurrentPatient()
       # Highlight the current case in the list view (when pressing on next o)
       self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
-      
+
+  def get_index_difference(self):
+      len_directoryCases = self.lenDirectoryCases
+      print("len directoryCases", len_directoryCases)
+      len_yamlCases = len(self.yamlListName)
+      print(" len yamlCases", len_yamlCases)
+      difference = int(len_directoryCases - len_yamlCases)
+      print("difference", difference)
+      return difference
+
   def getCurrentTableItem(self):
       print("\n ENTERING UPDATE_UI_CASE_LIST \n")
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
@@ -783,15 +882,52 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # self.uncheckAllBoxes()
       self.clearTexts()
 
+      print("self ui slicerdirectory lsit view,", self.ui.SlicerDirectoryListView.currentRow)
+
       # When an item in SlicerDirectroyListView is selected the case number is printed
       # below we update the case index and we need to pass one parameter to the methods since it takes 2 (1 in addition to self)
-      self.updateCaseIndex(self.ui.SlicerDirectoryListView.currentRow) # Index starts at 0
+      # self.updateCaseIndex(
+      #     self.ui.SlicerDirectoryListView.currentRow)  # Index starts at 0
       # Update the case index
-      self.currentCase_index = self.ui.SlicerDirectoryListView.currentRow
+      # print(" self cirrentCase", self.currentCase)
+      # self.currentCase_index = self.yamlListName.index(self.currentCase)
       # Same code in onBrowseFoldersButton, need to update self.currentCase
       # note that updateCaseAll() not implemented here - it is called when a case is selected from the list view or next/previous button is clicked
-      self.currentCase = self.Cases[self.currentCase_index]
-      self.currentCasePath = self.CasesPaths[self.currentCase_index]
+      # All below is dependent on self.currentCase_index updates,
+      if self.check_different_list():
+          self.currentCase_index = self.ui.SlicerDirectoryListView.currentRow
+          self.update_UI_from_other_case_list()
+      else:
+          print("entering else getcurrenttableidem")
+          self.updateCaseIndex(
+              self.ui.SlicerDirectoryListView.currentRow)  # Index starts at 0
+          # Update the case index
+          self.currentCase_index = self.ui.SlicerDirectoryListView.currentRow
+          self.currentCase = self.Cases[self.currentCase_index]
+          self.currentCasePath = self.CasesPaths[self.currentCase_index]
+          print("entering else getcurrenttableidem self currentCase_index", self.currentCase_index)
+          print("entering else getcurrenttableidem self currentCase",
+                self.currentCase)
+          print("entering else getcurrenttableidem self currentCasePath ",
+                self.currentCasePath)
+
+
+      # # When an item in SlicerDirectroyListView is selected the case number is printed
+      # # below we update the case index and we need to pass one parameter to the methods since it takes 2 (1 in addition to self)
+      # self.updateCaseIndex(self.ui.SlicerDirectoryListView.currentRow) # Index starts at 0
+      # # Update the case index
+      # self.currentCase_index = self.ui.SlicerDirectoryListView.currentRow
+      # # Same code in onBrowseFoldersButton, need to update self.currentCase
+      # # note that updateCaseAll() not implemented here - it is called when a case is selected from the list view or next/previous button is clicked
+      # # All below is dependent on self.currentCase_index updates,
+      # if self.check_different_list():
+      #     self.update_UI_from_other_case_list()
+      # else :
+      #     self.currentCase = self.Cases[self.currentCase_index]
+      #     self.currentCasePath = self.CasesPaths[self.currentCase_index]
+
+      # self.currentCase = self.Cases[self.currentCase_index]
+      # self.currentCasePath = self.CasesPaths[self.currentCase_index]
       self.updateCurrentPatient()
       self.loadPatient()
       
@@ -2354,11 +2490,32 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print("filename=", filename)
       return filename
 
+  def remove_version_extension(self, filename):
+      print(" ENTERING remove version extension")
+      filename = filename[:-4]
+      return filename
+
+  def remove_label_extension(self, filename, list_of_labels):
+      print(" ENTERING remove label extension")
+      for i in range(len(list_of_labels)):
+          if list_of_labels[i] in filename:
+              return filename.replace(list_of_labels[i], "")
+
+
+
   def check_version_folder(self):
       if os.path.exists(f'{self.OutputFolder}{os.sep}versions'):
           print("folder version exists")
           return True
       else :
+          print("folder version does not exist")
+          return False
+
+  def check_ref_folder(self):
+      if os.path.exists(f"{self.GTFolder}"):
+          print("folder version exists")
+          return True
+      else:
           print("folder version does not exist")
           return False
 
@@ -2368,6 +2525,15 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if folder_version:
           print("\n ttttt NEEDS SCAN FOR VERSION \n")
           version = self.get_latest_version(filename)
+
+      return version
+
+  def check_version_ref(self, filename):
+      folder_ref = self.check_ref_folder()
+      version = "_v01"
+      if folder_ref:
+          print("\n ttttt NEEDS SCAN FOR VERSION \n")
+          version = self.get_latest_version_ref(filename)
 
       return version
 
@@ -2490,6 +2656,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 
+
   # def get_latest_version(self, filename):
   #     elements = os.listdir(f'{self.OutputFolder}{os.sep}versions')
   #     list_version = []
@@ -2511,24 +2678,234 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #         return f"_v{(max_version + 1):02d}"
   #
 
+  # Get list_of_versions
+  def get_list_of_versions(self, filename):
+      list_version = []
+      if os.path.exists(f'{self.OutputFolder}{os.sep}versions'):
+          elements = os.listdir(f'{self.OutputFolder}{os.sep}versions')
+          for element in elements:
+              element = element[:-len(self.config_yaml["volume_extension"])]
+              print(" filename in get_list_of_version", filename)
+              print(" get list of version element", element)
+              if filename in element:
+                  list_version.append(int(element[-2:]))
+
+      print(" ttttt list version", list_version)
+      return list_version
+
+  def get_list_of_versions_ref(self, filename):
+      list_version = []
+      if os.path.exists(f'{self.GTFolder}'):
+          elements = os.listdir(f'{self.GTFolder}')
+          for element in elements:
+              element = element[:-len(self.config_yaml["volume_extension"])]
+              print(" filename in get_list_of_version", filename)
+              print(" get list of version element", element)
+              if filename in element:
+                  list_version.append(int(element[-2:]))
+
+      print(" ttttt list version", list_version)
+      return list_version
+
+
+
+  # def get_all_files(self):
+  #     print(" ENTERING et_all_files")
+  #     # all_files = sorted(glob(f'{self.OutputFolder}{os.sep}versions{os.sep}'))
+  #     versions_folder = os.path.join(self.OutputFolder, 'versions')
+  #     pattern = os.path.join(versions_folder,'*')  # Adjust pattern to match files
+  #     all_files = sorted(glob(pattern))
+  #     print("all_file", all_files)
+  #     print("len all file", len(all_files))
+  #     return all_files
+
+  def get_all_labels(self):
+      print("Entering get_all_labels")
+      list_of_labels = []
+
+      for i in range(len(self.config_yaml["labels"])):
+          print(self.config_yaml["labels"][i]["name"])
+          list_of_labels.append(self.config_yaml["labels"][i]["name"])
+          # print("type", type(self.config_yaml["labels"][i]))
+      return list_of_labels
+
+
+
+
+
+
+  def get_all_files_versions(self, max_version=None):
+      print(" ENTERING et_all_files")
+      versions_folder = os.path.join(self.OutputFolder, 'versions')
+      pattern = os.path.join(versions_folder,'*')  # Adjust pattern to match files
+      # all_files = sorted(glob(pattern))
+      all_files = glob(pattern)
+      print("all_file", all_files)
+      print("len all file", len(all_files))
+      print("max version", max_version)
+      print("self config yamel labels", self.config_yaml["labels"])
+      print("type self config", type(self.config_yaml["labels"]))
+
+      list_of_labels = self.get_all_labels()
+
+      # for i in range(len(self.config_yaml["labels"])):
+      #     print(self.config_yaml["labels"][i]["name"])
+      #     list_of_labels.append(self.config_yaml["labels"][i]["name"])
+      #     # print("type", type(self.config_yaml["labels"][i]))
+
+      print("list of labels", list_of_labels)
+      print("all files", all_files)
+
+      # Sort the all files list so that the list returned has the element in
+      # the same order as compared to the label list (order) from the config
+      # file
+
+      all_files_label_sorted = []
+      for label in list_of_labels:
+          for version in range(max_version):
+              for element in all_files:
+                  if (label in element) and (
+                          f"_v{(version + 1):02d}" in element):
+                      # print(element)
+                      all_files_label_sorted.append(element)
+
+      print("all files label sorted", all_files_label_sorted)
+
+      print("self config yaml", self.config_yaml["labels"])
+
+      versions_dict = {}
+      for i in range(max_version):
+          list_of_files = []
+          for element in all_files_label_sorted:
+              if f"_v{(i + 1):02d}" in element:
+                  print("all file[i] found", all_files_label_sorted[i])
+                  list_of_files.append(element)
+                  versions_dict[f"_v{(i + 1):02d}"] = list_of_files
+
+              # versions_dict[f"_v{(i + 1):02d}"] = list_of_files.append(all_files[i])
+
+      print("versions_dict", versions_dict)
+
+
+      return versions_dict
+
+  # Load versions
+  def load_version(self, versions_dict, name_of_items):
+      print(" ENTERING load_version")
+      list_version_to_load = versions_dict[f"_{name_of_items}"]
+      print("versions_dict item", list_version_to_load)
+      print("load version", name_of_items) #ex v01 (what appears on the button)
+      list_of_labels = self.get_all_labels()
+      for segment_version_path in list_version_to_load:
+          print("segment_version", segment_version_path)
+          labelmap_node = slicer.util.loadLabelVolume(segment_version_path)
+          print("create_vtk_segment labelmap node 1", labelmap_node)
+          print("create_vtk_segment labelmap node type", type(labelmap_node))
+          slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(
+              labelmap_node, self.segmentationNode)
+          print("verify importation segment to segmentation node")
+
+          # Get the segmentation node
+          segmentation = self.segmentationNode.GetSegmentation()
+          print("create vtk ; print segmentation", segmentation)
+
+          # Get the segment IDs
+          segmentIDs = vtk.vtkStringArray()
+          print("create vtk segment segmentIDs vtk string array", segmentIDs)
+          segmentation.GetSegmentIDs(segmentIDs)
+          print("segment get segment ids after adding segments",
+                segmentation)
+
+          # Set the name for each segment
+          print("set name len of segment", segmentIDs.GetNumberOfValues())
+          segmentID = segmentIDs.GetValue((segmentIDs.GetNumberOfValues() - 1))
+          print("segmentID after setted", segmentID)
+          segment = segmentation.GetSegment(segmentID)
+          print("semgnet affetr setted", segment)
+          for i in range(len(list_of_labels)):
+              if list_of_labels[i] in segment_version_path:
+                  label = list_of_labels[i]
+                  break
+              else :
+                  label=None
+          # i = list_version_to_load.index(segment_version_path)
+          segmentName = f"{name_of_items}_{label}"
+          print("segmentName", segmentName)  # Customize the name as needed
+          segment.SetName(segmentName)
+          # segment.SetID(segmentName)
+          print("segmentation after renaming", segmentation)
+
+      self.segmentationNode.Modified()
+      self.subjectHierarchy()
+      self.clean_hierarchy_folder()
+
+  def unload_version(self, versions_dict, name_of_items):
+      print(" ENTERING unload_version")
+      list_version_to_unload = versions_dict[f"_{name_of_items}"]
+      print("versions_dict item", list_version_to_unload)
+      list_of_labels = self.get_all_labels()
+
+      # Get the segmentation node
+      segmentation = self.segmentationNode.GetSegmentation()
+
+      # Get the segment IDs
+      segmentIDs = vtk.vtkStringArray()
+      segmentation.GetSegmentIDs(segmentIDs)
+      print("segmentation get segmentIDS", segmentIDs)
+
+      number_of_values = segmentIDs.GetNumberOfValues()
+      # Iterate through all segments and print their names
+      for i in range(number_of_values):
+          segmentID = segmentIDs.GetValue(i)
+          segment = segmentation.GetSegment(segmentID)
+          segmentName = segment.GetName()
+          print(f"Segment ID: {segmentID}, Segment Name: {segmentName}")
+          for label in list_of_labels:
+              if f"{name_of_items}_{label}" == segmentName:
+                  segmentation.RemoveSegment(segmentID)
+
+      self.segmentationNode.Modified()
+      self.subjectHierarchy()
+      self.clean_hierarchy_folder()
+
+  # Set a color to the segments to a specific corresponding version, inspired
+  # from the previous one
+  def set_color_version(self):
+      pass
+
+  #Return an integer
+  def get_latest_version_ref(self, filename):
+      version = 0
+      list_version = self.get_list_of_versions_ref(filename)
+      if list_version == []:
+          return version
+      else:
+          max_version = max(list_version)
+          max_version = min(max_version,
+                            98)  # to prevent exceeding 99 versions.
+          print("max list_version before increment", max_version)
+          return max_version
+
+
   #Return an integer
   def get_latest_version(self, filename):
 
       #could implement the paragraph below in new function to get all
       # versions of a specific file
 
-      list_version = []
+      # list_version = []
       version = 0
-      if os.path.exists(f'{self.OutputFolder}{os.sep}versions'):
-        elements = os.listdir(f'{self.OutputFolder}{os.sep}versions')
-        for element in elements:
-          element = element[:-len(self.config_yaml["volume_extension"])]
-          print(" filename in get_latest_version", filename)
-          print(" get latest version element", element)
-          if filename in element:
-              list_version.append(int(element[-2:]))
-
-      print(" ttttt list version", list_version)
+      list_version = self.get_list_of_versions(filename)
+      # if os.path.exists(f'{self.OutputFolder}{os.sep}versions'):
+      #   elements = os.listdir(f'{self.OutputFolder}{os.sep}versions')
+      #   for element in elements:
+      #     element = element[:-len(self.config_yaml["volume_extension"])]
+      #     print(" filename in get_latest_version", filename)
+      #     print(" get latest version element", element)
+      #     if filename in element:
+      #         list_version.append(int(element[-2:]))
+      #
+      # print(" ttttt list version", list_version)
 
       #for list of all verison of a file = return list_version
 
@@ -2640,10 +3017,28 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   print("'FILES_SEG' key not found in the YAML file.")
                   return None
 
+          def extract_elements_from_yaml(checkingRemainingCases):
+              # Load the YAML file
+              with open(checkingRemainingCases, 'r') as file:
+                  yaml_data = yaml.safe_load(file)
+
+              # Check if 'FILES_SEG' key exists in the YAML data
+              if 'FILES_SEG' in yaml_data:
+                  # Return the first element of the 'FILES_SEG' list
+                  return yaml_data['FILES_SEG']
+              else:
+                  # Handle the case where 'FILES_SEG' key is not found
+                  print("'FILES_SEG' key not2 found in the YAML file.")
+                  return None
+
           first_element = extract_first_list_element_from_yaml(checkingRemainingCases)
           print("First element in the 'FILES_SEG' list:", first_element)
           print("       ********* EXTRACTED!!! ")
           print("self case path", self.CasesPaths)
+
+          yamlListeOfCases = extract_elements_from_yaml(checkingRemainingCases)
+          self.yamlListName = yamlListeOfCases
+          print("self yamllistofcase", self.yamlListName)
 
           # Find the path of the case to be loaded.
           search_directory = self.CurrentFolder
@@ -2655,7 +3050,30 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           PathToLoad = find_file_by_name(search_directory, first_element)
 
-          for i in range(len(self.CasesPaths)):
+          # Find the path of the files to be in the case list
+          def find_files(filenames, root_dir):
+              file_paths = []
+              for dirpath, _, files in os.walk(root_dir):
+                  for file in files:
+                      if file in filenames:
+                          file_paths.append(os.path.join(dirpath, file))
+              return file_paths
+
+          # # Example usage:
+          # filenames = yamlListName
+          # print("root_dir", self.CurrentFolder)
+          # root_dir = self.CurrentFolder
+
+          yamlListPath = sorted(find_files(yamlListeOfCases,
+                                           self.CurrentFolder))
+          print("yamlListPath", yamlListPath)
+
+          self.yamlListPath = yamlListPath
+          print("len self yaml path", len(self.yamlListPath))
+          print("self yaml list of Cases", self.yamlListPath)
+
+          for i in range(len(self.Cases)): #tried with self.yaml and works
+              # too = might create some bugs eventually
               print(" self case path i ", self.CasesPaths[i])
               print(" first element", PathToLoad)
 
@@ -2669,6 +3087,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                       print("current case is less than i", i)
                       self.onNextButton()
                   break
+
+          self.update_UI_case_list()
 
       else:
           print(f"The path '{checkingRemainingCases}' does not exist.")
@@ -2718,11 +3138,262 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           save_files_seg_to_yaml()
 
+  def selectGTReferences(self):
+      print(" ENTERING selectGTReferences")
+      self.GTFolder = qt.QFileDialog.getExistingDirectory(None,
+                                                              "Open a folder",
+                                                              self.GT_DIR)
+      # print("self.GTFolder", self.GT_DIR)
+      # print("self.GTFolder", self.GTFolder)
+
+
   def onToggleSegmentationVersions(self):
       print("test toggle segmentation")
+      # self.toggleSegmentation = not self.toggleSegmentation
+      print("sefl toggle Segmentation", self.toggleSegmentation)
+      # if self.toggleSegmentation:
+      self.open_selection_box()
+
+  def open_selection_box(self):
+      # Initialize clickedItems
+      self.clickedItems = set()
+
+      # Create the custom widget
+      widget = qt.QWidget()
+      widget.setWindowTitle(f"{self.currentCase}")
+      widget.setLayout(qt.QVBoxLayout())
+
+      # Set the minimum size for the widget
+      widget.setMinimumSize(300, 200)  # Width: 300, Height: 200
+
+      # Set the widget to stay on top
+      widget.setWindowFlags(widget.windowFlags() | qt.Qt.WindowStaysOnTopHint)
+
+      item_layout = qt.QGridLayout()
+      widget.layout().addLayout(item_layout)
+
+      # Add items to the selection box
+      name = self.Cases[self.currentCase_index]
+      filename = self.remove_file_extension(name)
+      items = set(sorted(self.get_list_of_versions(filename)))
+      print("items", items)
+      name_of_items = []
+      for i in range(len(items)):
+          name_of_items.append(f"v{i+1:02d}")
+      print("name of items", name_of_items)
+      max_version = max(items, default=0) #avoid error if the case has no
+      # previous segmentation
+      num_columns = 1
+      versions_dict = self.get_all_files_versions(max_version)
+      print("version_dict", versions_dict)
+
+      # Store button widgets in a dictionary
+      self.buttons = {}
+
+      def item_clicked(name_of_items):
+          print(f"Item '{name_of_items}' clicked")
+          button = self.buttons[name_of_items]
+          if name_of_items not in self.clickedItems:
+              print(f"New item '{name_of_items}' has not been clicked before.")
+              self.itemClicked = True  # Mark this item as clicked
+              self.load_version(versions_dict, name_of_items)
+              button.setStyleSheet(
+                  "background-color: green")  # Set button color to green
+              self.clickedItems.add(name_of_items)  # Add to clicked items set
+          else:
+              print(f"Item '{name_of_items}' has already been clicked before.")
+              self.itemClicked = False  # Unmark this item as clicked
+              self.unload_version(versions_dict, name_of_items)
+              button.setStyleSheet("")  # Revert button color to default
+              self.clickedItems.remove(
+                  name_of_items)  # Remove from clicked items set
+
+      for i, item in enumerate(name_of_items):
+          row = i // num_columns
+          col = i % num_columns
+          button = qt.QPushButton(item)
+          button.clicked.connect(lambda _, name=item: item_clicked(
+              name))  # Use lambda with default argument
+          item_layout.addWidget(button, row, col)
+          self.buttons[item] = button
+
+          # def item_clicked(name_of_items):
+      #     print(f"Item '{name_of_items}' clicked")
+      #     if name_of_items not in self.clickedItems:
+      #         print(f"New item '{name_of_items}' has not been clicked before.")
+      #         self.itemClicked = True  # Mark this item as clicked
+      #         self.load_version(versions_dict, name_of_items)
+      #         self.clickedItems.add(name_of_items)  # Add to clicked items set
+      #     else:
+      #         print(f"Item '{name_of_items}' has already been clicked before.")
+      #         self.itemClicked = False  # Unmark this item as clicked
+      #         self.unload_version(versions_dict, name_of_items)
+      #         self.clickedItems.remove(
+      #             name_of_items)  # Remove from clicked items set
+      #
+      # for i, item in enumerate(name_of_items):
+      #     row = i // num_columns
+      #     col = i % num_columns
+      #     button = qt.QPushButton(item)
+      #     button.clicked.connect(lambda _, name=item: item_clicked(
+      #         name))  # Connect the clicked signal
+      #     item_layout.addWidget(button, row, col)
+
+      # Add OK and Cancel buttons
+      button_box = qt.QDialogButtonBox(
+          qt.QDialogButtonBox.Ok | qt.QDialogButtonBox.Cancel)
+      button_box.accepted.connect(widget.close)
+      button_box.rejected.connect(widget.close)
+      widget.layout().addWidget(button_box)
+
+      # Show the widget non-modally
+      widget.show()
 
       # maxime
 
+  def onAssessSegmentationButton(self):
+      print("assess segmentation started! ")
+
+      #set a counter for the number of iteration (pressed self asssment
+      # self.count = 0
+
+      # Get the list of the Ground Truth References segmentations
+      ground_truth_list = [f for f in os.listdir(self.GTFolder) if
+                                   os.path.isfile(os.path.join(self.GTFolder, f)) and
+                                   not f.startswith('.') and not f.endswith(
+                                       '.cache')]
+
+      # Select a Random Case To Assess and Display it in the SliceViewer
+      # ground_truth_list = os.listdir(self.GTFolder)
+      random_item_filepath = random.choice(ground_truth_list)
+      print("random item", random_item_filepath)
+      filename = self.remove_file_extension(random_item_filepath)
+      print("filename", filename)
+      version_ref = self.check_version_ref(filename)
+      print("version_ref", version_ref)
+
+      list_of_labels = self.get_all_labels()
+      print("list_of_labels", list_of_labels)
+      filename_final = self.remove_version_extension(filename)
+      filename_final = self.remove_label_extension(filename_final,list_of_labels)
+      filename_final = filename_final[:-1]
+      print("filename final", filename_final)
+
+      # Get the Volume associated to the random_item_filepath
+      volumePath = (f"{self.GTFolder}{os.sep}volumes{os.sep}{filename_final}{self.file_extension}")
+      print("volumePath", volumePath)
+      slicer.util.loadVolume(volumePath)
+
+      # volume_node = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')
+      # new_name = "NewVolumeName"
+      # volume_node.SetName(new_name)
+
+      # Get the current scalar volume node
+      # Get the scalar volume node by its current name
+
+      # Replace 'vtkMRMLScalarVolumeNode2' with the actual ID of your scalar volume node
+      nodeID1 = 'vtkMRMLScalarVolumeNode1'
+      volumeNodeMain = slicer.mrmlScene.GetNodeByID(nodeID1)
+
+      count = self.countAssess+1
+
+      nodeID2 = f'vtkMRMLScalarVolumeNode{count}'
+      volumeNodeTest = slicer.mrmlScene.GetNodeByID(nodeID2)
+      print("got node ID1 et nodeID2")
+      print("get name node ID1", volumeNodeMain.GetName())
+      print("get name node ID2", volumeNodeTest.GetName())
+      print("finalename final  ebfore", filename_final)
+
+      def setAssessName():
+          if self.countAssess == 1:
+            volumeNodeTest.SetName('NewVolumeName')
+            return 'NewVolumeName'
+          else :
+            volumeNodeTest.SetName(f'NewVolumeName_{self.countAssess}')
+            return f'NewVolumeName_{self.countAssess}'
+
+      if volumeNodeMain.GetName() in volumeNodeTest.GetName():
+          newName = setAssessName()
+      # if filename_final in volumeNodeMain.GetName():
+          print("*****test == worked!")
+          # Set the new name of the volume node
+          slicer.app.processEvents()  # Update the GUI
+          print("name changed")
+      else :
+          newName = setAssessName()
+          slicer.app.processEvents()  # Update the GUI
+          print("name changed2")
+
+      #Increment the number of iteration to find easily the appropriate node
+      # after
+      self.countAssess+=1
+
+
+      print("rady to test manual segmentation!")
+      print("filename_final", filename_final)
+      #get latest version
+      latest_ref_version = self.get_latest_version_ref(filename_final)
+      print("latest_ref_version", latest_ref_version)
+
+      print("ground truth list", ground_truth_list)
+
+
+      # Remove the name of the case (and the name of its segment)
+
+      # Open the SegmentEditor and create new Segments
+
+
+      ###chat gpt
+      print('chatgpot seg')
+      # Step 1: Create a New Segmentation Node
+      volumeNodeName = newName # Replace with your volume node name
+      volumeNode = slicer.util.getNode(volumeNodeName)
+
+      segmentationNode = slicer.mrmlScene.AddNewNodeByClass(
+          'vtkMRMLSegmentationNode')
+      curSegName = segmentationNode.SetName(volumeNode.GetName() +
+                                          '_Segmentation')
+      segmentation = segmentationNode.GetSegmentation()
+      print(" segmentation", segmentation)
+      #Create new segments and attribute them in the segmentaitron node
+      for i in range(len(list_of_labels)):
+          segmentation.AddEmptySegment()
+          segmentID = segmentation.GetNthSegmentID(i)
+          segment = segmentation.GetSegment(segmentID)
+          segment.SetName(f"{newName}_{list_of_labels[i]}{self.file_extension}")
+
+      print(f"Created new segmentation node: {segmentationNode.GetName()}")
+
+      ###HERE 20240606
+      # Create a new segment editor node
+      segmentEditorNode = slicer.mrmlScene.AddNewNodeByClass(
+          "vtkMRMLSegmentEditorNode")
+      segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
+      # Set the segment editor node in the widget
+      segmentEditorWidget.setMRMLSegmentEditorNode(segmentEditorNode)
+      # Now set the segmentation node
+      segmentEditorWidget.setSegmentationNode(segmentationNode)
+      # Finally, set the source volume node
+      segmentEditorWidget.setSourceVolumeNode(volumeNode)
+
+      # segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
+      # segmentEditorWidget.setSegmentationNode(segmentationNode)
+      # segmentEditorWidget.setMRMLScene(slicer.mrmlScene)
+      # segmentEditorWidget.setSourceVolumeNode(volumeNode)
+      self.onPushButton_segmeditor()
+
+      # At each slice that is modified, a dice score is printed when leaving
+      # the slice
+
+  def onGetResult(self):
+      print(" ENTERING onGetResult")
+
+      # Calculate the overall Dice Score between the reference segmentation
+      # and the new one (saved in assessment folder)
+
+      # If Dice Score > threshold, then print/ dialog box! You passed
+      # If Dice Score < threshold, then print dialog box! Your Dice Score.
+      # Please retry and load a new volume to be assessed
 
   def onCreateSegmentationButtonClicked(self):
       print("\n ENTERING onCreateSegmentationButton \n")
@@ -3476,7 +4147,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       df['Category'] = df['Segment'].str.extract("_([A-Z]+)$")
       df.to_csv(outputFilename, index=False)
 
-
 class MySlicerModule(ScriptedLoadableModule):
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
@@ -3545,12 +4215,16 @@ class MySlicerModule(ScriptedLoadableModule):
 #     def is_rendering_paused(self):
 #         return self._pause_count > 0
 
+
+
+
 ### maxime addings : mouse customs
 # import vtk
 # import slicer
+import vtk
 
 class CustomInteractorStyle(vtk.vtkInteractorStyleImage):
-    def __init__(self):
+    def __init__(self, sliceWidget=None):
         self.AddObserver("RightButtonPressEvent", self.onRightButtonPressEvent)
         self.AddObserver("MouseMoveEvent", self.onMouseMoveEvent)
         self.AddObserver("RightButtonReleaseEvent", self.onRightButtonReleaseEvent)
@@ -3561,7 +4235,10 @@ class CustomInteractorStyle(vtk.vtkInteractorStyleImage):
         self.AddObserver("KeyPressEvent", self.onKeyPressEvent)
         self.AddObserver("KeyReleaseEvent", self.onKeyReleaseEvent)
         self.startPosition = None
-        self.sliceWidget = slicer.app.layoutManager().sliceWidget('Yellow')
+        self.sliceWidget = sliceWidget
+        # self.sliceWidget = slicer.app.layoutManager().sliceWidget('Red')
+        # self.sliceWidget = slicer.app.layoutManager().sliceWidget('Yellow')
+        # self.sliceWidget = slicer.app.layoutManager().sliceWidget('Red')
         self.sliceNode = self.sliceWidget.mrmlSliceNode()
         self.sliceLogic = slicer.app.applicationLogic().GetSliceLogic(self.sliceNode)
         self.panning = False
