@@ -204,6 +204,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.yamlListPath = []
     self.lenDirectoryCases = 0
     self.countAssess = 1
+    self.indexYaml = -1
 
 
 
@@ -743,6 +744,16 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.FOLDER_FORMAT}*{os.sep}anat{os.sep}*{self.CONTRAST}{self.VOLUME_FILE_TYPE}'))
       self.lenDirectoryCases = len(self.CasesPaths)
 
+      #mb added for efficiency
+      self.allCasesPath = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.FOLDER_FORMAT}*{os.sep}anat{os.sep}*{self.CONTRAST}{self.VOLUME_FILE_TYPE}'))
+      self.allCases = []
+      for i in range(len(self.allCasesPath)):
+          self.allCases.append(os.path.split(self.allCasesPath[i])[1])
+
+      print("self all cases", self.allCases)
+
+
+
       #trying with bids only t1raw
       ###HERE
       # self.CasesPaths = glob(f'{self.CurrentFolder}{os.sep}')
@@ -803,7 +814,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def update_UI_from_other_case_list(self):
       print(" ENTERING UPDATE_from_other_case_list \n")
       self.ui.SlicerDirectoryListView.clear()
-      self.ui.SlicerDirectoryListView.addItems(self.yamlListName)
+      self.ui.SlicerDirectoryListView.addItems(self.allCases)
       # print(" in if yamlListofCaseflas", self.yamlListPath)
       # print("self.yamListof cases", self.yamlListName)
       print("len selfyamlListName", len(self.yamlListName))
@@ -815,8 +826,39 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # print("self cases paths in update ui diff", self.CasesPaths)
       # print("self cases in yamlListName", self.Cases)
 
-      self.currentCase = self.yamlListName[self.currentCase_index]
-      self.currentCasePath = self.yamlListPath[self.currentCase_index]
+      # self.currentCase = self.yamlListName[self.currentCase_index]
+      # self.currentCasePath = self.yamlListPath[self.currentCase_index]
+
+      # #curentCase index corresponds to which index in self.allCases
+      # right_element = self.allCases[self.currentCase_index]
+      # right_index = self.currentCase_index - self.get_index_difference()
+      # print("right index", right_index)
+      #
+      # if right_index >= 0:
+      #     self.currentCase = self.yamlListName[right_index]
+      #     self.currentCasePath = self.yamlListPath[right_index]
+      # else :
+      #     self.currentCase = self.allCases[self.currentCase_index]
+      #     self.currentCasePath = self.allCasesPath[self.currentCase_index]
+
+      # curentCase index corresponds to which index in self.allCases
+
+      #get the yaml name
+      if self.indexYaml != -1:
+          print("index yaml succed")
+          self.currentCase = self.yamlListName[self.indexYaml]
+          print("currentCase succed", self.currentCase)
+          self.currentCasePath = self.yamlListPath[self.indexYaml]
+          print("self current path succes", self.currentCasePath)
+          self.currentCase_index = self.allCases.index(self.nameYaml)
+          print("worked!!")
+      else :
+          print("except index yaml")
+          self.currentCase = self.allCases[self.currentCase_index]
+          self.currentCasePath = self.allCasesPath[self.currentCase_index]
+
+
+
 
   def check_different_list(self):
       print(" ENTERING check_other_list \n")
@@ -847,22 +889,34 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.SlicerDirectoryListView.clear()
       # Populate the SlicerDirectoryListView
       if self.check_different_list():
+          print("in check differetn list")
           self.update_UI_from_other_case_list()
+          print("in check differetn list,", self.currentCase_index)
+
       else :
-          self.ui.SlicerDirectoryListView.addItems(self.Cases)
-      self.currentCase_index = 0  # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
+          print("in else update ui case_list")
+          self.ui.SlicerDirectoryListView.addItems(self.allCases)
+          self.currentCase_index = 0  # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
+      print("self currencCas eindex reset", self.currentCase_index)
+      # print("self currentCasepATH 1", self.currentCasePath)
       self.updateCaseAll()
+      print("self currentCasepATH 2", self.currentCasePath)
       self.loadPatient()
 
   def updateCaseAll(self):
       print("\n ENTERING UPDATECASEALL \n")
       # All below is dependent on self.currentCase_index updates,
       if self.check_different_list():
+          print(" in entering updatecaseall")
           self.update_UI_from_other_case_list()
       else :
           self.currentCase = self.Cases[self.currentCase_index]
           self.currentCasePath = self.CasesPaths[self.currentCase_index]
+      print("after else", self.currentCasePath)
       self.updateCurrentPatient()
+      print("after update Current Patient", self.currentCasePath)
+      print(" update casle all currentcase index", self.currentCase_index)
+      print("self current patient", self.currentCase)
       # Highlight the current case in the list view (when pressing on next o)
       self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
 
@@ -896,6 +950,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # All below is dependent on self.currentCase_index updates,
       if self.check_different_list():
           self.currentCase_index = self.ui.SlicerDirectoryListView.currentRow
+          self.indexYaml = self.ui.SlicerDirectoryListView.currentRow
+          print("self ui slicerdirectory lsit view self index yaml,",
+                self.indexYaml)
+          self.indexYaml = -1
+
           self.update_UI_from_other_case_list()
       else:
           print("entering else getcurrenttableidem")
@@ -945,6 +1004,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   def updateCurrentPatient(self):
       print("\n ENTERING updateCurrentPatient \n")
+      if self.yamlListName:
+          print("name")
+          # print("self yamllist name", self.yamlListName)
+          # print("self yamllipah", self.yamlListPath)
       print("self current patient", self.currentCase)
 
       self.ui.CurrentPatient.setText(f'Current case : {self.currentCase}')
@@ -968,8 +1031,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       # reset dropbox to index 0
       #initially was to 0 -- maxime modified
-      self.ui.dropDownButton_label_select.setCurrentIndex(0)
-      # self.ui.dropDownButton_label_select.setCurrentIndex(self.currentCase_index)
+      # self.ui.dropDownButton_label_select.setCurrentIndex(0)
+      self.ui.dropDownButton_label_select.setCurrentIndex(self.currentCase_index)
 
       print("load patient current index", self.currentCase_index)
 
@@ -1277,17 +1340,25 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # ----- ANW Modification ----- : Since index starts at 0, we need to do len(cases)-1 (instead of len(cases)+1).
       # Ex. if we have 10 cases, then len(case)=10 and index goes from 0-9,
       # so we have to take the minimum between len(self.Cases)-1 and the currentCase_index (which is incremented by 1 everytime we click the button)
-      self.currentCase_index = min(len(self.Cases)-1, self.currentCase_index+1)
+      # self.currentCase_index = min(len(self.Cases)-1, self.currentCase_index+1)
+      print("self currentCaseindex BEFORE min len", self.currentCase_index)
+
+      self.currentCase_index = min(len(self.allCases)-1,
+                                   self.currentCase_index+1)
+      print("self currentCaseindex after min len", self.currentCase_index)
+
       self.updateCaseAll()
       self.loadPatient()
 
-      if self.currentCase_index == (len(self.Cases)-1):
+      if self.currentCase_index == (len(self.allCases)-1):
           print("*** This is the last case of the list. ***")
           self.show_message_box("This is the last case of the list.")
 
       print("*** in on next button self currentCase_index", self.currentCase_index)
-      print("*** in on next button len(self.Cases-1", len(self.Cases)-1)
+      print("*** in on next button len(self.Cases-1", len(self.allCases)-1)
       print("*** in on next button self current in+1", self.currentCase_index+1)
+      print(" incremented self currencease index quesiton",
+            self.currentCase_index)
 
 
   def newSegmentation(self):
@@ -2275,20 +2346,20 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       #go to next case to segment
 
-      print("going to the next case")
-      self.segmentationModified = False
-      if direction == "Previous":
-          if self.currentCase_index == 0:
-              print("*** This is the first case of the list. ***")
-              self.show_message_box("This is the first case of the list.")
-          else :
-              self.onPreviousButton()
-      else :
-          if self.currentCase_index == (len(self.Cases) - 1):
-              print("*** This is the last case of the list. ***")
-              self.show_message_box("This is the last case of the list.")
-          else :
-            self.onNextButton()
+      # print("going to the next case")
+      # self.segmentationModified = False
+      # if direction == "Previous":
+      #     if self.currentCase_index == 0:
+      #         print("*** This is the first case of the list. ***")
+      #         self.show_message_box("This is the first case of the list.")
+      #     else :
+      #         self.onPreviousButton()
+      # else :
+      #     if self.currentCase_index == (len(self.allCases) - 1):
+      #         print("*** This is the last case of the list. ***")
+      #         self.show_message_box("This is the last case of the list.")
+      #     else :
+      #       self.onNextButton()
 
       # Update the remainingCasesYAML
 
@@ -2300,17 +2371,120 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       #     print(remainingCasesYAML['FILES_SEG'])
       # self.RemainingCases
 
+
+
       with open(self.RemainingCases, 'r') as file:
           data = yaml.safe_load(file)
           print("data, data", data)
+          self.yamlListName = data['FILES_SEG']
+          print("len yamlList name in with open", len(self.yamlListName))
+          print("list yaml name", self.yamlListName)
+          self.yamlListPath = []
+          for i in range(len(self.yamlListName)):
+              for element in self.allCasesPath:
+                  if self.yamlListName[i] in element:
+                      self.yamlListPath.append(element)
+          print("for loop worked!!!****")
+          print("len yamlListPath", len(self.yamlListPath))
 
-      if 'FILES_SEG' in data and isinstance(data['FILES_SEG'], list) and data['FILES_SEG']:
-          data['FILES_SEG'].pop(0)
+      print("data file seg before entering if", data['FILES_SEG'] )
+      print("self.currentCase and boolean", self.currentCase)
+      print(self.currentCase in data['FILES_SEG'])
+      print("len data", len(data['FILES_SEG']))
+
+      index_case_to_modify = self.allCases.index(self.currentCase)
+      print("index_case_modified before", index_case_to_modify)
+      if index_case_to_modify == len(self.allCases)-1: ###HERE SSATURDAY
+          print("last case")
+          self.currentCaseModified = self.allCases[index_case_to_modify]
+          print("self currentCase modified", self.currentCaseModified)
+          index_path_to_modify = self.allCasesPath.index(self.currentCasePath)
+          self.currentCasePathModified = self.allCasesPath[
+              index_path_to_modify]
+          print("current case path modified", self.currentCasePathModified)
+      else :
+          self.currentCaseModified = self.allCases[index_case_to_modify-1]
+          print("self currentCase modified", self.currentCaseModified)
+          index_path_to_modify = self.allCasesPath.index(self.currentCasePath)
+          self.currentCasePathModified = self.allCasesPath[index_path_to_modify-1]
+          print("current case path modified", self.currentCasePathModified)
+
+      if self.currentCaseModified in data['FILES_SEG']:
+          print("self currenCase in data file seg", self.currentCaseModified)
+          print("***************************\n")
+          print(" len data file seg", len(data['FILES_SEG']))
+          # data['FILES_SEG'].remove(self.currentCase)
+          print("self currentCase", self.currentCaseModified)
+          print("self currentCasePath", self.currentCasePathModified)
+          print("self yaml listname before not finding", self.yamlListName)
+          print("len yaml listname", len(self.yamlListName))
+          self.indexYaml = self.yamlListName.index(self.currentCaseModified)
+          print("self indexYaml before", self.indexYaml)
+          self.yamlListPath.remove(self.currentCasePathModified)
+          self.yamlListName.remove(self.currentCaseModified)
+          data['FILES_SEG'] = self.yamlListName
+          print("self indexYaml after", self.indexYaml)
+
+          self.nameYaml = self.yamlListName[self.indexYaml]
+          print("self name Yaml", self.nameYaml)
+          self.currentCase_index = self.allCases.index(self.nameYaml)
+          print("self current indez cas after", self.currentCase_index)
+          # self.currentCase_index = self.currentCaseModified
+          print("***************************\n")
+
+      # if self.currentCase in data['FILES_SEG']:
+      #     print("self currenCase in data file seg", self.currentCase)
+      #     print("***************************\n")
+      #     print(" len data file seg", len(data['FILES_SEG']))
+      #     # data['FILES_SEG'].remove(self.currentCase)
+      #     print("self currentCase", self.currentCase)
+      #     print("self currentCasePath", self.currentCasePath)
+      #     self.indexYaml = self.yamlListName.index(self.currentCase)
+      #     print("self indexYaml before", self.indexYaml)
+      #     self.yamlListPath.remove(self.currentCasePath)
+      #     self.yamlListName.remove(self.currentCase)
+      #     data['FILES_SEG'] = self.yamlListName
+      #     print("self indexYaml after", self.indexYaml)
+      #
+      #     self.nameYaml = self.yamlListName[self.indexYaml]
+      #     print("self name Yaml", self.nameYaml)
+      #     self.currentCase_index = self.allCases.index(self.nameYaml)
+      #     print("self current indez cas after", self.currentCase_index)
+      #     self.currentCase_index = self.currentCase_index - 1
+      #     print("***************************\n")
+
+          # self.indexYaml =
+
+          # new_index = self.currentCase
+
+      # if 'FILES_SEG' in data and isinstance(data['FILES_SEG'], list) and data['FILES_SEG']:
+      #     data['FILES_SEG'].pop(0)
 
       with open(self.RemainingCases, 'w') as file:
+          print("in write remaining cases", data)
+          print(" len data file seg after", len(data['FILES_SEG']))
+
           yaml.dump(data, file, default_flow_style=False)
 
+
+
+
       print("Should be completed")
+
+      print("going to the next case")
+      self.segmentationModified = False
+      if direction == "Previous":
+          if self.currentCase_index == 0:
+              print("*** This is the first case of the list. ***")
+              self.show_message_box("This is the first case of the list.")
+          else:
+              self.onPreviousButton()
+      else:
+          if self.currentCase_index == (len(self.allCases) - 1):
+              print("*** This is the last case of the list. ***")
+              self.show_message_box("This is the last case of the list.")
+          else:
+              self.onNextButton()
 
       # Open a new segmentation editor optimizedd
 
@@ -2483,6 +2657,18 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # self.save_statistics()
       # # Update the color of the segment
       # self.update_current_case_paths_by_segmented_volumes()
+
+  def adjust_index(self, index_removed):
+      self.allCases
+      self.allCasesPath
+
+      self.yamlListName
+      self.yamlListPath
+
+      #find index in allCases
+      appropriate_index = self.allCases.index(self.yamlListName[index_removed])
+      print("appropriate_index", appropriate_index)
+      return appropriate_index
 
   def remove_file_extension(self, file_path):
       print(" ENTERING remove file extension")
@@ -2998,6 +3184,18 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       original_list = self.Cases
 
       checkingRemainingCases = f'{self.OutputFolder}{os.sep}remainingCases.yaml'
+      #create a copy of all cases
+      checkingallCases = f'{self.OutputFolder}{os.sep}allCases.yaml'
+      allCasesdata = {
+          'FILES_SEG': self.allCases
+      }
+      if not os.path.exists(checkingallCases):
+          print(f"***The path '{checkingallCases}' does not exists.")
+          # Write data to a YAML file
+          with open(checkingallCases, 'w') as file:
+              yaml.dump(allCasesdata, file, default_flow_style=False)
+              print("allCases worked")
+
       # Example usage
       self.RemainingCases = checkingRemainingCases
       print("***yaml file path", self.RemainingCases)
@@ -3077,15 +3275,20 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               print(" self case path i ", self.CasesPaths[i])
               print(" first element", PathToLoad)
 
+              # if f'{PathToLoad}' == self.CasesPaths[i]:
               if f'{PathToLoad}' == self.CasesPaths[i]:
                   print("there we go")
                   print("self cases path i,", self.CasesPaths[i])
                   # print("self current index", self.current_index)
                   print("self current index", self.currentCase_index)
                   print("i", i)
-                  while self.currentCase_index < i:
-                      print("current case is less than i", i)
-                      self.onNextButton()
+                  # while self.currentCase_index < i:
+                  #     print("current case is less than i", i)
+                  #     self.onNextButton()
+                  # break
+                  self.currentCase_index = i
+                  print("current case is less than i", i)
+                  # self.onNextButton()
                   break
 
           self.update_UI_case_list()
