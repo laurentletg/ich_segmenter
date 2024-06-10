@@ -206,7 +206,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.countAssess = 1
     self.indexYaml = -1
 
-
+    #assessment of segmentation
+    self.assessOrigDict = {}
+    self.assessModifDict = {}
 
     self.VOLUME_FILE_TYPE = self.config_yaml['volume_extension']
     self.SEGM_FILE_TYPE = self.config_yaml['segmentation_extension']
@@ -248,6 +250,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.assessSegmentationButton.connect('clicked(bool)', self.onAssessSegmentationButton)
     self.ui.getResultButton.connect('clicked(bool)', self.onGetResult)
     self.ui.selectGTReferences.connect('clicked(bool)', self.selectGTReferences)
+    self.ui.toggleInterpolation.connect('clicked(bool)', self.onToggleInterpolation)
 
     #maxime navigation event
     # Track if segmentation is modified
@@ -258,6 +261,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.loadMask = False
     self.itemClicked = False
     self.toggleSegmentation = False
+    self.interpolation = self.config_yaml["interpolation"]
 
     # Connect segmentation modified event
     # self.observeSegmentationNode()
@@ -844,8 +848,10 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # curentCase index corresponds to which index in self.allCases
 
       #get the yaml name
-      if self.indexYaml != -1:
+      if self.indexYaml != -1 and (self.yamlListName != []):
           print("index yaml succed")
+          print(" in update_UI_from_other_case_list self indexYaml ",
+                self.indexYaml)
           self.currentCase = self.yamlListName[self.indexYaml]
           print("currentCase succed", self.currentCase)
           self.currentCasePath = self.yamlListPath[self.indexYaml]
@@ -910,8 +916,16 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           print(" in entering updatecaseall")
           self.update_UI_from_other_case_list()
       else :
+          print("om else update case all")
+          print(" self currentcas eindex", self.currentCase_index)
+
           self.currentCase = self.Cases[self.currentCase_index]
           self.currentCasePath = self.CasesPaths[self.currentCase_index]
+
+          print(" self curent case", self.currentCase)
+          print(" self currentcas eindex", self.currentCase_index)
+          print("self current case path", self.currentCasePath)
+
       print("after else", self.currentCasePath)
       self.updateCurrentPatient()
       print("after update Current Patient", self.currentCasePath)
@@ -1048,6 +1062,13 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Adjust windowing (no need to use self. since this is used locally)
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
+
+      #deactive the interpolation
+      if not self.interpolation:
+          print("interpolation deactivation set to true")
+          self.VolumeNode.GetDisplayNode().SetInterpolate(0)
+          self.ui.toggleInterpolation.setStyleSheet("background-color : red")
+
 
       # MB - WW removed since MRI may also be loaded
       # Vol_displayNode.SetWindow(85)
@@ -1360,6 +1381,19 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(" incremented self currencease index quesiton",
             self.currentCase_index)
 
+  def generate_message_box(self, message):
+      # Create a message box
+      messageBox = qt.QMessageBox()
+
+      # Set the message box text
+      messageBox.setText(message)
+
+      # Set the message box title
+      messageBox.setWindowTitle("Message Box")
+
+      # Display the message box
+      messageBox.exec_()
+
 
   def newSegmentation(self):
       print("IN NEW SEGMENTATION")
@@ -1420,17 +1454,21 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # for label in self.config_yaml["labels"]:
         #     self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
 
-        for label in self.config_yaml["labels"]:
-            print("******* ****** *****")
-            print(" label yaml data", label)
-            print("label yaml name", label["name"])
-            print(" rgb", label["color_r"], label["color_g"], label["color_b"])
+        segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
 
-            self.onNewLabelSegm(label["name"], label["color_r"],
-                                label["color_g"], label["color_b"])
-                                # label["lower_bound_HU"],
-                                # label["upper_bound_HU"])
-            # print("sel on NewlabelSegm", self.onNewLabelSegm())
+        self.set_color_label(segmentationNode)
+
+        # for label in self.config_yaml["labels"]:
+        #     print("******* ****** *****")
+        #     print(" label yaml data", label)
+        #     print("label yaml name", label["name"])
+        #     print(" rgb", label["color_r"], label["color_g"], label["color_b"])
+        #
+        #     self.onNewLabelSegm(label["name"], label["color_r"],
+        #                         label["color_g"], label["color_b"])
+        #                         # label["lower_bound_HU"],
+        #                         # label["upper_bound_HU"])
+        #     # print("sel on NewlabelSegm", self.onNewLabelSegm())
 
         first_label_name = self.config_yaml["labels"][0]["name"]
 
@@ -1748,25 +1786,43 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   #maxime modif
 
-  def onNewLabelSegm(self, label_name, label_color_r, label_color_g, label_color_b):
+  def onNewLabelSegm(self, segmentationNode, label_name, label_color_r,
+                     label_color_g,
+                     label_color_b, AssessSegmentationFlag=False):
       print("IN ON NEW LABEL SEG")
       print("label name", label_name)
 
+      if AssessSegmentationFlag:
+          # -12 to remove the extension Segmentation (keeping the _)
+          segment_name = f"{segmentationNode.GetName()[:-12]}{label_name}{self.file_extension}"
+          print("segment name in assess seg flag", segment_name)
+      else:
+          segment_name = self.newSegment(label_name)
 
-
-      segment_name = self.newSegment(label_name)
+      # segment_name = self.newSegment(label_name)
+      # segment_name = f"{segmentationNode.GetName()}{label_name}{self.file_extension}"
 
       print("segment name", segment_name)
       print("rgb dans newlabel segm", label_color_r, label_color_g, label_color_b)
+      # self.segmentationNode = segmentationNode
 
-      self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      self.segmentationNode.UndoEnabledOn()
-      Segmentation = self.segmentationNode.GetSegmentation()
-      self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
+      # self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      # self.segmentationNode.UndoEnabledOn()
+      # Segmentation = self.segmentationNode.GetSegmentation()
+      # self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
 
-      print(" xxxxxxxxxxx new label seg id", self.SegmentID)
+      segmentationNode.UndoEnabledOn()
+      Segmentation = segmentationNode.GetSegmentation()
+      # self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
+      SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
 
-      segment = Segmentation.GetSegment(self.SegmentID)
+
+
+
+
+      print(" xxxxxxxxxxx new label seg id", SegmentID)
+
+      segment = Segmentation.GetSegment(SegmentID)
       # segment = Segmentation.GetSegment(segment_name) maybe to try if not
       # working
 
@@ -1774,10 +1830,18 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # self.onPushButton_select_label(segment_name)
 
   #maxime
-  def onPushButton_select_label(self, segment_name):
+  def onPushButton_select_label(self, segment_name,
+                                segmentationNodeSpec=None):
       print("\n ENTERING oN PUSH BUTTON SELECT LABEL segment name")
       print(f"segment label select name: {segment_name}")
-      self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      print("segmentationnode spec", segmentationNodeSpec)
+      # if segmentationNodeSpec != None:
+      #     print("in if segmentaitnnode spec diff of none")
+      #     self.segmentationNode = segmentationNodeSpec
+      # else :
+      #     print(" in else segmentaitno node == NOne")
+      #     self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+
       Segmentation = self.segmentationNode.GetSegmentation()
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
       print("onPushButton_select_labe self segment ID", self.SegmentID)
@@ -2393,21 +2457,30 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print("len data", len(data['FILES_SEG']))
 
       index_case_to_modify = self.allCases.index(self.currentCase)
-      print("index_case_modified before", index_case_to_modify)
-      if index_case_to_modify == len(self.allCases)-1: ###HERE SSATURDAY
-          print("last case")
-          self.currentCaseModified = self.allCases[index_case_to_modify]
-          print("self currentCase modified", self.currentCaseModified)
-          index_path_to_modify = self.allCasesPath.index(self.currentCasePath)
+      print("index_case_to modify ", index_case_to_modify)
+
+      correspondingIndex = self.get_corresponding_index()
+      print("checkinf if first or last")
+      if (correspondingIndex[0] == 0) or (correspondingIndex[0] == len(
+              self.allCases)-1): #check if first or last case
+          print("first or last")
+          self.currentCaseModified = self.allCases[correspondingIndex[0]]
+          print("sel current cas emodified i index 0", self.currentCaseModified)
+          print("self current case should be the same", self.currentCase)
+
+          self.currentCasePathModified = self.allCasesPath[correspondingIndex[0]]
+          print("current case path modified i 0", self.currentCasePathModified)
+
+      else:
+          self.currentCaseModified = self.allCases[correspondingIndex[0]]
+          print("sel current cas emodified i index else",
+                self.currentCaseModified)
+          print("self current case should be the same", self.currentCase)
+
           self.currentCasePathModified = self.allCasesPath[
-              index_path_to_modify]
-          print("current case path modified", self.currentCasePathModified)
-      else :
-          self.currentCaseModified = self.allCases[index_case_to_modify-1]
-          print("self currentCase modified", self.currentCaseModified)
-          index_path_to_modify = self.allCasesPath.index(self.currentCasePath)
-          self.currentCasePathModified = self.allCasesPath[index_path_to_modify-1]
-          print("current case path modified", self.currentCasePathModified)
+              correspondingIndex[0]]
+          print("current case path modified else", self.currentCasePathModified)
+
 
       if self.currentCaseModified in data['FILES_SEG']:
           print("self currenCase in data file seg", self.currentCaseModified)
@@ -2416,21 +2489,74 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           # data['FILES_SEG'].remove(self.currentCase)
           print("self currentCase", self.currentCaseModified)
           print("self currentCasePath", self.currentCasePathModified)
+          print("corresponding index [1[]", correspondingIndex[1])
           print("self yaml listname before not finding", self.yamlListName)
           print("len yaml listname", len(self.yamlListName))
-          self.indexYaml = self.yamlListName.index(self.currentCaseModified)
+          self.indexYaml = correspondingIndex[1]
+          # self.indexYaml = self.yamlListName.index(self.currentCaseModified)
           print("self indexYaml before", self.indexYaml)
           self.yamlListPath.remove(self.currentCasePathModified)
           self.yamlListName.remove(self.currentCaseModified)
           data['FILES_SEG'] = self.yamlListName
-          print("self indexYaml after", self.indexYaml)
+          print("data file seg **", data['FILES_SEG'])
+          print("self index yaml before cheks", self.indexYaml)
+          print("len yamlListName", len(self.yamlListName))
+          if data['FILES_SEG'] == []:
+              print("empty list")
+              self.generate_message_box("There is no remaining cases.")
+              self.indexYaml = -1
+              self.currentCase_index = -1
+              self.yamlListPath = []
+              # self.currentCasePath = self.allCasesPath[0]
+              # self.currentCase =
 
-          self.nameYaml = self.yamlListName[self.indexYaml]
-          print("self name Yaml", self.nameYaml)
-          self.currentCase_index = self.allCases.index(self.nameYaml)
-          print("self current indez cas after", self.currentCase_index)
-          # self.currentCase_index = self.currentCaseModified
-          print("***************************\n")
+          elif self.indexYaml >= len(self.yamlListName)-1:
+
+              # means that you were on the last case
+              print("that means you were on the last case")
+              self.indexYaml = len(self.yamlListName)-1
+              # self.currentCase_index = 0
+              self.generate_message_box("Last case in remaininCases has been "
+                                        "segmented. \nGoing to the last case in the remaining list.")
+
+          else :
+              print("entering else meaning not empty list")
+              print("self indexYaml after", self.indexYaml)
+              print("len yaml listname after", len(self.yamlListName))
+              self.nameYaml = self.yamlListName[self.indexYaml]
+              print("self name Yaml", self.nameYaml)
+              self.currentCase_index = self.allCases.index(self.nameYaml)
+              print("self current indez cas after", self.currentCase_index)
+              # self.currentCase_index = self.currentCaseModified
+              print("***************************\n")
+      else :
+          # file not found in yaml list
+        print("else pass in save seg")
+        print("correspdongin index -1?", correspondingIndex[1])
+
+      # if index_case_to_modify == len(self.allCases)-1: ###HERE SSATURDAY
+      #     print("last case")
+      #     self.currentCaseModified = self.allCases[index_case_to_modify]
+      #     print("self currentCase modified", self.currentCaseModified)
+      #     index_path_to_modify = self.allCasesPath.index(self.currentCasePath)
+      #     self.currentCasePathModified = self.allCasesPath[
+      #         index_path_to_modify]
+      #     print("current case path modified", self.currentCasePathModified)
+      # else :
+      #     if index_case_to_modify == 0:
+      #         pass
+      #
+      #     self.currentCaseModified = self.allCases[index_case_to_modify-1]
+      #     print("self currentCase modified", self.currentCaseModified)
+      #     index_path_to_modify = self.allCasesPath.index(self.currentCasePath)
+      #     self.currentCasePathModified = self.allCasesPath[index_path_to_modify-1]
+      #     print("current case path modified", self.currentCasePathModified)
+      #     # self.currentCaseModified = self.allCases[index_case_to_modify-1]
+      #     # print("self currentCase modified", self.currentCaseModified)
+      #     # index_path_to_modify = self.allCasesPath.index(self.currentCasePath)
+      #     # self.currentCasePathModified = self.allCasesPath[index_path_to_modify-1]
+      #     # print("current case path modified", self.currentCasePathModified)
+
 
       # if self.currentCase in data['FILES_SEG']:
       #     print("self currenCase in data file seg", self.currentCase)
@@ -2658,17 +2784,39 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # # Update the color of the segment
       # self.update_current_case_paths_by_segmented_volumes()
 
-  def adjust_index(self, index_removed):
-      self.allCases
-      self.allCasesPath
+  # def adjust_index(self, index_removed):
+  #     self.allCases
+  #     self.allCasesPath
+  #
+  #     self.yamlListName
+  #     self.yamlListPath
+  #
+  #     #find index in allCases
+  #     appropriate_index = self.allCases.index(self.yamlListName[index_removed])
+  #     print("appropriate_index", appropriate_index)
+  #     return appropriate_index
 
-      self.yamlListName
-      self.yamlListPath
+  def get_corresponding_index(self):
+      if self.currentCase:
+          allCasesIndex = self.allCases.index(self.currentCase)
+          if self.currentCase in self.yamlListName:
+              yamlListIndex = self.yamlListName.index(self.currentCase)
+          else:
+              yamlListIndex = -1
+          print("\n ******* \n ")
+          print("verifications corresponding index", self.currentCase)
+          print("allCasesIndex", allCasesIndex)
+          print("yamlListIndex", yamlListIndex)
+          return (allCasesIndex, yamlListIndex)
 
-      #find index in allCases
-      appropriate_index = self.allCases.index(self.yamlListName[index_removed])
-      print("appropriate_index", appropriate_index)
-      return appropriate_index
+  def get_path_from_name(self, currentCase):
+      print("in get_path_from_name")
+      print("current case", self.currentCase)
+      for element in self.allCasesPath:
+          if currentCase in element:
+              print("element (the path)", element)
+              return element
+
 
   def remove_file_extension(self, file_path):
       print(" ENTERING remove file extension")
@@ -3195,6 +3343,21 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           with open(checkingallCases, 'w') as file:
               yaml.dump(allCasesdata, file, default_flow_style=False)
               print("allCases worked")
+      else :
+          print(" the path all cases exists")
+          with open(checkingallCases, 'r') as file:
+              data = yaml.safe_load(file)
+              self.allCases = data["FILES_SEG"]
+              print(" self all cases just load", self.allCases)
+              allCasesPath2 = []
+              for i in range(len(self.allCases)):
+                  for element in self.allCasesPath:
+                      if self.allCases[i] in element:
+                          allCasesPath2.append(element)
+              print("allCasesPath2", allCasesPath2)
+              self.allCasesPath = allCasesPath2
+
+
 
       # Example usage
       self.RemainingCases = checkingRemainingCases
@@ -3238,6 +3401,22 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.yamlListName = yamlListeOfCases
           print("self yamllistofcase", self.yamlListName)
 
+          self.currentCase = first_element
+          self.currentCasePath = self.get_path_from_name(self.currentCase)
+
+          ##get the corresponding index
+          print("get corresponding index")
+          print("self currentcase", self.currentCase)
+          print("self current case path", self.currentCasePath)
+
+          print(" self current index", self.currentCase_index)
+          print("len yamlFileName", len(self.yamlListName))
+          print(" len yamlPath", len(self.yamlListPath))
+          print("self.allCases", len(self.allCases))
+          self.get_corresponding_index()
+
+
+
           # Find the path of the case to be loaded.
           search_directory = self.CurrentFolder
           def find_file_by_name(search_directory, first_element):
@@ -3276,7 +3455,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               print(" first element", PathToLoad)
 
               # if f'{PathToLoad}' == self.CasesPaths[i]:
-              if f'{PathToLoad}' == self.CasesPaths[i]:
+              if f'{PathToLoad}' == self.allCasesPath[i]:
                   print("there we go")
                   print("self cases path i,", self.CasesPaths[i])
                   # print("self current index", self.current_index)
@@ -3466,6 +3645,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                    not f.startswith('.') and not f.endswith(
                                        '.cache')]
 
+      print("ground truth list", ground_truth_list)
+
       # Select a Random Case To Assess and Display it in the SliceViewer
       # ground_truth_list = os.listdir(self.GTFolder)
       random_item_filepath = random.choice(ground_truth_list)
@@ -3515,17 +3696,21 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             volumeNodeTest.SetName(f'NewVolumeName_{self.countAssess}')
             return f'NewVolumeName_{self.countAssess}'
 
-      if volumeNodeMain.GetName() in volumeNodeTest.GetName():
-          newName = setAssessName()
-      # if filename_final in volumeNodeMain.GetName():
-          print("*****test == worked!")
-          # Set the new name of the volume node
-          slicer.app.processEvents()  # Update the GUI
-          print("name changed")
-      else :
-          newName = setAssessName()
-          slicer.app.processEvents()  # Update the GUI
-          print("name changed2")
+      # if volumeNodeMain.GetName() in volumeNodeTest.GetName():
+      #     newName = setAssessName()
+      # # if filename_final in volumeNodeMain.GetName():
+      #     print("*****test == worked!")
+      #     # Set the new name of the volume node
+      #     slicer.app.processEvents()  # Update the GUI
+      #     print("name changed")
+      # else :
+      #     newName = setAssessName()
+      #     slicer.app.processEvents()  # Update the GUI
+      #     print("name changed2")
+
+      newName = setAssessName()
+      slicer.app.processEvents()
+      print("newname", newName)
 
       #Increment the number of iteration to find easily the appropriate node
       # after
@@ -3545,6 +3730,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Open the SegmentEditor and create new Segments
 
+      print('voluem node name', volumeNodeTest.GetName())
+
 
       ###chat gpt
       print('chatgpot seg')
@@ -3558,6 +3745,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                           '_Segmentation')
       segmentation = segmentationNode.GetSegmentation()
       print(" segmentation", segmentation)
+      print("Cure seg name", curSegName)
       #Create new segments and attribute them in the segmentaitron node
       for i in range(len(list_of_labels)):
           segmentation.AddEmptySegment()
@@ -3567,17 +3755,35 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       print(f"Created new segmentation node: {segmentationNode.GetName()}")
 
+      # Set the segmentation node in the Segmentation Editor
+      segmentationEditorWidget = slicer.modules.SegmentEditorWidget.editor
+      segmentationEditorWidget.setSegmentationNode(segmentationNode)
+      print("segmentation node name after supposed to be setted", segmentationNode.GetName())
+
+      # Set the source volume in the segmentation editor widget
+      # sourceVolumeNode = slicer.util.getNode(volumeNodeName)
+      segmentationEditorWidget.setMasterVolumeNode(volumeNode)
+
+      self.set_color_label(segmentationNode, True)
+      self.first_label_segment_name = f"{newName}_{list_of_labels[0]}{self.file_extension}"
+      self.segmentationNode = segmentationNode
+
+      print("first_label_assess", self.first_label_segment_name)
+
+      self.onPushButton_select_label(self.first_label_segment_name, segmentationNode)
+
       ###HERE 20240606
       # Create a new segment editor node
-      segmentEditorNode = slicer.mrmlScene.AddNewNodeByClass(
-          "vtkMRMLSegmentEditorNode")
-      segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
-      # Set the segment editor node in the widget
-      segmentEditorWidget.setMRMLSegmentEditorNode(segmentEditorNode)
-      # Now set the segmentation node
-      segmentEditorWidget.setSegmentationNode(segmentationNode)
-      # Finally, set the source volume node
-      segmentEditorWidget.setSourceVolumeNode(volumeNode)
+      print(" now for creating a new segment editor node")
+      # segmentEditorNode = slicer.mrmlScene.AddNewNodeByClass(
+      #     "vtkMRMLSegmentEditorNode")
+      # segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
+      # # Set the segment editor node in the widget
+      # segmentEditorWidget.setMRMLSegmentEditorNode(segmentEditorNode)
+      # # Now set the segmentation node
+      # segmentEditorWidget.setSegmentationNode(segmentationNode)
+      # # Finally, set the source volume node
+      # segmentEditorWidget.setSourceVolumeNode(volumeNode)
 
       # segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
       # segmentEditorWidget.setSegmentationNode(segmentationNode)
@@ -3585,18 +3791,80 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # segmentEditorWidget.setSourceVolumeNode(volumeNode)
       self.onPushButton_segmeditor()
 
+      ### Get the essential values for use in result
+      self.assessOrigDict["filename"] = filename
+      self.assessOrigDict["filename_final"] = filename_final
+      self.assessOrigDict["volumePath"] = volumePath
+      self.assessOrigDict["newName"] = newName
+      self.assessOrigDict["latest_ref_version"] = latest_ref_version
+      self.assessOrigDict["volumeNodeName"] = volumeNodeName
+      self.assessOrigDict["segmentationNode"] = segmentationNode
+      self.assessOrigDict["list_of_labels"] = list_of_labels
+      self.assessOrigDict["ground_truth_list"] = ground_truth_list
+
+      print(" self assessOrig Dict", self.assessOrigDict)
+      # self.assessModifDict = {}
+
+
       # At each slice that is modified, a dice score is printed when leaving
       # the slice
+
+  def set_color_label(self, segmentationNode, AssessSegmentationFlag=False):
+      for label in self.config_yaml["labels"]:
+          print("******* ****** *****")
+          print("semgneaitonnode", segmentationNode)
+          print(" label yaml data", label)
+          print("label yaml name", label["name"])
+          print(" rgb", label["color_r"], label["color_g"], label["color_b"])
+
+          self.onNewLabelSegm(segmentationNode, label["name"], label["color_r"],
+                              label["color_g"], label["color_b"], AssessSegmentationFlag)
+          # label["lower_bound_HU"],
+          # label["upper_bound_HU"])
+          # print("sel on NewlabelSegm", self.onNewLabelSegm())
 
   def onGetResult(self):
       print(" ENTERING onGetResult")
 
       # Calculate the overall Dice Score between the reference segmentation
       # and the new one (saved in assessment folder)
+      print("self assessing Dict", self.assessOrigDict)
+      for element in self.assessOrigDict:
+          print(element, self.assessOrigDict[element])
+      list_of_label_map_to_compare = []
+      for element in self.assessOrigDict["ground_truth_list"]:
+          if self.assessOrigDict["filename_final"] in element:
+              list_of_label_map_to_compare.append(element)
+
+      print("\n")
+      for element in list_of_label_map_to_compare:
+          print("element", element)
+      ### HERE END OF SUNDAY JUNE 09 20H32
+      ### PROBLEM HERE IS TO CHECK IF GETS THE LATEST VERSION AND ALSO WHEN i
+      # REDO ASSESSMENT
+
+
+
+
 
       # If Dice Score > threshold, then print/ dialog box! You passed
       # If Dice Score < threshold, then print dialog box! Your Dice Score.
       # Please retry and load a new volume to be assessed
+
+  def onToggleInterpolation(self):
+      print(" ENTERING onToggleInterpolation")
+      volumeNode = slicer.mrmlScene.GetFirstNodeByClass(
+                          'vtkMRMLVolumeNode')
+      displayNode = volumeNode.GetDisplayNode()
+      currentState = displayNode.GetInterpolate()
+      displayNode.SetInterpolate(not currentState)
+      print("current state interpolation", currentState)
+      toggleButton = self.ui.toggleInterpolation
+      if currentState == 0:
+         toggleButton.setStyleSheet("background-color : green")
+      else:
+          toggleButton.setStyleSheet("background-color : red")
+
 
   def onCreateSegmentationButtonClicked(self):
       print("\n ENTERING onCreateSegmentationButton \n")

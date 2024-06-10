@@ -20,273 +20,7 @@
       <string>Configuration</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="1" column="3">
-       <widget class="QPushButton" name="toggleSegmentationVersions">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>50</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Toggle Segmentation Versions</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0" colspan="4">
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Set default directory</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_uint8casting">
-          <property name="toolTip">
-           <string>This will check if all segmentation file are in the uint8 format. Since Slicer 5.6 this raises in an error if the segmentation file are in float. </string>
-          </property>
-          <property name="text">
-           <string>QC check segmentation uint8 casting</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="getDefaultDir">
-          <property name="text">
-           <string>Get default directory</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="BrowseFolders">
-          <property name="text">
-           <string>Browse volume folder</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="CurrentFolder">
-          <property name="text">
-           <string>Current Folder:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_2">
-            <item>
-             <widget class="QLabel" name="label_2">
-              <property name="text">
-               <string>Annotator's name</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="Annotator_name"/>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_3">
-            <item>
-             <widget class="QLabel" name="label_4">
-              <property name="text">
-               <string>Degree</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="AnnotatorDegree">
-              <item>
-               <property name="text">
-                <string/>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Medical Student</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Resident</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Radiologist</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Supervisor</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Research Team</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
-            <item>
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>Revision step</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="RevisionStep">
-              <item>
-               <property name="text">
-                <string/>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>0 - First</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>1 - Revision</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>2 - Final</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QPushButton" name="Previous">
-            <property name="text">
-             <string>&lt;&lt;  Previous</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="Next">
-            <property name="text">
-             <string>Next  &gt;&gt;</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="FileIndex">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_check_errors_labels">
-            <property name="text">
-             <string>check error labels</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="testButton">
-            <property name="text">
-             <string>check saved seg</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_test1">
-            <property name="text">
-             <string>pushButton_test1</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_test2">
-            <property name="toolTip">
-             <string>update the list keeping only remainig cases based on the folder where segmentations are currently being saved</string>
-            </property>
-            <property name="text">
-             <string>pushButton_test2</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QLabel" name="CurrentPatient">
-          <property name="text">
-           <string>Current Patient:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="CurrentSegmenationLabel">
-          <property name="text">
-           <string>Current Segmentation Label:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="BrowseFolders_2">
-          <property name="text">
-           <string>Browse mask folder</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="SelectOutputFolder">
-          <property name="text">
-           <string>Select output folder</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="selectGTReferences">
-          <property name="text">
-           <string>Select GT References folder</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="13" column="0" colspan="4">
-       <layout class="QVBoxLayout" name="verticalLayout_5"/>
-      </item>
-      <item row="1" column="1">
-       <widget class="QPushButton" name="assessSegmentationButton">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Assessment</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0" colspan="4">
+      <item row="3" column="0" colspan="5">
        <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3">
         <property name="text">
          <string>Case list</string>
@@ -364,7 +98,7 @@
         </layout>
        </widget>
       </item>
-      <item row="12" column="0" colspan="4">
+      <item row="13" column="0" colspan="5">
        <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
         <property name="text">
          <string>Tools</string>
@@ -841,6 +575,253 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="0" colspan="5">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Set default directory</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_uint8casting">
+          <property name="toolTip">
+           <string>This will check if all segmentation file are in the uint8 format. Since Slicer 5.6 this raises in an error if the segmentation file are in float. </string>
+          </property>
+          <property name="text">
+           <string>QC check segmentation uint8 casting</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="getDefaultDir">
+          <property name="text">
+           <string>Get default directory</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="BrowseFolders">
+          <property name="text">
+           <string>Browse volume folder</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="CurrentFolder">
+          <property name="text">
+           <string>Current Folder:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_2">
+            <item>
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Annotator's name</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="Annotator_name"/>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QLabel" name="label_4">
+              <property name="text">
+               <string>Degree</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="AnnotatorDegree">
+              <item>
+               <property name="text">
+                <string/>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Medical Student</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Resident</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Radiologist</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Supervisor</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Research Team</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <item>
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Revision step</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="RevisionStep">
+              <item>
+               <property name="text">
+                <string/>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>0 - First</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>1 - Revision</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>2 - Final</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QPushButton" name="Previous">
+            <property name="text">
+             <string>&lt;&lt;  Previous</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="Next">
+            <property name="text">
+             <string>Next  &gt;&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="FileIndex">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_check_errors_labels">
+            <property name="text">
+             <string>check error labels</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="testButton">
+            <property name="text">
+             <string>check saved seg</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_test1">
+            <property name="text">
+             <string>pushButton_test1</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_test2">
+            <property name="toolTip">
+             <string>update the list keeping only remainig cases based on the folder where segmentations are currently being saved</string>
+            </property>
+            <property name="text">
+             <string>pushButton_test2</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="CurrentPatient">
+          <property name="text">
+           <string>Current Patient:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="CurrentSegmenationLabel">
+          <property name="text">
+           <string>Current Segmentation Label:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="BrowseFolders_2">
+          <property name="text">
+           <string>Browse mask folder</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="SelectOutputFolder">
+          <property name="text">
+           <string>Select output folder</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="selectGTReferences">
+          <property name="text">
+           <string>Select GT References folder</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="14" column="0" colspan="5">
+       <layout class="QVBoxLayout" name="verticalLayout_5"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="assessSegmentationButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Assessment</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="2">
        <widget class="QPushButton" name="getResultButton">
         <property name="sizePolicy">
@@ -857,6 +838,38 @@
         </property>
         <property name="text">
          <string>Get Result</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QPushButton" name="toggleSegmentationVersions">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Toggle Segmentation Versions</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QPushButton" name="toggleInterpolation">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Toggle Interpolation</string>
         </property>
        </widget>
       </item>

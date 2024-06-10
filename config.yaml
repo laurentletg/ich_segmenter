@@ -9,6 +9,8 @@ folder_organization: "sub-"
   #filter them, you may indicate it here. By default, all contrasts will be
    #                    loaded.
 contrast: "T2w"
+interpolation: False #voluntarily will set each new load to this
+  # configuration to avoid potential annotation on not default setting
 
 output_directory: "/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data/site_003"
 
