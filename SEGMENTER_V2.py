@@ -32,6 +32,8 @@ from functools import partial
 import random
 # from render_manager import RenderManager
 # from PyQt5.QtWidgets import QApplication, QMainWindow
+import SimpleITK as sitk
+import sitkUtils
 
 # TODO: add all constants to the config file
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yaml")
@@ -3555,7 +3557,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       widget.layout().addLayout(item_layout)
 
       # Add items to the selection box
-      name = self.Cases[self.currentCase_index]
+      name = self.allCases[self.currentCase_index]
       filename = self.remove_file_extension(name)
       items = set(sorted(self.get_list_of_versions(filename)))
       print("items", items)
@@ -3772,7 +3774,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.onPushButton_select_label(self.first_label_segment_name, segmentationNode)
 
-      ###HERE 20240606
+
       # Create a new segment editor node
       print(" now for creating a new segment editor node")
       # segmentEditorNode = slicer.mrmlScene.AddNewNodeByClass(
@@ -3832,16 +3834,209 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       for element in self.assessOrigDict:
           print(element, self.assessOrigDict[element])
       list_of_label_map_to_compare = []
+      latest_ref_version = self.assessOrigDict["latest_ref_version"]
+      latest_ref_version_str = f"_v{latest_ref_version:02d}"
+      print("latest_ref_version_str", latest_ref_version_str)
       for element in self.assessOrigDict["ground_truth_list"]:
           if self.assessOrigDict["filename_final"] in element:
-              list_of_label_map_to_compare.append(element)
+              if latest_ref_version_str in element: #if there are multiple
+                  # versions, takes the latest one for comparison!
+                list_of_label_map_to_compare.append(element)
 
       print("\n")
       for element in list_of_label_map_to_compare:
           print("element", element)
+
+      segmentationNode = self.assessOrigDict["segmentationNode"]
+      volumeNodeName = self.assessOrigDict["volumeNodeName"]
+      volumeNode = slicer.util.getNode(volumeNodeName)
+
+      print("segmentationNode on get result", segmentationNode)
+      print("volumenode on get result", volumeNode)
+      print("type volumenode on get result", type(volumeNode))
+
+      #THIS COMMENTED CODE GENERATES A GLOBAL LABEL MAP VOLUME INCLUDING ALL
+      # SEGMENTS (OT NECESSARY FOR DICE SCORE SINCE IT IS COMPARED FOR EACH
+      # SEGMENT)
+      # # Get the label mal (signification? - mb added by chatgpt and works!
+      # labelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass(
+      #     'vtkMRMLLabelMapVolumeNode')
+      #
+      # print("labelmapvolume node worked", labelmapVolumeNode)
+      # print("type labelmapvolume", type(labelmapVolumeNode))
+      #
+      # # print("self label mao", self.labelmap_volume_node)
+      # slicer.modules.segmentations.logic().ExportVisibleSegmentsToLabelmapNode(
+      #     segmentationNode, labelmapVolumeNode, volumeNode)
+      #
+      # print("slicer logic worked segmentation")
+      #
+      # # Get the segments name
+      # segmentsNames = segmentationNode.GetSegmentation().GetSegmentIDs()
+      # print("segmentsNames", segmentsNames)
+
+      segmentation_node = segmentationNode #slightly different form in save
+      # segmentation
+      segmentation = segmentation_node.GetSegmentation()
+      segment_ids = vtk.vtkStringArray()
+      segmentation.GetSegmentIDs(segment_ids)
+
+      list_of_labels = self.assessOrigDict["list_of_labels"]
+      for i in range(len(list_of_labels)):
+          segmentationNode
+
+          # Specify the segment ID (replace 'Segment_1' with the actual segment ID)
+          segmentId = f'Segment_{i+1}'
+          print(segmentId, list_of_labels[i])
+
+          # Create a new labelmap volume node
+          labelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass(
+              'vtkMRMLLabelMapVolumeNode', f'Segment_{i+1}')
+
+          # Export the segment to the labelmap volume node
+          slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(
+              segmentationNode, [segmentId], labelmapVolumeNode)
+          print(
+              f"Segment '{segmentId}' has been exported to labelmap volume node: {labelmapVolumeNode.GetName()}")
+
+      print("onSaveSegmentationButton new saved worked!!!!")
+
+      # Find and load segmentations from reference
+
+      list_of_label_mapNames = []
+      for element in list_of_label_map_to_compare:
+          list_of_label_mapNames.append(self.remove_file_extension(element))
+      list_of_label_map_path_to_compare = []
+
+      for element in list_of_label_map_to_compare:
+          list_of_label_map_path_to_compare.append(f"{self.GTFolder}{os.sep}{element}")
+      print("list_of_label_map_path_to_compare", list_of_label_map_path_to_compare)
+
+      for segment in list_of_label_map_path_to_compare:
+          # Path to the labelmap volume file
+          labelmapVolumePath = segment  # Replace with your actual file path
+
+          # Load the labelmap volume
+          [success, labelmapVolumeNode] = slicer.util.loadLabelVolume(
+              labelmapVolumePath, returnNode=True)
+      print("segment list of label map to compare should have worked")
+
+      # now here we have all the segments for assessment as labelmap and
+      # reference label map that can be compared
+
+      # Compute Dice Score for each assessed segment and new segment
+      #Before, we must combine them. Here a list of tuple is created.
+      listTupleDice = []
+
+      print(" names to look for", list_of_label_mapNames)
+      filename_final = self.assessOrigDict["filename_final"]
+      print("filename_final", filename_final)
+      print("list of labels", list_of_labels)
+      print("latest ref version str", latest_ref_version_str)
+
+      for i in range(len(list_of_label_map_to_compare)):
+          # listTupleDice.append((f"Segment_{i+1}",
+          #                      list_of_label_mapNames[i]))
+          listTupleDice.append((f"Segment_{i + 1}",
+                                f"{filename_final}_{list_of_labels[i]}{latest_ref_version_str}"))
+
+      print("listTupleDice", listTupleDice)
+      resultList = []
+      for element in listTupleDice:
+          # 1 is the labelmap for assessment
+          # 0 is the labelmap for assessment
+          # Get the label map nodes
+
+
+          # labelmap1 = slicer.util.getNode(
+          #     element[0])  # Replace with your actual label map node names
+          # labelmap2 = slicer.util.getNode(element[1])
+          # print("lael map worked")
+          # print(f"labelmap 1 {element}", labelmap1)
+          # print(f"label map 2 {element}", labelmap2)
+          #
+          # # Convert the label maps to SimpleITK images
+          # #NOW HERE, GET THE ERROR
+          # sitkImage1 = sitkUtils.PullFromSlicer(labelmap1.GetName())
+          # sitkImage2 = sitkUtils.PullFromSlicer(labelmap2.GetName())
+
+          labelmap1 = slicer.util.getNode(element[0])
+          labelmap2 = slicer.util.getNode(element[1])
+          print("Label map worked")
+          print(f"Labelmap 1 {element[0]}:", labelmap1)
+          print(f"Labelmap 2 {element[1]}:", labelmap2)
+
+          # Convert the label maps to SimpleITK images
+          sitkImage1 = sitkUtils.PullVolumeFromSlicer(labelmap1)
+          sitkImage2 = sitkUtils.PullVolumeFromSlicer(labelmap2)
+
+          # Define a reference volume (choose one of the volumes as reference)
+          referenceVolumeNode = volumeNode
+
+          # Convert the reference volume to SimpleITK image
+          referenceImage = sitkUtils.PullVolumeFromSlicer(referenceVolumeNode)
+
+          # Resample sitkImage1 to match the reference volume
+          resampler = sitk.ResampleImageFilter()
+          resampler.SetReferenceImage(referenceImage)
+          resampler.SetInterpolator(sitk.sitkNearestNeighbor)
+          resampler.SetDefaultPixelValue(0)
+
+          resampledImage1 = resampler.Execute(sitkImage1)
+          resampledImage2 = resampler.Execute(sitkImage2)
+
+          # Ensure the label maps are binary (only 0 and 1)
+          resampledImage1 = sitk.BinaryThreshold(resampledImage1,
+                                                 lowerThreshold=1,
+                                                 upperThreshold=1,
+                                                 insideValue=1, outsideValue=0)
+          resampledImage2 = sitk.BinaryThreshold(resampledImage2,
+                                                 lowerThreshold=1,
+                                                 upperThreshold=1,
+                                                 insideValue=1, outsideValue=0)
+
+          # Compute the Dice coefficient
+          diceFilter = sitk.LabelOverlapMeasuresImageFilter()
+          diceFilter.Execute(resampledImage1, resampledImage2)
+          dice_score = diceFilter.GetDiceCoefficient()
+
+          print(f"Dice score {element}:", dice_score)
+          resultList.append(element[0], element[1], dice_score)
+
+      print("resultList", resultList)
+
+      #TO DO: create a json file with records of results, annotator names
+      # date, time etc.
+
+          # # Ensure the label maps are binary (only 0 and 1)
+          # sitkImage1 = sitk.BinaryThreshold(sitkImage1, lowerThreshold=1,
+          #                                   upperThreshold=1, insideValue=1,
+          #                                   outsideValue=0)
+          # sitkImage2 = sitk.BinaryThreshold(sitkImage2, lowerThreshold=1,
+          #                                   upperThreshold=1, insideValue=1,
+          #                                   outsideValue=0)
+          #
+          # # Compute the Dice coefficient
+          # diceFilter = sitk.LabelOverlapMeasuresImageFilter()
+          # diceFilter.Execute(sitkImage1, sitkImage2)
+          # dice_score = diceFilter.GetDiceCoefficient()
+          #
+          # print(f"Dice score {element}:", dice_score)
+
+
+
+
+
+
+
+
+
+
       ### HERE END OF SUNDAY JUNE 09 20H32
       ### PROBLEM HERE IS TO CHECK IF GETS THE LATEST VERSION AND ALSO WHEN i
       # REDO ASSESSMENT
+
+
 
 
 
