@@ -39,6 +39,7 @@ from functools import partial
 import random
 import SimpleITK as sitk
 import sitkUtils
+from datetime import datetime
 
 # Adding all constants to the config file
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "config.yaml")
@@ -271,6 +272,10 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
         self.segmentation_toggled = False
         self.interpolation_state = self.config_yaml["interpolation_state"]
 
+        # Define colors to be used in the application
+        self.color_active = "green"
+        self.color_inactive = "red"
+
         # Display the selected color view at module startup
         if self.config_yaml['slice_view_color'] == "Yellow":
             slicer.app.layoutManager().setLayout(
@@ -326,6 +331,7 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
             self.get_current_table_item)
 
         self.ui.PBLoadMask.connect('clicked(bool)', self.load_masks)
+        self.ui.PBLoadMask.setStyleSheet("background-color: red")
         self.ui.PBSaveSegmentation.connect('clicked(bool)',
                                            self.save_segmentation)
 
@@ -453,12 +459,16 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
     def enter_function(self, function_name):
         # To remove entering function prints, just comment out the next line
         print(f"\n ENTERING {function_name}() \n")
+        pass
 
     def print_dictionary(self, dictionary, name=None):
         if name is None:
             name = "dictionary"
         for element in dictionary:
             print(f"{name} {element}: ", dictionary[element])
+
+    def set_button_color(self, button, color):
+        button.setStyleSheet(f"background-color: {color}")
 
     def show_message_box(self, message,
                          box_title=None,
@@ -631,26 +641,11 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
         print(" set_segment_name(), segment_name: ", segment_name)
         return segment_name
 
-    def set_one_label_color(self, segmentation_node, label_name,
+    def set_one_label_color(self, segment,
                             label_color_r,
                             label_color_g,
-                            label_color_b,
-                            assess_segmentation_flag=False):
+                            label_color_b):
         self.enter_function("set_one_label_color")
-
-        if assess_segmentation_flag:
-            # -12 to remove the extension Segmentation (keeping the _)
-            segment_name = (f"{segmentation_node.GetName()[:-12]}{label_name}"
-                            f"{self.file_extension}")
-        else:
-            segment_name = self.new_segment(label_name)
-
-        segmentation_node.UndoEnabledOn()
-        segmentation = segmentation_node.GetSegmentation()
-        segment_id = segmentation.GetSegmentIdBySegmentName(segment_name)
-        # segment = segmentation.GetSegment(segment_name) maybe to try if not
-        # working
-        segment = segmentation.GetSegment(segment_id)
 
         segment.SetColor(label_color_r / 255,
                          label_color_g / 255,
@@ -659,13 +654,32 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
     def set_all_labels_colors(self, segmentation_node,
                               assess_segmentation_flag=False):
         self.enter_function("set_all_labels_colors")
+        segmentation_node.UndoEnabledOn()
+        segmentation = segmentation_node.GetSegmentation()
         for label in self.config_yaml["labels"]:
-            self.set_one_label_color(segmentation_node,
-                                     label["name"],
+            label_name = label["name"]
+            print("label_name: ", label_name)
+            print("label color_r: ", label["color_r"])
+            print("label color_g: ", label["color_g"])
+            print("label color_b: ", label["color_b"])
+
+            if assess_segmentation_flag:
+                # -12 to remove the extension Segmentation (keeping the _)
+                segment_name = (
+                    f"{segmentation_node.GetName()[:-12]}{label_name}"
+                    f"{self.file_extension}")
+            else:
+                segment_name = self.new_segment(label_name)
+
+            segment_id = segmentation.GetSegmentIdBySegmentName(segment_name)
+            # segment = segmentation.GetSegment(segment_name) maybe to try if
+            # not working
+            segment = segmentation.GetSegment(segment_id)
+
+            self.set_one_label_color(segment,
                                      label["color_r"],
                                      label["color_g"],
-                                     label["color_b"],
-                                     assess_segmentation_flag)
+                                     label["color_b"])
 
     # MB CODE BELOW
     # Define a callback function for the observers
@@ -679,6 +693,8 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
             print("Segment modified:", segment.GetName())
             self.segmentation_modified = True
             print("self.segmentation_modified", self.segmentation_modified)
+            # Timer begin
+            self.time_begin = datetime.now()
 
         if segmentation_node:
             # Get the active segment
@@ -1487,6 +1503,7 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
 
             filename = self.remove_file_extension(segment_name)
             version = self.increment_latest_version(filename)
+            self.version = version
             print(f"save_segmentation(), for loop {i} version: ", version)
             print(f"save_segmentation(), for loop {i} filename: ", filename)
 
@@ -1519,6 +1536,9 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
 
         # TODO: Create a function that will run a shell script and generate the
         #  Quality Control report from sct.
+
+        # End timer for this case
+        self.time_end = datetime.now()
 
         # TODO: Save a .json file with statistics
         # Save a csv file with statistics
@@ -1614,18 +1634,43 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
         print(" save_csv_file(), annotator_degree: ", self.annotator_degree)
         print(" save_csv_file(), revision_step: ", self.revision_step)
 
+        def format_time(time):
+            return time.strftime("%Y-%m-%d %H:%M:%S")
+
+        def format_dif_time(timedelta):
+            timedelta_str = str(timedelta)
+            datetime_object = datetime.strptime(timedelta_str , "%H:%M:%S.%f")
+            datetime_object = datetime_object.strftime("%H:%M:%S.%f")[:-3]
+            print("datetime_object: ", datetime_object)
+            return datetime_object
+
+
         # Actual variables [formated in list for convenient purposes].
         case_number = [self.segmentation_node.GetName()]
         annotator_name = [self.annotator_name]
         annotator_degree = [self.annotator_degree]
         revision_step = [self.revision_step]
+        version = [self.version]
+        begin = [format_time(self.time_begin)]
+        end = [format_time(self.time_end)]
+        time_difference = [format_dif_time(self.time_end -
+                                                self.time_begin)]
+
+        comments = ["comments"]
         csv_name = 'metadata.csv'  # by default. Can be changed by user.
+
+
 
         # Combine data into rows using zip
         data = list(zip(case_number,
                         annotator_name,
                         annotator_degree,
-                        revision_step))
+                        revision_step,
+                        version,
+                        begin,
+                        end,
+                        time_difference,
+                        comments))
 
         # Create the folder if it does not exist
         os.makedirs(self.output_folder, exist_ok=True)
@@ -1639,11 +1684,22 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
             writer = csv.writer(file)
             # Write header only if the file does not already exist
             if not csv_exists:
+                # writer.writerow(
+                #     ['Case number',
+                #      'Annotator Name',
+                #      'Annotator Degree',
+                #      'Revision Step'])
                 writer.writerow(
                     ['Case number',
                      'Annotator Name',
                      'Annotator Degree',
-                     'Revision Step'])
+                     'Revision Step',
+                     'Version',
+                     'Begin',
+                     'End',
+                     'Time Difference',
+                     'Comments '
+                     ])
 
             # Write data rows
             for row in data:
@@ -1806,6 +1862,7 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
             return False
         return True
 
+
     def create_vtk_segment(self):
         self.enter_function("create_vtk_segment")
         # Creates a vtk object from an existing already saved segment.
@@ -1820,25 +1877,46 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
 
         labelmap_node = slicer.util.loadLabelVolume(segment_path)
 
-        slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(
-            labelmap_node, self.segmentation_node)
+        # If the loaded segment is empty (has only 0 values), will add new
+        # segment, but need to check first if empty or not
 
-        # Get the segmentation node
-        segmentation = self.segmentation_node.GetSegmentation()
-        # Get the segment IDs
-        segments_ids = vtk.vtkStringArray()
-        print("create_vtk_segment(), segments_ids: ", segments_ids)
-        segmentation.GetSegmentIDs(segments_ids)
+        # Convert the image data to a numpy array
+        scalars = slicer.util.arrayFromVolume(labelmap_node)
+        # Check if there are any values other than 0
+        label_map_not_empty = np.any(scalars != 0)
 
-        # Set the name for each segment
-        segment_id = segments_ids.GetValue(
-            (segments_ids.GetNumberOfValues() - 1))
-        print("create_vtk_segment(), segment_id: ", segment_id)
-        segment = segmentation.GetSegment(segment_id)
-        print("create_vtk_segment(), segment: ", segment)
-        segment_name = f"{self.segment_name}"
-        print("segment_name", segment_name)  # Customize the name as needed
-        segment.SetName(segment_name)
+        if label_map_not_empty:
+            print("labelmap_node is not empty", labelmap_node)
+            print('The labelmap volume contains values other than 0')
+
+            # Import it in the segmentation node
+            slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(
+                labelmap_node, self.segmentation_node)
+
+            # Get the segmentation node
+            segmentation = self.segmentation_node.GetSegmentation()
+
+            # Get the segment IDs
+            segments_ids = vtk.vtkStringArray()
+            print("create_vtk_segment(), segments_ids: ", segments_ids)
+            segmentation.GetSegmentIDs(segments_ids)
+
+            # Set the name for the segment
+            segment_id = segments_ids.GetValue(
+                (segments_ids.GetNumberOfValues() - 1))
+            print("create_vtk_segment(), segment_id: ", segment_id)
+            segment = segmentation.GetSegment(segment_id)
+            print("create_vtk_segment(), segment: ", segment)
+            segment_name = f"{self.segment_name}"
+            print("segment_name", segment_name)  # Customize the name as needed
+            segment.SetName(segment_name)
+            print("create_vtk_segment(), segment renamed: ", segment)
+
+        else:
+            print("labelmap_node is empty", labelmap_node)
+            print('The labelmap volume only contains 0 values')
+            self.segmentation_node.GetSegmentation().AddEmptySegment(
+                self.segment_name)
 
     # Get list_of_versions
     def get_list_of_versions(self, filename, folder_path=None):
@@ -2171,6 +2249,13 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
 
     def open_selection_box(self):
         self.enter_function("open_selection_box")
+
+        # TODO: Need to uncomment when knowing how to remove the color when
+        #  closing the qt dialog box
+        # Set the toggle button color when clicked
+        # self.set_button_color(self.ui.TGSegmentationVersions,
+        # self.color_active)
+
         # Initialize clickedItems
         self.clickedItems = set()
 
@@ -2214,15 +2299,16 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
                     f"New item '{name_of_items}' has not been clicked before.")
                 self.item_clicked = True  # Mark this item as clicked
                 self.load_version(versions_dict, name_of_items)
-                button.setStyleSheet(
-                    "background-color: green")  # Set button color to green
+                # Set button color to active color (e.g. green)
+                self.set_button_color(button, self.color_active)
                 self.clickedItems.add(name_of_items)  # Add to clicked items set
             else:
                 print(
                     f"Item '{name_of_items}' has already been clicked before.")
                 self.item_clicked = False  # Unmark this item as clicked
                 self.unload_version(versions_dict, name_of_items)
-                button.setStyleSheet("")  # Revert button color to default
+                # Revert button color to default
+                self.set_button_color(button, color="")
                 self.clickedItems.remove(
                     name_of_items)  # Remove from clicked items set
 
@@ -2513,11 +2599,11 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
         current_state = display_node.GetInterpolate()
         display_node.SetInterpolate(not current_state)
         print("current state: ", current_state)
-        toggleButton = self.ui.TGInterpolation
+        # toggleButton = self.ui.TGInterpolation
         if current_state == 0:
-            toggleButton.setStyleSheet("background-color : green")
+            self.set_button_color(self.ui.TGInterpolation, self.color_active)
         else:
-            toggleButton.setStyleSheet("background-color : red")
+            self.set_button_color(self.ui.TGInterpolation, self.color_inactive)
 
     def clicked_pb_create_segmentation(self):
         self.enter_function("clicked_pb_create_segmentation")
@@ -2543,7 +2629,10 @@ class GeNeuroSegmenterWidget(ScriptedLoadableModuleWidget,
         self.enter_function("load_masks")
         self.mask_loaded = not self.mask_loaded
         print("self.mask_loaded: ", self.mask_loaded)
-        #TODO: change color (toggle) of the load_mask button
+        if self.mask_loaded:
+            self.set_button_color(self.ui.PBLoadMask, self.color_active)
+        else:
+            self.set_button_color(self.ui.PBLoadMask, self.color_inactive)
 
     # LLG work
     def convert_nifti_header_Segment(self):
