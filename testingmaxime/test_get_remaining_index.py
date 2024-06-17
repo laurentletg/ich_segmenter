@@ -44,7 +44,7 @@ def get_index_by_name(element_list, element_name):
         return None
 
 # Example usage
-my_list = self.Cases
+my_list = self.cases
 element_name = 'banana'
 index = get_index_by_name(my_list, element_name)
 print(f"The index of '{element_name}' in the list is:", index)

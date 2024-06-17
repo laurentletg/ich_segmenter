@@ -8,7 +8,7 @@ print("ceci est un test pour voir si execute fichier python dun endroit "
 ################# CONFIG FILE BEGIN ##########################
 
 # Specify the absolute path where you want to write the file
-output_folder = "/Users/maximebouthillier/gitmax/code/dr_letourneau/ICH_SEGMENTER_V2/testingmaxime"
+output_folder = "/Users/maximebouthillier/gitmax/code/dr_letourneau/geneuro_segmenter/testingmaxime"
 
 # Specify the absolute path of the script you want to execute
 script_file = "/Users/maximebouthillier/gitmax/code/testing/slicer_exploration_basic/src/script_file_to_execute.py"  #ex print 1212

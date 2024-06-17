@@ -2,19 +2,19 @@ default_volume_directory: '/Users/maximebouthillier/gitmax/data_confid/test_sct_
 volume_extension: ".nii.gz"
 regex_format_volume_load: '.nii.gz'
 regex_format_volume_save: ""
-
+##to do withouth jz
 ###maxime modif bids format
 folder_organization: "sub-"
 #If modality has multiple contrasts (ex MRI T1w, T2w ...) and you want to
   #filter them, you may indicate it here. By default, all contrasts will be
    #                    loaded.
 contrast: "T2w"
-interpolation: False #voluntarily will set each new load to this
+interpolation_state: False #voluntarily will set each new load to this
   # configuration to avoid potential annotation on not default setting
 
 output_directory: "/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data/site_003"
 
-extension_directory: "/Users/maximebouthillier/gitmax/code/dr_letourneau/ICH_SEGMENTER_V2"
+extension_directory: "/Users/maximebouthillier/gitmax/code/dr_letourneau/geneuro_segmenter"
 GTReferences_folder: "/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data/site_003"
 slice_view_color: "Yellow" #can be replaced by Red or Yellow to display startup
 

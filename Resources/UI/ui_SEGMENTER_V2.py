@@ -91,7 +91,7 @@ class Ui_Form(object):
         self.BrowseFolders.setObjectName("BrowseFolders")
         self.verticalLayout.addWidget(self.BrowseFolders)
         self.CurrentFolder = QtWidgets.QLabel(self.CollapsibleGroupBox)
-        self.CurrentFolder.setObjectName("CurrentFolder")
+        self.CurrentFolder.setObjectName("current_dir")
         self.verticalLayout.addWidget(self.CurrentFolder)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")

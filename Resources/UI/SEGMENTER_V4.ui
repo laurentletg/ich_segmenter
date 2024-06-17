@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>893</width>
-    <height>765</height>
+    <width>892</width>
+    <height>794</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,7 +29,7 @@
          <item row="0" column="1">
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
-            <widget class="QPushButton" name="LoadPrediction">
+            <widget class="QPushButton" name="PBLoadMask">
              <property name="font">
               <font>
                <weight>75</weight>
@@ -68,7 +68,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="SaveSegmentationButton">
+            <widget class="QPushButton" name="PBSaveSegmentation">
              <property name="font">
               <font>
                <weight>75</weight>
@@ -117,14 +117,14 @@
          <item row="2" column="0">
           <layout class="QGridLayout" name="gridLayout">
            <item row="2" column="2">
-            <widget class="QPushButton" name="PushButton_segmeditor">
+            <widget class="QPushButton" name="PBSegmentEditor">
              <property name="text">
               <string>Segm Editor</string>
              </property>
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QPushButton" name="pushButton_ToggleVisibility">
+            <widget class="QPushButton" name="TGToggleVisibility">
              <property name="text">
               <string>Visibility: ON</string>
              </property>
@@ -134,16 +134,9 @@
             </widget>
            </item>
            <item row="3" column="0">
-            <widget class="QPushButton" name="pushButton_undo">
+            <widget class="QPushButton" name="PBUndo">
              <property name="text">
               <string>Undo</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="pushButton_Smooth">
-             <property name="text">
-              <string>Smooth margins</string>
              </property>
             </widget>
            </item>
@@ -155,7 +148,7 @@
             </widget>
            </item>
            <item row="3" column="2">
-            <widget class="QPushButton" name="pushButton_ToggleFill">
+            <widget class="QPushButton" name="TGToggleFill">
              <property name="text">
               <string>Fill: OFF</string>
              </property>
@@ -165,17 +158,17 @@
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QComboBox" name="dropDownButton_label_select"/>
+            <widget class="QComboBox" name="CBDropdownLabelSelect"/>
            </item>
            <item row="1" column="1">
-            <widget class="QPushButton" name="pushButton_Paint">
+            <widget class="QPushButton" name="PBPaint">
              <property name="text">
               <string>Paint</string>
              </property>
             </widget>
            </item>
            <item row="1" column="2">
-            <widget class="QPushButton" name="pushButton_Erase">
+            <widget class="QPushButton" name="PBErase">
              <property name="text">
               <string>Erase mode</string>
              </property>
@@ -236,7 +229,7 @@
           </layout>
          </item>
          <item row="1" column="0">
-          <widget class="QPushButton" name="SegmentWindowPushButton">
+          <widget class="QPushButton" name="PBSegmentWindow">
            <property name="text">
             <string>Dock Segment Editor</string>
            </property>
@@ -557,7 +550,7 @@
        </widget>
       </item>
       <item row="1" column="0">
-       <widget class="QPushButton" name="createSegmentationButton">
+       <widget class="QPushButton" name="PBCreateSegmentation">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -585,7 +578,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_uint8casting">
+         <widget class="QPushButton" name="PBUInt8Casting">
           <property name="toolTip">
            <string>This will check if all segmentation file are in the uint8 format. Since Slicer 5.6 this raises in an error if the segmentation file are in float. </string>
           </property>
@@ -595,21 +588,35 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="getDefaultDir">
+         <widget class="QPushButton" name="PBGetDefaultDir">
           <property name="text">
            <string>Get default directory</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="BrowseFolders">
+         <widget class="QPushButton" name="PBBrowseVolDir">
           <property name="text">
            <string>Browse volume folder</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="CurrentFolder">
+         <widget class="QPushButton" name="PBSelectOutputDir">
+          <property name="text">
+           <string>Select output folder</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="PBSelectGTDir">
+          <property name="text">
+           <string>Select GT References folder</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="CurrentDir">
           <property name="text">
            <string>Current Folder:</string>
           </property>
@@ -716,14 +723,14 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
-           <widget class="QPushButton" name="Previous">
+           <widget class="QPushButton" name="PBPrevious">
             <property name="text">
              <string>&lt;&lt;  Previous</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="Next">
+           <widget class="QPushButton" name="PBNext">
             <property name="text">
              <string>Next  &gt;&gt;</string>
             </property>
@@ -737,33 +744,16 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_check_errors_labels">
+           <widget class="QPushButton" name="PBCheckErrorsLabels">
             <property name="text">
              <string>check error labels</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="testButton">
+           <widget class="QPushButton" name="PBCheckSavedSeg">
             <property name="text">
              <string>check saved seg</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_test1">
-            <property name="text">
-             <string>pushButton_test1</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_test2">
-            <property name="toolTip">
-             <string>update the list keeping only remainig cases based on the folder where segmentations are currently being saved</string>
-            </property>
-            <property name="text">
-             <string>pushButton_test2</string>
             </property>
            </widget>
           </item>
@@ -783,34 +773,13 @@
           </property>
          </widget>
         </item>
-        <item>
-         <widget class="QPushButton" name="BrowseFolders_2">
-          <property name="text">
-           <string>Browse mask folder</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="SelectOutputFolder">
-          <property name="text">
-           <string>Select output folder</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="selectGTReferences">
-          <property name="text">
-           <string>Select GT References folder</string>
-          </property>
-         </widget>
-        </item>
        </layout>
       </item>
       <item row="14" column="0" colspan="5">
        <layout class="QVBoxLayout" name="verticalLayout_5"/>
       </item>
       <item row="1" column="1">
-       <widget class="QPushButton" name="assessSegmentationButton">
+       <widget class="QPushButton" name="PBAssessSegmentation">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -823,7 +792,7 @@
        </widget>
       </item>
       <item row="1" column="2">
-       <widget class="QPushButton" name="getResultButton">
+       <widget class="QPushButton" name="PBGetResultsSegmentation">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -842,7 +811,7 @@
        </widget>
       </item>
       <item row="1" column="3">
-       <widget class="QPushButton" name="toggleSegmentationVersions">
+       <widget class="QPushButton" name="TGSegmentationVersions">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -861,7 +830,7 @@
        </widget>
       </item>
       <item row="1" column="4">
-       <widget class="QPushButton" name="toggleInterpolation">
+       <widget class="QPushButton" name="TGInterpolation">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>

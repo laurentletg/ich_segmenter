@@ -1,4 +1,4 @@
-# GENERIC SEGMENTER
+# GENEURO_SEGMENTER
 
 * 3D Slicer extension
 * Adapted from Dr. Laurent Létourneau-Guillon and team in [https://github.com/laurentletg/ICH_SEGMENTER_V2](https://github.com/laurentletg/ICH_SEGMENTER_V2) (due to the nature of the adaptations, this repository has been forked to make this repository).
@@ -70,7 +70,6 @@ This module has been developed on:
 
 Although it may work on other versions, please note that it has not been tested.
 
-
 ### Installation steps
 
 1. Install [3D Slicer](https://download.slicer.org).
@@ -89,7 +88,6 @@ Although it may work on other versions, please note that it has not been tested.
 8. (Optional: set the GENERIC SEGMENTER module to launch at 3DSlicer startup. To do so, go in `Edit -> Application Settings -> Modules -> Default startup module`.)
 
    ![1718131258080](image/README/1718131258080.png)
-
 
 ### Troubleshooting
 
@@ -110,13 +108,11 @@ Although it may work on other versions, please note that it has not been tested.
   slicer.util.pip_install('slicerio')
   ```
 
-
 ### Usage
 
-This video summarizes functions and development context about this module. TO DO 
+This video summarizes functions and development context about this module. TO DO
 
-This video explains more in details the workflow proposed by this module and gives example of how it works. TO DO 
-
+This video explains more in details the workflow proposed by this module and gives example of how it works. TO DO
 
 #### Configuration & Settings
 
@@ -135,7 +131,6 @@ A configuration file `config.yaml` is required to use the extension, and customi
 Once the configuration file has been settled, the module can be used for manual segmentation and/or manual correction tasks.
 
 Below are usage examples that guide the user through accomplishing different tasks.
-
 
 #### At each start
 
@@ -169,7 +164,6 @@ N.B. #1 You can adjust the painting sphere dimension by pressing "Shift" and scr
 
 N.B. #2 From the moment you modify the first segmentation label in your segmentation label masks list, a timer is started in the background and will be resetted only when segmentation will be saved or another volume will be displayed. **TO DO TIMER**
 
-
 #### Save segmentation
 
 Once a segmentation of a case is ready to be saved, you have to click on the Save segmentation button.
@@ -187,11 +181,9 @@ As mentioned earlier, this will:
 
 This button allows to display/undisplay the latest version segmentation masks for a given volume (toggle).
 
-For example, if the latest version for a given version is _v03 for label1 and label2, but _v02 for label3, _v03 for label1 and label2 and _v02 for label3 will be displayed. 
+For example, if the latest version for a given version is _v03 for label1 and label2, but _v02 for label3, _v03 for label1 and label2 and _v02 for label3 will be displayed.
 
 Please note that if you want to see the segmentation mask for the currently displayed volume, you need to click again on the same case in the UI case list. TO DO make it appears automatically ...
-
-
 
 #### Toggle Segmentation Versions
 
@@ -199,13 +191,9 @@ This button allows to display specific versions in the slice viewer. A single or
 
 N.B. If you open the segment editor and remove from the display some segment for a given version (even all), the toggle buttons will stay with green background. **TO DO CHECK TOGGLE VERSION AND SEGMENT EDITOR INTERACTIONS**
 
-
 #### Toggle Interpolation
 
 This button reverses the interpolation state of the volumes that are displayed. By default, the state of each volume (and segmentation mask) will be the one setted in the config.yaml file. If the toggle Interpolation is clicked, interpolation state of each volume that will be loaded after will be the same that has been determined by the last click on the Toggle Interpolation button.
-
-
-
 
 TO DO :
 
@@ -220,20 +208,40 @@ TO DO :
 - [ ] Specify the organization format that should have the references folder (naming should respect the convention BIDS and the version naming of the curent project)
 - [ ] Assess module's utility by integrating it into a methodology validation study on manual segmentation
 
+        # NOW HERE
+        # NEXT STEPS ARE TO MANAGE SEGMENTATION MASKS ACCORDING TO CONFIG FILE
+        # RE-ARRANGE TO MAKE THE MASK LOADING OK AND NOT HAVING TO RE-ARRANGE
+        # INPUT SOME CONFIG PARAMETERS IN CONFIG FILE
+        # MANAGE COMMENT BOX
+        # MANAGE TIMER FOR EACH CASE
+        # MAKE MANDATORY TO WRITE ANNOTATOR NAME ETC.
+        # RE-ORGANIZE THE GUI
+        # MAKE A BUTTON TO LOAD MASKS AND ASSOCIATE THEM TO VOLUME
+        # CREATE KEYBOARD SHORTCUT AND AUTOMATIC DISPLAY OF SCREEN
+        # TRY TO RE-ARRANGE THE GUI
+        # CORRET EXTENSION NAME AND CODE ASSOCIATED
+
 * Expand revision step to more than 2 ...
 * Add a button for custom function!
 * ADD funding
+* 
+
+```
+
+# # TODO REMOVE THE NAME IN EACH SEGMENTS SINCE THIS IS NOT REALLY NEED.
+#  WOULD NEED TO MODIFY THE QC SCRIPT ALSO
+
+# add a button to flag the case
+
+make opening the one slice view adaptaed to the volume nloaded (e.g. sagittal or axial = load axial)
+```
 
 Please note that we appreciate any constructive feedback. Feel free to reach us if you have any suggestion and/or comments.
-
-
-
 
 ### TODO:
 
 - [ ] In the future, the IDs won't be incorporated in the segment names, only in the filenames. This will require a change in post-annotation QC script (separate repository).
 - [ ] Add the QC check module within the extension and allow to check the label name : value correspondance based on the config file.
-
 
 ### Other extensions that could be useful
 
@@ -242,7 +250,6 @@ Please note that we appreciate any constructive feedback. Feel free to reach us 
 ### Video tutorials
 
 The videos are much less blurry if the mp4 files are downloaded to your computer.
-
 
 ### Other resources
 
