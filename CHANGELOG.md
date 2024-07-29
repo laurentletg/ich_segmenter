@@ -8,7 +8,8 @@
 ![MLSmeasure.png](images%2FMLSmeasure.png)
 - Added a screenshot button save button that also saves the text description in the widget adjacent to it. 
 ![screeshot.png](images%2Fscreeshot.png)
-- 
+
+
 ## [2.1.2] - 2024-04-30
 
 ![images/slicertogglefill.gif](https://github.com/laurentletg/ICH_SEGMENTER_V2/blob/main/images/slicertogglefill.gif)
