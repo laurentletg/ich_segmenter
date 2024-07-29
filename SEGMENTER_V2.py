@@ -455,7 +455,13 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCurrentFolder()
       # LLG GET A LIST OF cases WITHIN CURRENT FOLDERS (SUBDIRECTORIES). List comp to get only the case
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.VOLUME_FILE_TYPE}'))
-      self.Cases = sorted([re.findall(self.VOL_REGEX_PATTERN,os.path.split(i)[-1])[0] for i in self.CasesPaths])
+
+      print(os.path.basename(self.CasesPaths[0]))
+      try:
+          self.Cases = sorted([re.findall(self.VOL_REGEX_PATTERN,os.path.split(i)[-1])[0] for i in self.CasesPaths])
+      except IndexError:
+          print('issue with regex')
+
       self.update_UI_case_list()
 
   def update_UI_case_list(self):
@@ -1354,7 +1360,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print('-'*20)
       print(f'self.currentCase::{self.currentCase}')
       print(f'self.outputSegmFile ::{self.outputSegmFile}')
-      segmentation_info = slicerio.read_segmentation_info(self.outputSegmFile)
+      segmentation_info = slicerio.read_segmentation(self.outputSegmFile)
       print('-' * 20)
       print('Segmentation info :')
       print(segmentation_info)
@@ -1574,6 +1580,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         output_screen_capture_filename = os.path.join(self.output_dir, f'screenshot_{self.currentCase}.png')
         cap.captureImageFromView(view, output_screen_capture_filename)
         comments = self.ui.textEdit_screenshot.toPlainText()
+        output_dir = os.path.joint(self.output_dir, 'screenshots')
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
         with open(os.path.join(self.output_dir, f'screenshot_comments_{self.currentCase}.txt'), 'w') as f:
             f.write(comments)
 
