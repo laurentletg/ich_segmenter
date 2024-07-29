@@ -283,7 +283,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.PauseTimerButton.connect('clicked(bool)', self.togglePauseTimerButton)
     self.ui.StartTimerButton.connect('clicked(bool)', self.toggleStartTimerButton)
     self.ui.pushButton_ToggleFill.connect('clicked(bool)', self.toggleFillButton)
-    self.ui.SegmentWindowPushButton.connect('clicked(bool)', self.onSegmendEditorPushButton)
+    self.ui.SegmentWindowPushButton.connect('clicked(bool)', self.onSegmentEditorPushButton)
     self.ui.UB_HU.valueChanged.connect(self.onUB_HU)
     self.ui.LB_HU.valueChanged.connect(self.onLB_HU)
     self.ui.pushDefaultMin.connect('clicked(bool)', self.onPushDefaultMin)
@@ -293,6 +293,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.check_for_outlier_labels)
     self.ui.pushButton_test1.connect('clicked(bool)', self.keyboard_toggle_fill)
     self.ui.pushButton_test2.connect('clicked(bool)', self.onpushbuttonttest2)
+
 
 
     # KEYBOARD SHORTCUTS
@@ -416,11 +417,12 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           input_path = os.path.basename(case)
           if input_path.endswith('.nii') or input_path.endswith('.nii.gz'):
               segm = nib.load(case)
-              segm_data = segm.get_fdata()
-              print(f'infile: {input_path}, dtype: {segm_data.dtype}')
-              if segm_data.dtype != np.uint8:
+              segm_data_dtype = segm.dataobj
+              print(f'infile: {input_path}, dtype: {segm_data_dtype}')
+              if segm_data_dtype != np.uint8:
+                  segm_data = segm.get_fdata()
                   segm_data = segm_data.astype(np.uint8)
-                  segm_nii = nib.Nifti1Image(segm_data, segm.affine)
+                  segm_nii = nib.Nifti1Image(segm_data, segm.affine, segm.header)
                   nib.save(segm_nii, case)
                   print(f'converted file {input_path} to uint8')
           elif input_path.endswith('seg.nrrd'):
@@ -618,14 +620,12 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def subjectHierarchy(self):
     # Get the subject hierarchy node
     shNode = slicer.mrmlScene.GetSubjectHierarchyNode()
-
     # Get scene item ID first because it is the root item:
     sceneItemID = shNode.GetSceneItemID()
     # Get the scene item ID (check if the scene item exists)
     subjectItemID = shNode.GetItemChildWithName(shNode.GetSceneItemID(), self.currentCase)
     if not subjectItemID:
         subjectItemID = shNode.CreateSubjectItem(shNode.GetSceneItemID(), self.currentCase)
-
     # TODO: this will need to be updated when moving to multiple studies per patient (or done in a separate script)
     # Creat a folder to include a study (if more than one study)
     # check if the folder exists and if not create it (avoid recreating a new one when reloading a mask)
@@ -635,7 +635,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         folderID = shNode.CreateFolderItem(subjectItemID, Study_name)
     # set under the subject
     shNode.SetItemParent(folderID, subjectItemID)
-
     # get all volume nodes
     VolumeNodes = slicer.util.getNodesByClass('vtkMRMLVolumeNode')
     VolumeNodeNames = [i.GetName() for i in VolumeNodes]
@@ -1157,7 +1156,6 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                                                         label["color_b"] / 255)
 
   def update_current_case_paths_by_segmented_volumes(self):
-      print('test')
       print(self.output_seg_dir)
       segmentations = glob(os.path.join(self.output_seg_dir, '*.seg.nrrd'))
       print(len(segmentations))
@@ -1180,7 +1178,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onpushbuttonttest2(self):
       pass
 
-  def onSegmendEditorPushButton(self):
+  def onSegmentEditorPushButton(self):
 
       if self.ui.SegmentWindowPushButton.isChecked():
           self.ui.SegmentWindowPushButton.setStyleSheet("background-color : gray")
