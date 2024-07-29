@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>918</width>
-    <height>1077</height>
+    <width>952</width>
+    <height>1911</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -38,11 +38,11 @@
       <item row="10" column="0" colspan="2">
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
-         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
-          <property name="text">
+         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2" native="true">
+          <property name="text" stdset="0">
            <string>Tools</string>
           </property>
-          <property name="collapsed">
+          <property name="collapsed" stdset="0">
            <bool>true</bool>
           </property>
           <layout class="QGridLayout" name="gridLayout_6">
@@ -58,6 +58,37 @@
            </item>
            <item row="2" column="0">
             <layout class="QGridLayout" name="gridLayout">
+             <item row="0" column="2">
+              <widget class="QPushButton" name="pushButton_get_line_measure">
+               <property name="text">
+                <string>Save line measurement</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QPushButton" name="pushButton_Small_holes">
+               <property name="text">
+                <string>Remove small holes</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="pushButton_screenshot">
+               <property name="text">
+                <string>screenshot</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="2">
+              <widget class="QPushButton" name="pushButton_ToggleFill">
+               <property name="text">
+                <string>Fill: OFF</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
              <item row="2" column="2">
               <widget class="QPushButton" name="PushButton_segmeditor">
                <property name="text">
@@ -89,26 +120,6 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
-              <widget class="QPushButton" name="pushButton_Small_holes">
-               <property name="text">
-                <string>Remove small holes</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QPushButton" name="pushButton_ToggleFill">
-               <property name="text">
-                <string>Fill: OFF</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QComboBox" name="dropDownButton_label_select"/>
-             </item>
              <item row="1" column="1">
               <widget class="QPushButton" name="pushButton_Paint">
                <property name="text">
@@ -120,6 +131,31 @@
               <widget class="QPushButton" name="pushButton_Erase">
                <property name="text">
                 <string>Erase mode</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QComboBox" name="dropDownButton_label_select"/>
+             </item>
+             <item row="0" column="0">
+              <widget class="QTextEdit" name="textEdit_screenshot">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>10</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>1000</width>
+                 <height>50</height>
+                </size>
                </property>
               </widget>
              </item>
@@ -197,7 +233,7 @@
        </layout>
       </item>
       <item row="1" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -210,10 +246,10 @@
           <height>710</height>
          </size>
         </property>
-        <property name="text">
+        <property name="text" stdset="0">
          <string>Case list</string>
         </property>
-        <property name="collapsed">
+        <property name="collapsed" stdset="0">
          <bool>false</bool>
         </property>
         <layout class="QGridLayout" name="gridLayout_9">
@@ -287,10 +323,16 @@
            <item>
             <widget class="QListWidget" name="SlicerDirectoryListView">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>1677721</width>
+               <height>50000</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -525,7 +567,7 @@
          <enum>QLayout::SetMaximumSize</enum>
         </property>
         <item>
-         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton">
+         <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
             <horstretch>0</horstretch>
@@ -538,10 +580,10 @@
             <height>16777215</height>
            </size>
           </property>
-          <property name="text">
+          <property name="text" stdset="0">
            <string>CRFs</string>
           </property>
-          <property name="collapsed">
+          <property name="collapsed" stdset="0">
            <bool>false</bool>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -554,7 +596,7 @@
               </size>
              </property>
              <property name="currentIndex">
-              <number>2</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="tab_5">
               <property name="sizePolicy">

@@ -2,6 +2,13 @@
 
 **All notable changes to this project will be documented in this file.**
 
+
+## [2.1.3] - 2024-05-01
+- Added the option to get a line measurement for midline shift. Note, it considers only the 2nd measurement available, the first one is typically to get the ideal midline. It saves in the output folder as a csv and a screenshot capture. 
+![MLSmeasure.png](images%2FMLSmeasure.png)
+- Added a screenshot button save button that also saves the text description in the widget adjacent to it. 
+![screeshot.png](images%2Fscreeshot.png)
+- 
 ## [2.1.2] - 2024-04-30
 
 ![images/slicertogglefill.gif](https://github.com/laurentletg/ICH_SEGMENTER_V2/blob/main/images/slicertogglefill.gif)

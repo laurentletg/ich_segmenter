@@ -13,6 +13,7 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import slicerio # cannot install in slicer
 import SegmentStatistics
+import ScreenCapture
 
 import pandas as pd
 import numpy as np
@@ -229,7 +230,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Load widget from .ui file (created by Qt Designer).
     # Additional widgets can be instantiated manually and added to self.layout.
-    uiWidget = slicer.util.loadUI(self.resourcePath('UI/SEGMENTER_V4.ui'))
+    uiWidget = slicer.util.loadUI(self.resourcePath('UI/ICH_SEGMENTER_V2.ui'))
     self.layout.addWidget(uiWidget)
     self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -246,6 +247,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # CONFIG - could be removed
     self.get_config_values()
     self.DEFAULT_VOLUME_DIR = self.config_yaml['default_volume_directory']
+    self.CurrentFolder = self.DEFAULT_VOLUME_DIR
     self.DEFAULT_SEGMENTATION_DIR = self.config_yaml['default_segmentation_directory']
     print(f'Default directory location: {self.DEFAULT_SEGMENTATION_DIR}')
     self.VOLUME_FILE_TYPE = self.config_yaml['volume_extension']
@@ -293,8 +295,16 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.check_for_outlier_labels)
     self.ui.pushButton_test1.connect('clicked(bool)', self.keyboard_toggle_fill)
     self.ui.pushButton_test2.connect('clicked(bool)', self.onpushbuttonttest2)
+    self.ui.pushButton_get_line_measure.connect('clicked(bool)', self.get_line_measure)
+    self.ui.pushButton_screenshot.connect('clicked(bool)', self.get_screenshot)
 
-
+    # Set annotator details
+    self.ui.Annotator_name.setText(self.config_yaml['annotator_name'])
+    self.ui.AnnotatorDegree.setCurrentIndex(self.config_yaml['annotator_degree'])
+    self.ui.RevisionStep.setCurrentIndex(self.config_yaml['revision_step'])
+    self.annotator_name = self.ui.Annotator_name.text
+    self.annotator_degree = self.ui.AnnotatorDegree.currentText
+    self.revision_step = self.ui.RevisionStep.currentText
 
     # KEYBOARD SHORTCUTS
     keyboard_shortcuts = []
@@ -375,6 +385,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
 
+
+    if self.annotator_name and self.revision_step:
+        self.createFolders()
 
   def setUpperAndLowerBoundHU(self, inputLB_HU, inputUB_HU):
       self.LB_HU = inputLB_HU
@@ -1519,6 +1532,55 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       df['ID'] = df['Segment'].str.extract("(ID_[a-zA-Z0-90]+)_")
       df['Category'] = df['Segment'].str.extract("_([A-Z]+)$")
       df.to_csv(outputFilename, index=False)
+
+  def get_line_measure(self):
+      annotator_name = self.ui.Annotator_name.text
+      revision_step = self.ui.RevisionStep.currentIndex
+      markupsLogic = slicer.modules.markups.logic()
+      if markupsLogic:
+          print(f'Found markupsLogic')
+          lineNode = slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode")[1]
+          length = lineNode.GetLineLengthWorld()
+          print(f'Length of line: {length}')
+          #save to csv specific for line measurement
+          output_dir = os.path.join(self.output_dir,
+                                             f'Output_line_measure_{annotator_name}_{revision_step}')  # only get the number
+          if not os.path.exists(output_dir):
+              os.makedirs(output_dir)
+
+          output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE, os.path.basename(self.currentCasePath))[0]
+          outputFilename = 'Line_measure_{}_{}_{}.{}'.format(output_file_pt_id_instanceUid, annotator_name, revision_step, 'csv')
+          outputFilename = os.path.join(output_dir, outputFilename)
+          df = pd.DataFrame({'id': output_file_pt_id_instanceUid, 'annotator':annotator_name, 'revision_step':revision_step, 'length': [length]})
+          df.to_csv(outputFilename, index=False)
+
+          # Save a screenshot of the line measurement
+          # screenshot = qt.QPixmap.grabWidget(slicer.util.mainWindow())
+          # screenshot.save()
+
+          view = slicer.app.layoutManager().sliceWidget('Red').sliceView()
+          cap = ScreenCapture.ScreenCaptureLogic()
+          output_screen_capture_filename = os.path.join(output_dir, f'line_measure_{output_file_pt_id_instanceUid}_{annotator_name}_{revision_step}.png')
+          cap.captureImageFromView(view, output_screen_capture_filename)
+      else:
+          msg = qt.QMessageBox()
+          msg.setWindowTitle('Warning')
+          msg.setText('No line measurement found!')
+          msg.exec()
+
+  def get_screenshot(self):
+        view = slicer.app.layoutManager().sliceWidget('Red').sliceView()
+        cap = ScreenCapture.ScreenCaptureLogic()
+        output_screen_capture_filename = os.path.join(self.output_dir, f'screenshot_{self.currentCase}.png')
+        cap.captureImageFromView(view, output_screen_capture_filename)
+        comments = self.ui.textEdit_screenshot.toPlainText()
+        with open(os.path.join(self.output_dir, f'screenshot_comments_{self.currentCase}.txt'), 'w') as f:
+            f.write(comments)
+
+
+
+
+
 
 
 
