@@ -4,7 +4,8 @@
 
 ## [2.1.4] - 2024-08-06
 - Fixed the issue with nnunet or any nifti segmentations that loads as _Segment_1_ etc
-- Now loads using the config file (remove the id in segment names).
+- Now loads using the config file (remove the id in segment names) and uses the name and colors set in the config file.
+
 
 ```py
 
