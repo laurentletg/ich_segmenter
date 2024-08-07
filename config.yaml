@@ -1,15 +1,13 @@
-default_volume_directory: '/Users/laurentletourneau-guillon/Dropbox/CHUM/RECHERCHE/2020ICHHEMATOMAS/2024_07_getting_all_local_segmentation_data/output/all_local_segmentation_Ahmad_data_cleaned/vols' # adjust to your default volume directory
+default_volume_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/A_SEGMENTER_without_duplicates_from_malo_delphine_new_volumes_without_duplicates/volumes'
 volume_extension: "*.nrrd"
-# regex_format_volume_load: 'Volume_pt_id_(ID_[a-zA-Z0-9]+)*'
-regex_format_volume_load : '[0-9]+_[1-2]+'
-regex_format_volume_save: '[0-9]+_[1-2]+'
+regex_format_volume_load: 'Volume_pt_id_(ID_[a-zA-Z0-9]+)*'
+regex_format_volume_save: "Volume_pt_id_(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*"
 
-default_segmentation_directory: '/Users/laurentletourneau-guillon/Dropbox/CHUM/RECHERCHE/2020ICHHEMATOMAS/2024_07_getting_all_local_segmentation_data/output/all_local_segmentation_Ahmad_data_cleaned/segms'
-segmentation_extension:  "*.seg.nrrd"
-regex_format_segmentation_load:  '[0-9]+_[1-2]+'
-#regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
+default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/A_SEGMENTER_without_duplicates_from_malo_delphine_new_volumes_without_duplicates/New_batch_10012024_BE_multipred_nii'
+segmentation_extension:  "*.nii.gz"
+regex_format_segmentation_load:  'Volume_pt_id_(ID_[a-zA-Z0-9]+)*'
+# regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
 
-# Default information regarding the annotator's name, degree and revision step
 annotator_name : 'LLG'
 annotator_degree : 4 # 0 is default and doest not contain anything,
 revision_step : 3 # 0 is default and doest not contain anything,
