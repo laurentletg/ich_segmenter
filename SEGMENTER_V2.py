@@ -1365,6 +1365,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         pass
 
     def check_match_label_name_value(self):
+      #TODO: refactor this method using the qc script
       """"
       Check match between lable name and values
       # seg.nrrd file = outputSegmFile
@@ -1390,8 +1391,8 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       print('-' * 20)
       print(f'lenght of segment names {len(segment_names)}')
-      if len(segment_names) != 3:
-          raise ValueError('Number of segments not equal to 3')
+      if len(segment_names) != len(self.config_yaml['labels']):
+          raise ValueError('Number of segments not equal to number of labels in the config file')
 
 
       for i in segment_names:
