@@ -1142,7 +1142,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           nn.SetAllSegmentsVisibility(True)
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
 
-          self.convert_nifti_header_Segment()
+          self.convert_nifti_header_segment()
 
           #### ADD SEGMENTS THAT ARE NOT IN THE SEGMENTATION ####
 
@@ -1155,7 +1155,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.subjectHierarchy()
 
 
-    def convert_nifti_header_Segment(self):
+    def convert_nifti_header_segment(self):
 
         # Check if the first segment starts with Segment_1 (e.g. loaded from nnunet).
         # If so change the name and colors of the segments to match the ones in the config file
