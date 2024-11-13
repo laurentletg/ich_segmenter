@@ -1365,148 +1365,149 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         pass
 
     def check_match_label_name_value(self):
-      #TODO: refactor this method using the qc script
-      """"
-      Check match between lable name and values
-      # seg.nrrd file = outputSegmFile
-      # seg nifti file = outputSegmFileNifti
-      # volume nifti file = outputVolfile
-      #
-      """
-      # get the current label name
-      # read with slicerio
-      print('-'*20)
-      print(f'self.currentCase::{self.currentCase}')
-      print(f'self.outputSegmFile ::{self.outputSegmFile}')
-      segmentation_info = slicerio.read_segmentation(self.outputSegmFile)
-      print('-' * 20)
-      print('Segmentation info :')
-      print(segmentation_info)
+       pass
+    #   #TODO: refactor this method using the qc script 
+    #   """"
+    #   Check match between lable name and values
+    #   # seg.nrrd file = outputSegmFile
+    #   # seg nifti file = outputSegmFileNifti
+    #   # volume nifti file = outputVolfile
+    #   #
+    #   """
+    #   # get the current label name
+    #   # read with slicerio
+    #   print('-'*20)
+    #   print(f'self.currentCase::{self.currentCase}')
+    #   print(f'self.outputSegmFile ::{self.outputSegmFile}')
+    #   segmentation_info = slicerio.read_segmentation(self.outputSegmFile)
+    #   print('-' * 20)
+    #   print('Segmentation info :')
+    #   print(segmentation_info)
 
-      # get the segment names
-      segment_names = slicerio.segment_names(segmentation_info)
-      print('-'*20)
-      print('segment names:')
-      print(segment_names)
+    #   # get the segment names
+    #   segment_names = slicerio.segment_names(segmentation_info)
+    #   print('-'*20)
+    #   print('segment names:')
+    #   print(segment_names)
 
-      print('-' * 20)
-      print(f'lenght of segment names {len(segment_names)}')
-      if len(segment_names) != len(self.config_yaml['labels']):
-          raise ValueError('Number of segments not equal to number of labels in the config file')
-
-
-      for i in segment_names:
-          if self.currentCase not in i:
-              raise ValueError(f'Case IC not found in segmentation segment name {i}')
-          else:
-              if 'ich' in i.lower():
-                  ich_name = i
-              elif 'ivh' in i.lower():
-                  ivh_name = i
-              elif 'phe' in i.lower():
-                  phe_name = i
-              else:
-                  raise ValueError('Segment name not recognized')
-
-      # #TODO: put in the config file
-      segment_names_to_labels = [(ich_name, 1), (ivh_name, 2), (phe_name, 3)]
-      voxels, header = nrrd.read(self.outputSegmFile)
-      # I think this function corrects the segment names and labels
-      extracted_voxels, extracted_header = slicerio.extract_segments(voxels, header, segmentation_info,
-                                                                     segment_names_to_labels)
-      # Below could be refactored to a function that take an arbitrary number of segment names and labels (e.g. generic qc script)
+    #   print('-' * 20)
+    #   print(f'lenght of segment names {len(segment_names)}')
+    #   if len(segment_names) != len(self.config_yaml['labels']):
+    #       raise ValueError('Number of segments not equal to number of labels in the config file')
 
 
-      # Overwrite the nrrd file
-      print(f'Writing a copy of the slicerio corrected segmentation file  {self.outputSegmFile} with the corrected labels and names')
-      output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,os.path.basename(self.currentCasePath))[0]
-      output_dir_segmentation_file_corrected = os.path.join(self.DEFAULT_VOLUME_DIR, 'Segmentation_file_corrected_slicerio')
-      if not os.path.isdir(output_dir_segmentation_file_corrected):
-          os.makedirs(output_dir_segmentation_file_corrected)
-      output_path = os.path.join(output_dir_segmentation_file_corrected, f'Slicerio_corrected_segmentation_{output_file_pt_id_instanceUid}.seg.nrrd')
+    #   for i in segment_names:
+    #       if self.currentCase not in i:
+    #           raise ValueError(f'Case IC not found in segmentation segment name {i}')
+    #       else:
+    #           if 'ich' in i.lower():
+    #               ich_name = i
+    #           elif 'ivh' in i.lower():
+    #               ivh_name = i
+    #           elif 'phe' in i.lower():
+    #               phe_name = i
+    #           else:
+    #               raise ValueError('Segment name not recognized')
 
-      try:
-          print('-' * 20)
-          print('*' * 20)
-          print('Segment0')
-          print(extracted_header['Segment0_LabelValue'])
-          print(extracted_header['Segment0_Name'])
-          print('*' * 20)
-          print('Segment1')
-          print(extracted_header['Segment1_LabelValue'])
-          print(extracted_header['Segment1_Name'])
-          print('*' * 20)
-          print('Segment2')
-          print(extracted_header['Segment2_LabelValue'])
-          print(extracted_header['Segment2_Name'])
-
-          assert extracted_header['Segment0_LabelValue'] == 1
-          assert extracted_header['Segment0_Name'] == ich_name
-          assert extracted_header['Segment1_LabelValue'] == 2
-          assert extracted_header['Segment1_Name'] == ivh_name
-          assert extracted_header['Segment2_LabelValue'] == 3
-          assert extracted_header['Segment2_Name'] == phe_name
-          print('-' * 20)
-          nrrd.write(output_path, extracted_voxels, extracted_header)
-          print(f'PASSED: Match segmentation labels and names for case {self.currentCase}')
+    #   # #TODO: put in the config file
+    #   segment_names_to_labels = [(ich_name, 1), (ivh_name, 2), (phe_name, 3)]
+    #   voxels, header = nrrd.read(self.outputSegmFile)
+    #   # I think this function corrects the segment names and labels
+    #   extracted_voxels, extracted_header = slicerio.extract_segments(voxels, header, segmentation_info,
+    #                                                                  segment_names_to_labels)
+    #   # Below could be refactored to a function that take an arbitrary number of segment names and labels (e.g. generic qc script)
 
 
+    #   # Overwrite the nrrd file
+    #   print(f'Writing a copy of the slicerio corrected segmentation file  {self.outputSegmFile} with the corrected labels and names')
+    #   output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,os.path.basename(self.currentCasePath))[0]
+    #   output_dir_segmentation_file_corrected = os.path.join(self.DEFAULT_VOLUME_DIR, 'Segmentation_file_corrected_slicerio')
+    #   if not os.path.isdir(output_dir_segmentation_file_corrected):
+    #       os.makedirs(output_dir_segmentation_file_corrected)
+    #   output_path = os.path.join(output_dir_segmentation_file_corrected, f'Slicerio_corrected_segmentation_{output_file_pt_id_instanceUid}.seg.nrrd')
 
-      except AssertionError as e:  # TODO : check for segment index also
-          # # Correct segmentation labels and names. Not that this requires pynnrd directly.
-          print('Correcting segmentation labels and names for case {}'.format(self.currentCase))
-          print(e)
-          print('Segmentation name {} to label value {}'.format(extracted_header['Segment0_Name'], extracted_header['Segment0_LabelValue']))
-          header['Segment0_LabelValue'] = 1
-          header['Segment0_Name'] = ich_name
-          print('Segmentation name {} to label value {}'.format(extracted_header['Segment1_Name'], extracted_header['Segment1_LabelValue']))
-          header['Segment1_LabelValue'] = 2
-          header['Segment1_Name'] = ivh_name
-          print('Segmentation name {} to label value {}'.format(extracted_header['Segment2_Name'], extracted_header['Segment2_LabelValue']))
-          header['Segment2_LabelValue'] = 3
-          header['Segment2_Name'] = phe_name
-          nrrd.write(output_path, extracted_voxels, extracted_header)
-          print(f'Corrected: changed the  segmentation labels and names matches for case {ID}')
+    #   try:
+    #       print('-' * 20)
+    #       print('*' * 20)
+    #       print('Segment0')
+    #       print(extracted_header['Segment0_LabelValue'])
+    #       print(extracted_header['Segment0_Name'])
+    #       print('*' * 20)
+    #       print('Segment1')
+    #       print(extracted_header['Segment1_LabelValue'])
+    #       print(extracted_header['Segment1_Name'])
+    #       print('*' * 20)
+    #       print('Segment2')
+    #       print(extracted_header['Segment2_LabelValue'])
+    #       print(extracted_header['Segment2_Name'])
+
+    #       assert extracted_header['Segment0_LabelValue'] == 1
+    #       assert extracted_header['Segment0_Name'] == ich_name
+    #       assert extracted_header['Segment1_LabelValue'] == 2
+    #       assert extracted_header['Segment1_Name'] == ivh_name
+    #       assert extracted_header['Segment2_LabelValue'] == 3
+    #       assert extracted_header['Segment2_Name'] == phe_name
+    #       print('-' * 20)
+    #       nrrd.write(output_path, extracted_voxels, extracted_header)
+    #       print(f'PASSED: Match segmentation labels and names for case {self.currentCase}')
 
 
-    def check_for_outlier_labels(self):
-      # Create a label map from the segmentation
-      # Get the volume node and segmentation node
-      volumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
-      segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
 
-      volumeArray = slicer.util.arrayFromVolume(self.VolumeNode)
+    #   except AssertionError as e:  # TODO : check for segment index also
+    #       # # Correct segmentation labels and names. Not that this requires pynnrd directly.
+    #       print('Correcting segmentation labels and names for case {}'.format(self.currentCase))
+    #       print(e)
+    #       print('Segmentation name {} to label value {}'.format(extracted_header['Segment0_Name'], extracted_header['Segment0_LabelValue']))
+    #       header['Segment0_LabelValue'] = 1
+    #       header['Segment0_Name'] = ich_name
+    #       print('Segmentation name {} to label value {}'.format(extracted_header['Segment1_Name'], extracted_header['Segment1_LabelValue']))
+    #       header['Segment1_LabelValue'] = 2
+    #       header['Segment1_Name'] = ivh_name
+    #       print('Segmentation name {} to label value {}'.format(extracted_header['Segment2_Name'], extracted_header['Segment2_LabelValue']))
+    #       header['Segment2_LabelValue'] = 3
+    #       header['Segment2_Name'] = phe_name
+    #       nrrd.write(output_path, extracted_voxels, extracted_header)
+    #       print(f'Corrected: changed the  segmentation labels and names matches for case {ID}')
 
-      # Loop through each segment
-      segmentIDs = segmentationNode.GetSegmentation().GetSegmentIDs()
-      for segmentID in segmentIDs:
-          # Export the current segment to a new labelmap
-          labelMapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
-          slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(segmentationNode, [segmentID],
-                                                                            labelMapVolumeNode, self.VolumeNode)
-          labelArray = slicer.util.arrayFromVolume(labelMapVolumeNode)
-          print(segmentID)
-          # Check and correct the values
-          array_range = labelArray[(volumeArray < self.OUTLIER_THRESHOLD_LB) | (volumeArray > self.OUTLIER_THRESHOLD_UB)]
-          if array_range.any():
-              print('Voxels to correct')
-              labelArray[(volumeArray < self.OUTLIER_THRESHOLD_LB) | (volumeArray > self.OUTLIER_THRESHOLD_UB)] = 0
-              slicer.util.updateVolumeFromArray(labelMapVolumeNode, labelArray)
 
-              # Clear the original segment
-              segmentationNode.GetSegmentation().RemoveSegment(segmentID)
+    # def check_for_outlier_labels(self):
+    #   # Create a label map from the segmentation
+    #   # Get the volume node and segmentation node
+    #   volumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
+    #   segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+    #   segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
 
-              # Import the corrected labelmap back to this segment
-              slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelMapVolumeNode,
-                                                                                    segmentationNode)
-          else:
-              print('No correction needed')
-          # Cleanup this temporary node
-          slicer.mrmlScene.RemoveNode(labelMapVolumeNode.GetDisplayNode().GetColorNode())
-          slicer.mrmlScene.RemoveNode(labelMapVolumeNode)
-          # Make sure the segmentation node matches the reference volume geometry
-          self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+    #   volumeArray = slicer.util.arrayFromVolume(self.VolumeNode)
+
+    #   # Loop through each segment
+    #   segmentIDs = segmentationNode.GetSegmentation().GetSegmentIDs()
+    #   for segmentID in segmentIDs:
+    #       # Export the current segment to a new labelmap
+    #       labelMapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
+    #       slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(segmentationNode, [segmentID],
+    #                                                                         labelMapVolumeNode, self.VolumeNode)
+    #       labelArray = slicer.util.arrayFromVolume(labelMapVolumeNode)
+    #       print(segmentID)
+    #       # Check and correct the values
+    #       array_range = labelArray[(volumeArray < self.OUTLIER_THRESHOLD_LB) | (volumeArray > self.OUTLIER_THRESHOLD_UB)]
+    #       if array_range.any():
+    #           print('Voxels to correct')
+    #           labelArray[(volumeArray < self.OUTLIER_THRESHOLD_LB) | (volumeArray > self.OUTLIER_THRESHOLD_UB)] = 0
+    #           slicer.util.updateVolumeFromArray(labelMapVolumeNode, labelArray)
+
+    #           # Clear the original segment
+    #           segmentationNode.GetSegmentation().RemoveSegment(segmentID)
+
+    #           # Import the corrected labelmap back to this segment
+    #           slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelMapVolumeNode,
+    #                                                                                 segmentationNode)
+    #       else:
+    #           print('No correction needed')
+    #       # Cleanup this temporary node
+    #       slicer.mrmlScene.RemoveNode(labelMapVolumeNode.GetDisplayNode().GetColorNode())
+    #       slicer.mrmlScene.RemoveNode(labelMapVolumeNode)
+    #       # Make sure the segmentation node matches the reference volume geometry
+    #       self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
 
     def save_statistics(self):
       volumeNode=slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
