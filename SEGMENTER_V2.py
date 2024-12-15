@@ -457,10 +457,19 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.VOLUME_FILE_TYPE}'))
 
       print(os.path.basename(self.CasesPaths[0]))
+
       try:
           self.Cases = sorted([re.findall(self.VOL_REGEX_PATTERN,os.path.split(i)[-1])[0] for i in self.CasesPaths])
       except IndexError:
-          print('issue with regex')
+          print('issue with regex, verify patterns below')
+          cases_basename = [os.path.basename(i) for i in self.CasesPaths]
+          print(f'cases_basename: {cases_basename}')
+          for i in cases_basename:
+             match = re.findall(self.VOL_REGEX_PATTERN, i)
+             if match:
+               print(match[0])
+             else:
+                print('No match')
 
       self.update_UI_case_list()
 
