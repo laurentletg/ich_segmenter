@@ -129,21 +129,21 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
        self.segmenter.ClearPHESegment()
        self.close()
 
-class SlicerCompare2exams(ScriptedLoadableModule):
+class SEGMENTER_V2(ScriptedLoadableModule):
   """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "SlicerCompare2exams"  # TODO: make this more human readable by adding spaces
+    self.parent.title = "SEGMENTER_V2"  # TODO: make this more human readable by adding spaces
     self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
     self.parent.dependencies = []  # TODO: add here list of module names that this module requires
     self.parent.contributors = ["Delphine Pilon, An Ni Wu, Emmanuel Montagnon, Laurent Letourneau-Guillon"]  # TODO: replace with "Firstname Lastname (Organization)"
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
 This is an example of scripted loadable module bundled in an extension.
-See more information in <a href="https://github.com/organization/projectname#SlicerCompare2exams">module documentation</a>.
+See more information in <a href="https://github.com/organization/projectname#SEGMENTER_V2">module documentation</a>.
 """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
@@ -184,7 +184,7 @@ class Timer():
                 self.flag = False
 
 
-class SlicerCompare2examsWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """Uses ScriptedLoadableModuleWidget base class, available at:
     https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
     """
@@ -230,7 +230,7 @@ class SlicerCompare2examsWidget(ScriptedLoadableModuleWidget, VTKObservationMixi
 
         # Load widget from .ui file (created by Qt Designer).
         # Additional widgets can be instantiated manually and added to self.layout.
-        uiWidget = slicer.util.loadUI(self.resourcePath('UI/ICH_SlicerCompare2exams.ui'))
+        uiWidget = slicer.util.loadUI(self.resourcePath('UI/ICH_SEGMENTER_V2.ui'))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -241,7 +241,7 @@ class SlicerCompare2examsWidget(ScriptedLoadableModuleWidget, VTKObservationMixi
 
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
-        self.logic = SlicerCompare2examsLogic()
+        self.logic = SEGMENTER_V2Logic()
 
 
         # CONFIG - could be removed
@@ -1621,10 +1621,10 @@ class SlicerCompare2examsWidget(ScriptedLoadableModuleWidget, VTKObservationMixi
 
 
 
-class SlicerCompare2examsLogic(ScriptedLoadableModuleLogic):
+class SEGMENTER_V2Logic(ScriptedLoadableModuleLogic):
     pass
 
-class SlicerCompare2examsTest(ScriptedLoadableModuleTest):
+class SEGMENTER_V2Test(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
   Uses ScriptedLoadableModuleTest base class, available at:
@@ -1640,9 +1640,9 @@ class SlicerCompare2examsTest(ScriptedLoadableModuleTest):
     """Run as few or as many tests as needed here.
     """
     self.setUp()
-    self.test_SlicerCompare2exams1()
+    self.test_SEGMENTER_V21()
 
-  def test_SlicerCompare2exams1(self):
+  def test_SEGMENTER_V21(self):
     """ Ideally you should have several levels of tests.  At the lowest level
     tests should exercise the functionality of the logic with different inputs
     (both valid and invalid).  At higher levels your tests should emulate the
