@@ -1,25 +1,20 @@
-default_volume_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/Cleaned data Aloys 2023_12_25/all/nrrd/volumes'
+default_volume_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2024_07_getting_all_local_segmentation_data/output/premium_marie_chum/premium_chum_marie_data_cleaned/vols/baseline'
 volume_extension: "*.nrrd"
-regex_format_volume_load: 'Volume_(ID_[a-zA-Z0-9]+)*'
-regex_format_volume_save: 'Volume_(ID_[a-zA-Z0-9]+)*'
+regex_format_volume_load: '(^\\d+.1.*).nrrd$'
+regex_format_volume_save: '(^\\d+.1.*).nrrd$'
 
-default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/Cleaned data Aloys 2023_12_25/all/nrrd/labels/uint8_correction'
+default_segmentation_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2024_07_getting_all_local_segmentation_data/output/premium_marie_chum/premium_chum_marie_data_cleaned/segms/baseline'
 segmentation_extension:  "*.seg.nrrd"
-regex_format_segmentation_load:  '(ID_[a-zA-Z0-9]+)_LLG_2'
+regex_format_segmentation_load:  '.*'
 # regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
 
-annotator_name : 'LLG_2025_02'
+annotator_name : 'LLG_premium_review_marie_chum'
 annotator_degree : 4 # 0 is default and doest not contain anything,
 revision_step : 3 # 0 is default and doest not contain anything,
-
 
 KEYBOARD_SHORTCUTS:
   - method: "keyboard_toggle_fill"
     shortcut: "e"
-
-
-# Review mode does not load new empty segments but just the previously annotated file, saves on Next and automatically load segmentaiton
-REVIEW_MODE: True 
 
 
 OUTLIER_THRESHOLD:

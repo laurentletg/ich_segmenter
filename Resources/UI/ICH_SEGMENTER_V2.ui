@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>952</width>
-    <height>1911</height>
+    <height>1769</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -278,6 +278,13 @@
              </property>
              <property name="checkable">
               <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="checkBoxReview">
+             <property name="text">
+              <string>Review mode</string>
              </property>
             </widget>
            </item>

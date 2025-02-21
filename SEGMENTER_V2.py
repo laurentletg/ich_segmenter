@@ -213,6 +213,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         with open(CONFIG_FILE_PATH, 'r', encoding = 'utf-8') as file:
             self.config_yaml = yaml.safe_load(file)
         print("DEBUG configuration values for labels.")
+        print(self.config_yaml["REVIEW_MODE"])
         for label in self.config_yaml["labels"]:
             print(20*"-")
             print(label)
@@ -305,6 +306,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.annotator_name = self.ui.Annotator_name.text
         self.annotator_degree = self.ui.AnnotatorDegree.currentText
         self.revision_step = self.ui.RevisionStep.currentText
+        
+        # Review mode
+        self.ui.checkBoxReview.setChecked(self.config_yaml['REVIEW_MODE'])
 
         # KEYBOARD SHORTCUTS
         keyboard_shortcuts = []
@@ -457,8 +461,22 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{self.VOLUME_FILE_TYPE}'))
 
       print(os.path.basename(self.CasesPaths[0]))
+      print(f'regex pattern: {self.VOL_REGEX_PATTERN}')
+      
+      cases_basename = [os.path.basename(i) for i in self.CasesPaths]
+      print(f'cases_basename: {cases_basename}')
+      for i in cases_basename:
+        match = re.findall(self.VOL_REGEX_PATTERN, i)
+        if match:
+            print(match[0])
+        else:
+            print('No match')
+
+      
       try:
-          self.Cases = sorted([re.findall(self.VOL_REGEX_PATTERN,os.path.split(i)[-1])[0] for i in self.CasesPaths])
+          self.Cases = sorted([re.findall(self.VOL_REGEX_PATTERN,os.path.basename(i))[0] for i in self.CasesPaths])
+          print(f'found {len(self.Cases)} cases')
+          print(f'{self.Cases}')
       except IndexError:
           print('issue with regex')
 
@@ -517,6 +535,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def loadPatient(self):
       timer_index = 0
+      
       self.timers = []
       for label in self.config_yaml["labels"]:
           self.timers.append(Timer(number = timer_index))
@@ -544,9 +563,16 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Center image
       slicer.util.setSliceViewerLayers(background=self.VolumeNode, fit=True)
-
-      self.newSegmentation()
-      self.subjectHierarchy()
+      
+      
+      if not self.config_yaml['REVIEW_MODE']:
+        self.newSegmentation()
+        self.subjectHierarchy()
+        
+      
+      elif self.config_yaml['REVIEW_MODE']:
+          self.load_mask_v2()
+          self.toggleStartTimerButton()
 
     # Getter method to get the segmentation node name    - Not sure if this is really useful here.
     @property
@@ -575,6 +601,9 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.resetTimer()
       self.uncheckAllBoxes()
       self.clearTexts()
+      
+      if self.config_yaml['REVIEW_MODE']:
+          self.onSaveSegmentationButton()
 
       # ----- ANW Modification ----- : Since index starts at 0, we need to do len(cases)-1 (instead of len(cases)+1).
       # Ex. if we have 10 cases, then len(case)=10 and index goes from 0-9,
@@ -1046,7 +1075,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.save_node_with_isfile_check_qt_msg_box(self.outputSegmFile, self.segmentationNode)
 
           # reloading the .seg.nrrd file and check if the label name : value match
-          self.check_match_label_name_value()
+          # self.check_match_label_name_value()
 
       # If annotator_name empty or timer not started.
       else:
@@ -1097,19 +1126,21 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
     def load_mask_v2(self):
-      # Get list of prediction names
-      msg_warning_delete_segm_node =qt.QMessageBox() # Typo correction
-      msg_warning_delete_segm_node.setText('This will delete the current segmentation. Do you want to continue?')
-      msg_warning_delete_segm_node.setIcon(qt.QMessageBox.Warning)
-      msg_warning_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-      # if clikc ok, then delete the current segmentatio
-      msg_warning_delete_segm_node.setDefaultButton(qt.QMessageBox.Cancel)
-      response = msg_warning_delete_segm_node.exec() # calls remove node if ok is clicked
-      if response == qt.QMessageBox.Ok:
-          self.msg_warnig_delete_segm_node_clicked()
+      
+      if not self.config_yaml['REVIEW_MODE']:
+        # Get list of prediction names
+        msg_warning_delete_segm_node =qt.QMessageBox() # Typo correction
+        msg_warning_delete_segm_node.setText('This will delete the current segmentation. Do you want to continue?')
+        msg_warning_delete_segm_node.setIcon(qt.QMessageBox.Warning)
+        msg_warning_delete_segm_node.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+        # if clikc ok, then delete the current segmentatio
+        msg_warning_delete_segm_node.setDefaultButton(qt.QMessageBox.Cancel)
+        response = msg_warning_delete_segm_node.exec() # calls remove node if ok is clicked
+        if response == qt.QMessageBox.Ok:
+            self.msg_warnig_delete_segm_node_clicked()
 
-      else:
-          return
+        else:
+            return
 
       try:
             self.predictions_names = sorted([re.findall(self.SEGM_REGEX_PATTERN,os.path.split(i)[-1]) for i in self.predictions_paths])
@@ -1156,39 +1187,40 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
     def convert_nifti_header_segment(self):
+        if 'nii' in self.config_yaml['segmentation_extension']:
+          # Check if the first segment starts with Segment_1 (e.g. loaded from nnunet).
+          # If so change the name and colors of the segments to match the ones in the config file
+          first_segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(0).GetName()
+          print(f'first_segment_name :: {first_segment_name}')
+          if first_segment_name.startswith("Segment_"):
+              # iterate through all segments and rename them
 
-        # Check if the first segment starts with Segment_1 (e.g. loaded from nnunet).
-        # If so change the name and colors of the segments to match the ones in the config file
-        first_segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(0).GetName()
-        print(f'first_segment_name :: {first_segment_name}')
-        if first_segment_name.startswith("Segment_"):
-            # iterate through all segments and rename them
-
-            for i in range(self.segmentationNode.GetSegmentation().GetNumberOfSegments()):
-                segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(i).GetName()
-                print(f' src segment_name :: {segment_name}')
-                for label in self.config_yaml["labels"]:
-                    if label["value"] == int(segment_name.split("_")[-1]):
-                        self.segmentationNode.GetSegmentation().GetNthSegment(i).SetName(label['name'])
-                        # set color
-                        self.segmentationNode.GetSegmentation().GetNthSegment(i).SetColor(label["color_r"] / 255,
-                                                                                          label["color_g"] / 255,
-                                                                                          label["color_b"] / 255)
-
-        self.add_missing_nifti_segment()
+              for i in range(self.segmentationNode.GetSegmentation().GetNumberOfSegments()):
+                  segment_name = self.segmentationNode.GetSegmentation().GetNthSegment(i).GetName()
+                  print(f' src segment_name :: {segment_name}')
+                  for label in self.config_yaml["labels"]:
+                      if label["value"] == int(segment_name.split("_")[-1]):
+                          self.segmentationNode.GetSegmentation().GetNthSegment(i).SetName(label['name'])
+                          # set color
+                          self.segmentationNode.GetSegmentation().GetNthSegment(i).SetColor(label["color_r"] / 255,
+                                                                                            label["color_g"] / 255,
+                                                                                            label["color_b"] / 255)
+                          
+          self.add_missing_nifti_segment()
 
     def add_missing_nifti_segment(self):
-        for label in self.config_yaml['labels']:
-            name = label['name']
-            segment_names = [self.segmentationNode.GetSegmentation().GetNthSegment(node).GetName() for node in
-                             range(self.segmentationNode.GetSegmentation().GetNumberOfSegments())]
-            if not name in segment_names:
-                self.segmentationNode.GetSegmentation().AddEmptySegment(name)
-                segmentid = self.segmentationNode.GetSegmentation().GetSegmentIdBySegmentName(name)
-                segment = self.segmentationNode.GetSegmentation().GetSegment(segmentid)
-                segment.SetColor(label["color_r"] / 255,
-                                 label["color_g"] / 255,
-                                 label["color_b"] / 255)
+        if 'nii' in self.config_yaml['segmentation_extension']:
+          for label in self.config_yaml['labels']:
+              name = label['name']
+              segment_names = [self.segmentationNode.GetSegmentation().GetNthSegment(node).GetName() for node in
+                              range(self.segmentationNode.GetSegmentation().GetNumberOfSegments())]
+              if not name in segment_names:
+                  self.segmentationNode.GetSegmentation().AddEmptySegment(name)
+                  segmentid = self.segmentationNode.GetSegmentation().GetSegmentIdBySegmentName(name)
+                  segment = self.segmentationNode.GetSegmentation().GetSegment(segmentid)
+                  segment.SetColor(label["color_r"] / 255,
+                                  label["color_g"] / 255,
+                                  label["color_b"] / 255)
 
 
     def update_current_case_paths_by_segmented_volumes(self):
@@ -1378,7 +1410,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print('-'*20)
       print(f'self.currentCase::{self.currentCase}')
       print(f'self.outputSegmFile ::{self.outputSegmFile}')
-      segmentation_info = slicerio.read_segmentation(self.outputSegmFile)
+      # segmentation_info = slicerio.read_segmentation(self.outputSegmFile)
       print('-' * 20)
       print('Segmentation info :')
       print(segmentation_info)

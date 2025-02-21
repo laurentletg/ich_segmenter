@@ -1,25 +1,20 @@
-default_volume_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/Cleaned data Aloys 2023_12_25/all/nrrd/volumes'
+default_volume_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/A_SEGMENTER_without_duplicates_from_malo_delphine_new_volumes_without_duplicates/volumes'
 volume_extension: "*.nrrd"
-regex_format_volume_load: 'Volume_(ID_[a-zA-Z0-9]+)*'
-regex_format_volume_save: 'Volume_(ID_[a-zA-Z0-9]+)*'
+regex_format_volume_load: 'Volume_pt_id_(ID_[a-zA-Z0-9]+)*'
+regex_format_volume_save: "Volume_pt_id_(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*"
 
-default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/Cleaned data Aloys 2023_12_25/all/nrrd/labels/uint8_correction'
-segmentation_extension:  "*.seg.nrrd"
-regex_format_segmentation_load:  '(ID_[a-zA-Z0-9]+)_LLG_2'
+default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/A_SEGMENTER_without_duplicates_from_malo_delphine_new_volumes_without_duplicates/New_batch_10012024_BE_multipred_nii'
+segmentation_extension:  "*.nii.gz"
+regex_format_segmentation_load:  'Volume_pt_id_(ID_[a-zA-Z0-9]+)*'
 # regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
 
-annotator_name : 'LLG_2025_02'
+annotator_name : 'LLG'
 annotator_degree : 4 # 0 is default and doest not contain anything,
 revision_step : 3 # 0 is default and doest not contain anything,
-
 
 KEYBOARD_SHORTCUTS:
   - method: "keyboard_toggle_fill"
     shortcut: "e"
-
-
-# Review mode does not load new empty segments but just the previously annotated file, saves on Next and automatically load segmentaiton
-REVIEW_MODE: True 
 
 
 OUTLIER_THRESHOLD:
