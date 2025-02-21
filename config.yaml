@@ -15,7 +15,6 @@ revision_step : 3 # 0 is default and doest not contain anything,
 
 KEYBOARD_SHORTCUTS:
   - method: "keyboard_toggle_fill"
-    shortcut: "e"
 
 
 # Review mode does not load new empty segments but just the previously annotated file, saves on Next and automatically load segmentaiton

@@ -1013,6 +1013,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Get the segmentation node (the current one)
       self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
 
+
       #### SAVING CSV TIME #####
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None:
