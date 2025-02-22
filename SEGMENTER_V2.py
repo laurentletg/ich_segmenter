@@ -646,8 +646,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
 
     def newSegment(self, segment_name=None):
-
-      self.segment_name = f"{self.currentCase}_{segment_name}"
+      if self.config_yaml['SEGMENT_NAME_WITH_ID']:
+        self.segment_name = f"{self.currentCase}_{segment_name}"
+      else:
+        self.segment_name = segment_name
+        
       srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
       self.srcSegmentation = srcNode.GetSegmentation()
 
@@ -1283,7 +1286,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       label_name = label["name"]
       try:
-        segment_name = f"{self.currentCase}_{label_name}"
+        if self.config_yaml['SEGMENT_NAME_WITH_ID']:
+              segment_name = f"{self.currentCase}_{label_name}"
+        else:
+              segment_name = label_name
+
         self.onPushButton_select_label(segment_name, label["lower_bound_HU"], label["upper_bound_HU"])
       except:
         pass
