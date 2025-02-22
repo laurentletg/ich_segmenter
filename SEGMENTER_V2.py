@@ -1287,7 +1287,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       try:
         if self.config_yaml['SEGMENT_NAME_WITH_ID']:
               segment_name = f"{self.currentCase}_{label_name}"
-        else:
+        elif not self.config_yaml['SEGMENT_NAME_WITH_ID']:
               segment_name = label_name
 
         self.onPushButton_select_label(segment_name, label["lower_bound_HU"], label["upper_bound_HU"])
