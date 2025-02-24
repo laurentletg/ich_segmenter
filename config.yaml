@@ -1,29 +1,34 @@
-default_volume_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/backup_old_versions/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/Delphine_annotations_to_review/volume'
+default_volume_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2024_07_getting_all_local_segmentation_data/output/Ahmad_GT_baseline_CT_external_validation/vols_gt/baseline'
 volume_extension: "*.nrrd"
-regex_format_volume_load: 'Volume_pt_id_(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)'
-regex_format_volume_save: "Volume_pt_id_(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)"
+# regex_format_volume_load: '(\d+_\d+)_.*'
+# regex_format_volume_load: '([0-9]+_[0-9]+)_.*'
+regex_format_volume_load: '([0-9]+_[0-9]+).*'
+regex_format_volume_save: '([0-9]+_[0-9]+).*'
 
-default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/backup_old_versions/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/Delphine_annotations_to_review/volume/Labels_ANW_1'
+default_segmentation_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/Mac/Downloads/test_sanitization_segment_names/new seg'
 segmentation_extension:  "*.seg.nrrd"
-regex_format_segmentation_load:  '(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+).*'
-# regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
+regex_format_segmentation_load:  '([0-9]+_[0-9]+).*'
+# regex_format_volume_save: '([0-9]+_[0-9]+).*'
 
-annotator_name : 'LLG_2025_02'
-annotator_degree : 2 # 0 is default and doest not contain anything,
-revision_step : 2 # 0 is default and doest not contain anything,
+annotator_name : 'LLG_Ahmad'
+annotator_degree : 4 # 0 is default and doest not contain anything,
+revision_step : 3 # 0 is default and doest not contain anything,
 
 
 KEYBOARD_SHORTCUTS:
   - method: "keyboard_toggle_fill"
 
 
+# Load new segments when loading patient (useful for adding new segment to previously segmented cases)
+LOAD_NEW_SEGMENTS: True
+
 # Review mode does not load new empty segments but just the previously annotated file, saves on Next and automatically load segmentaiton
+# Note must also set LOAD_NEW_SEGMENTS to False.
 REVIEW_MODE: True 
 
 
 # use id in segment name
-SEGMENT_NAME_WITH_ID: True
-
+SEGMENT_NAME_WITH_ID: False
 
 
 OUTLIER_THRESHOLD:

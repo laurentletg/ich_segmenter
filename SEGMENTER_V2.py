@@ -564,11 +564,14 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Center image
       slicer.util.setSliceViewerLayers(background=self.VolumeNode, fit=True)
       
-      
-      if not self.config_yaml['REVIEW_MODE']:
+      if self.config_yaml['LOAD_NEW_SEGMENTS']:
         self.newSegmentation()
         self.subjectHierarchy()
-        
+      
+      # if not self.config_yaml['REVIEW_MODE']:
+      #   self.newSegmentation()
+      #   self.subjectHierarchy()
+            
       
       elif self.config_yaml['REVIEW_MODE']:
           self.load_mask_v2()
@@ -642,7 +645,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
 
         first_label_name = self.config_yaml["labels"][0]["name"]
-        first_label_segment_name = f"{self.currentCase}_{first_label_name}"
+        if self.config_yaml['SEGMENT_NAME_WITH_ID']:
+            first_label_segment_name = f"{self.currentCase}_{first_label_name}"
+        else:
+            first_label_segment_name = first_label_name
+
         self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
 
     def newSegment(self, segment_name=None):
