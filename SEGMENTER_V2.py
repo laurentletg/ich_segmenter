@@ -1232,12 +1232,15 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         print(len(segmentations))
         print(self.SEGM_REGEX_PATTERN)
         print(os.path.basename(segmentations[0]))
+        
         segmented_IDs = [re.findall(self.SEGM_REGEX_PATTERN, os.path.basename(segmentation))[0] for segmentation in
                        segmentations]
 
         self.ui.SlicerDirectoryListView.clear()
         for case in self.CasesPaths:
-          case_id = re.findall(self.VOL_REGEX_PATTERN, case)[0]
+          print(f'case :: {case}')
+          case_id = re.findall(self.VOL_REGEX_PATTERN, os.path.basename(case))[0]
+          print(f'case_id :: {case_id}')
           item = qt.QListWidgetItem(case_id)
           if not case_id in segmented_IDs:
               item.setForeground(qt.QColor('red'))
