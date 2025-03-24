@@ -1,18 +1,17 @@
-default_volume_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2025_03_24 FINAL DATASET REVIEW RSNA/RSNA FINAL/FINAL_FINAL_NRRD_POST_QC_for_Guillaume/vols'
+default_volume_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2024_07_getting_all_local_segmentation_data/output/Ahmad_GT_baseline_CT_external_validation/vols_gt/baseline'
 volume_extension: "*.nrrd"
+# regex_format_volume_load: '(\d+_\d+)_.*'
+regex_format_volume_load: '(ID_[0-9a-zA-Z]+).nii.gz'
+regex_format_volume_save: '(ID_[0-9a-zA-Z]+).nii.gz'
 
-regex_format_volume_load : '(.*).nrrd'
-regex_format_volume_save: '(.*).nrrd'
-
-default_segmentation_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2025_03_24 FINAL DATASET REVIEW RSNA/RSNA FINAL/FINAL_FINAL_NRRD_POST_QC_for_Guillaume/masks'
+default_segmentation_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2024_07_getting_all_local_segmentation_data/output/2025_03_baseline_charles_luca_ahmad_reviewed_by_an_ni/segms/ANW_0'
 segmentation_extension:  "*.seg.nrrd"
-regex_format_segmentation_load: '(.*).seg.nrrd'
-#regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
+regex_format_segmentation_load:  '(ID_[0-9a-zA-Z]+)_\D+_.*'
+# regex_format_volume_save: '([0-9]+_[0-9]+).*'
 
-# Default information regarding the annotator's name, degree and revision step
-annotator_name : 'An_Ni_Wu_csv_test'
-annotator_degree : 2 # 0 is default and doest not contain anything,
-revision_step : 1 # 0 is default and doest not contain anything,
+annotator_name : 'LLG_csvs_real'
+annotator_degree : 4 # 0 is default and doest not contain anything,
+revision_step : 2 # 0 is default and doest not contain anything,
 
 
 KEYBOARD_SHORTCUTS:
@@ -24,7 +23,7 @@ LOAD_NEW_SEGMENTS: True
 
 # Review mode does not load new empty segments but just the previously annotated file, saves on Next and automatically load segmentaiton
 # Note must also set LOAD_NEW_SEGMENTS to False.
-REVIEW_MODE: True
+REVIEW_MODE: True 
 
 
 # use id in segment name
@@ -112,4 +111,4 @@ labels: # !!!make sure that PHE and ICH have no gap between bounds!!!
 #    color_g: 255
 #    color_b: 255
 #    lower_bound_HU: 0
-#    upper_bound_HU: 33d_HU: 33
+#    upper_bound_HU: 33
