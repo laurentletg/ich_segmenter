@@ -294,7 +294,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
         self.ui.testButton.connect('clicked(bool)', self.save_statistics)
         self.ui.pushButton_check_errors_labels.connect('clicked(bool)', self.check_for_outlier_labels)
-        self.ui.pushButton_test1.connect('clicked(bool)', self.keyboard_toggle_fill)
+        self.ui.pushButton_test1.connect('clicked(bool)', self.get_dictionnary_from_fields)
         self.ui.pushButton_test2.connect('clicked(bool)', self.onpushbuttonttest2)
         self.ui.pushButton_get_line_measure.connect('clicked(bool)', self.get_line_measure)
         self.ui.pushButton_screenshot.connect('clicked(bool)', self.get_screenshot)
@@ -356,10 +356,11 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.LB_HU.setValue(self.LB_HU)
 
         ### ANW ICH TYPE/LOCATION CONNECTIONS
-        self.listichtype = [self.ui.ichtype1, self.ui.ichtype2, self.ui.ichtype3, self.ui.ichtype4, self.ui.ichtype5,
-                            self.ui.ichtype6, self.ui.ichtype7, self.ui.ichtype8, self.ui.ichtype9]
-        self.listichloc = [self.ui.ichloc1, self.ui.ichloc2, self.ui.ichloc3, self.ui.ichloc4, self.ui.ichloc5,
-                           self.ui.ichloc6, self.ui.ichloc7, self.ui.ichloc8, self.ui.ichloc9, self.ui.ichloc10]
+        self.listichtype = [self.ui.ichtype_trauma, self.ui.ichtype_spontaneous, self.ui.ichtype_infarct, self.ui.ichtype_metal_artifacts, self.ui.ichtype_surgical_changes,
+                            self.ui.ichtype_ventricular_drain, self.ui.ichtype_motion, self.ui.ichtype_simple, self.ui.ichtype_complex]
+
+        self.listichloc = [self.ui.ichloc_lob_frontal, self.ui.ichloc_lob_parietal, self.ui.ichloc_lob_occipital, self.ui.ichloc_lob_temporal, self.ui.ichloc_deep_bganglia,
+                           self.ui.ichloc_deep_thalamus, self.ui.ichloc_deep_ic, self.ui.ichloc_deep_ext_capsule, self.ui.ichloc_cerebellum_deep, self.ui.ichloc_cerebellum_lobar, self.ui.ichloc_pons, self.ui.ichloc_pons, self.ui.ichloc_brainstem]
 
         self.listEMs = [self.ui.EM_barras_density, self.ui.EM_barras_margins, self.ui.EM_black_hole, self.ui.EM_blend,
                         self.ui.EM_fl_level, self.ui.EM_hypodensity, self.ui.EM_island, self.ui.EM_satellite, self.ui.EM_swirl]
@@ -562,15 +563,20 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Center image
       slicer.util.setSliceViewerLayers(background=self.VolumeNode, fit=True)
       
-      
-      if not self.config_yaml['REVIEW_MODE']:
+      if self.config_yaml['LOAD_NEW_SEGMENTS']:
         self.newSegmentation()
         self.subjectHierarchy()
-        
+      
+      # if not self.config_yaml['REVIEW_MODE']:
+      #   self.newSegmentation()
+      #   self.subjectHierarchy()
+            
       
       elif self.config_yaml['REVIEW_MODE']:
           self.load_mask_v2()
           self.toggleStartTimerButton()
+
+      self.load_checkbox_states()
 
     # Getter method to get the segmentation node name    - Not sure if this is really useful here.
     @property
@@ -596,12 +602,16 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onNextButton(self):
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
+      if self.config_yaml['REVIEW_MODE']:
+          if self.segmentationNode:
+              self.onSaveSegmentationButton()
+          self.save_csv()
+
       self.resetTimer()
       self.uncheckAllBoxes()
       self.clearTexts()
       
-      if self.config_yaml['REVIEW_MODE']:
-          self.onSaveSegmentationButton()
+
 
       # ----- ANW Modification ----- : Since index starts at 0, we need to do len(cases)-1 (instead of len(cases)+1).
       # Ex. if we have 10 cases, then len(case)=10 and index goes from 0-9,
@@ -640,7 +650,12 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
 
         first_label_name = self.config_yaml["labels"][0]["name"]
-        first_label_segment_name = f"{self.currentCase}_{first_label_name}"
+        
+        if self.config_yaml['SEGMENT_NAME_WITH_ID']:
+            first_label_segment_name = f"{self.currentCase}_{first_label_name}"
+        else:
+            first_label_segment_name = first_label_name
+
         self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
 
     def newSegment(self, segment_name=None):
@@ -1232,12 +1247,15 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         print(len(segmentations))
         print(self.SEGM_REGEX_PATTERN)
         print(os.path.basename(segmentations[0]))
+        
         segmented_IDs = [re.findall(self.SEGM_REGEX_PATTERN, os.path.basename(segmentation))[0] for segmentation in
                        segmentations]
 
         self.ui.SlicerDirectoryListView.clear()
         for case in self.CasesPaths:
-          case_id = re.findall(self.VOL_REGEX_PATTERN, case)[0]
+          print(f'case :: {case}')
+          case_id = re.findall(self.VOL_REGEX_PATTERN, os.path.basename(case))[0]
+          print(f'case_id :: {case_id}')
           item = qt.QListWidgetItem(case_id)
           if not case_id in segmented_IDs:
               item.setForeground(qt.QColor('red'))
@@ -1287,7 +1305,7 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       try:
         if self.config_yaml['SEGMENT_NAME_WITH_ID']:
               segment_name = f"{self.currentCase}_{label_name}"
-        else:
+        elif not self.config_yaml['SEGMENT_NAME_WITH_ID']:
               segment_name = label_name
 
         self.onPushButton_select_label(segment_name, label["lower_bound_HU"], label["upper_bound_HU"])
@@ -1643,6 +1661,140 @@ class SEGMENTER_V2Widget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             os.makedirs(output_dir)
         with open(os.path.join(self.output_dir, f'screenshot_comments_{self.currentCase}.txt'), 'w') as f:
             f.write(comments)
+
+    def get_dictionnary_from_fields(self):
+        """
+        Get the values from the fields and return a dictionary including checkbox states
+        """
+        self.dataframe_csv = {}
+        self.dataframe_csv['Annotator Name'] = self.ui.Annotator_name.text  # No parentheses
+        self.dataframe_csv['Annotator Degree'] = self.ui.AnnotatorDegree.currentText
+        self.dataframe_csv['Revision Step'] = self.ui.RevisionStep.currentText
+
+        print('Checking comment fields')
+        print(self.ui.ichtype_other.text)
+        self.dataframe_csv['ICH Type comment'] = self.ui.ichtype_other.text
+        self.dataframe_csv['EM Comments'] = self.ui.EM_comments.text
+
+        # Debug checkbox states
+        print("Debugging checkbox states:")
+
+        # Add the checkbox states for ICH Types
+        print("ICH Types:")
+        for i, checkbox in enumerate(self.listichtype, 1):
+            # print(i, checkbox)
+            key = checkbox.text
+            is_checked = checkbox.isChecked()
+            print(f"  {key}: isChecked() = {is_checked}")
+            self.dataframe_csv[key] = 1 if is_checked else 0
+
+        # Add the checkbox states for ICH Locations
+        print("ICH Locations:")
+        for i, checkbox in enumerate(self.listichloc, 1):
+            # print(i, checkbox)
+            key = checkbox.text
+            is_checked = checkbox.isChecked()
+            print(f"  {key}: isChecked() = {is_checked}")
+            self.dataframe_csv[key] = 1 if is_checked else 0
+
+        # Add the checkbox states for Expansion Markers
+        print("Expansion Markers:")
+        for i, checkbox in enumerate(self.listEMs):
+            key = checkbox.text
+            is_checked = checkbox.isChecked()
+            print(f"  {key}: isChecked() = {is_checked}")
+            self.dataframe_csv[key] = 1 if is_checked else 0
+
+        print('DATAFRAME CSV')
+        print(self.dataframe_csv)
+
+        return self.dataframe_csv
+
+    def save_csv(self):
+        """
+        Save the dictionary to a csv file
+        """
+        self.get_dictionnary_from_fields()
+        output_dir = os.path.join(self.output_dir, 'csv_annotations')
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,
+                                                   os.path.basename(self.currentCasePath))[0]
+        outputFilename = 'Annotations_{}_{}_{}.{}'.format(output_file_pt_id_instanceUid,
+                                                          self.dataframe_csv['Annotator Name'],
+                                                          self.dataframe_csv['Revision Step'],
+                                                          'csv')
+        outputFilename = os.path.join(output_dir, outputFilename)
+
+        df = pd.DataFrame(self.dataframe_csv, index=[0])
+        df.to_csv(outputFilename, index=False)
+
+    def load_checkbox_states(self):
+        """
+        Check if a CSV file for the current case already exists and load checkbox states from it
+        """
+        try:
+            output_dir = os.path.join(self.output_dir, 'csv_annotations')
+            if not os.path.exists(output_dir):
+                return False
+
+            output_file_pt_id_instanceUid = re.findall(self.VOL_REGEX_PATTERN_PT_ID_INSTUID_SAVE,
+                                                       os.path.basename(self.currentCasePath))[0]
+            annotator_name = self.ui.Annotator_name.text
+            revision_step = self.ui.RevisionStep.currentText
+
+            # Try to find a matching file for this case, annotator, and revision
+            search_pattern = f'Annotations_{output_file_pt_id_instanceUid}_{annotator_name}_{revision_step}.csv'
+            file_path = os.path.join(output_dir, search_pattern)
+
+            if os.path.exists(file_path):
+                print(f"Found existing annotation file: {file_path}")
+                df = pd.read_csv(file_path)
+
+                if len(df) == 0:
+                    print("Found file is empty, not loading any states")
+                    return False
+
+                # Load data row (always use the first row)
+                data = df.iloc[0].to_dict()
+
+                # Update text fields
+                if 'ICH Type comment' in data:
+                    self.ui.ichtype_other.setText(str(data['ICH Type comment']))
+                if 'EM Comments' in data:
+                    self.ui.EM_comments.setText(str(data['EM Comments']))
+
+                # Update ICH Types checkboxes
+                for checkbox in self.listichtype:
+                    key = checkbox.text
+                    if key in data:
+                        checkbox.setChecked(bool(data[key]))
+                        print(f"Setting {key} to {bool(data[key])}")
+
+                # Update ICH Locations checkboxes
+                for checkbox in self.listichloc:
+                    key = checkbox.text
+                    if key in data:
+                        checkbox.setChecked(bool(data[key]))
+                        print(f"Setting {key} to {bool(data[key])}")
+
+                # Update Expansion Markers checkboxes
+                for checkbox in self.listEMs:
+                    key = checkbox.text
+                    if key in data:
+                        checkbox.setChecked(bool(data[key]))
+                        print(f"Setting {key} to {bool(data[key])}")
+
+                print("Successfully loaded checkbox states from existing file")
+                return True
+            else:
+                print(f"No existing annotation file found for this case/annotator/revision")
+                return False
+        except Exception as e:
+            print(f"Error loading checkbox states: {str(e)}")
+            return False
+
 
 
 

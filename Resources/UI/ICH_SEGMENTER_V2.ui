@@ -603,7 +603,7 @@
               </size>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>2</number>
              </property>
              <widget class="QWidget" name="tab_5">
               <property name="sizePolicy">
@@ -619,63 +619,76 @@
                <item row="0" column="0">
                 <layout class="QGridLayout" name="gridLayout_2">
                  <item row="1" column="0">
-                  <widget class="QCheckBox" name="ichtype2">
+                  <widget class="QCheckBox" name="ichtype_spontaneous">
                    <property name="text">
                     <string>Spontaneous</string>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="2">
-                  <widget class="QCheckBox" name="ichtype8">
+                  <widget class="QCheckBox" name="ichtype_simple">
+                   <property name="font">
+                    <font>
+                     <weight>75</weight>
+                     <bold>true</bold>
+                    </font>
+                   </property>
                    <property name="text">
-                    <string>Neoplasm</string>
+                    <string>Simple</string>
                    </property>
                   </widget>
                  </item>
                  <item row="2" column="2">
-                  <widget class="QCheckBox" name="ichtype9">
+                  <widget class="QCheckBox" name="ichtype_complex">
+                   <property name="font">
+                    <font>
+                     <weight>75</weight>
+                     <italic>false</italic>
+                     <bold>true</bold>
+                    </font>
+                   </property>
                    <property name="text">
-                    <string>Vascular malformation</string>
+                    <string>Complex</string>
                    </property>
                   </widget>
                  </item>
                  <item row="2" column="0">
-                  <widget class="QCheckBox" name="ichtype3">
+                  <widget class="QCheckBox" name="ichtype_infarct">
                    <property name="text">
                     <string>Infarct</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="2">
-                  <widget class="QCheckBox" name="ichtype7">
+                  <widget class="QCheckBox" name="ichtype_motion">
                    <property name="text">
-                    <string>Craniotomy</string>
+                    <string>Motion</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="1">
-                  <widget class="QCheckBox" name="ichtype4">
+                  <widget class="QCheckBox" name="ichtype_metal_artifacts">
                    <property name="text">
                     <string>Metal artifacts</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="0">
-                  <widget class="QCheckBox" name="ichtype1">
+                  <widget class="QCheckBox" name="ichtype_trauma">
                    <property name="text">
                     <string>Trauma</string>
                    </property>
                   </widget>
                  </item>
                  <item row="2" column="1">
-                  <widget class="QCheckBox" name="ichtype6">
+                  <widget class="QCheckBox" name="ichtype_ventricular_drain">
                    <property name="text">
                     <string>Ventricular drain</string>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="1">
-                  <widget class="QCheckBox" name="ichtype5">
+                  <widget class="QCheckBox" name="ichtype_surgical_changes">
                    <property name="text">
                     <string>Surgical changes</string>
                    </property>
@@ -724,72 +737,89 @@
                <item row="0" column="0">
                 <layout class="QGridLayout" name="gridLayout_5">
                  <item row="1" column="0">
-                  <widget class="QCheckBox" name="ichloc2">
+                  <widget class="QCheckBox" name="ichloc_lob_parietal">
                    <property name="text">
                     <string>Lobar - Parietal</string>
                    </property>
                   </widget>
                  </item>
                  <item row="4" column="0">
-                  <widget class="QCheckBox" name="ichloc4">
+                  <widget class="QCheckBox" name="ichloc_lob_temporal">
                    <property name="text">
                     <string>Lobar - Temporal</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="0">
-                  <widget class="QCheckBox" name="ichloc1">
+                  <widget class="QCheckBox" name="ichloc_lob_frontal">
                    <property name="text">
                     <string>Lobar - Frontal</string>
                    </property>
                   </widget>
                  </item>
                  <item row="3" column="0">
-                  <widget class="QCheckBox" name="ichloc3">
+                  <widget class="QCheckBox" name="ichloc_lob_occipital">
                    <property name="text">
                     <string>Lobar - Occipital</string>
                    </property>
                   </widget>
                  </item>
                  <item row="3" column="1">
-                  <widget class="QCheckBox" name="ichloc7">
+                  <widget class="QCheckBox" name="ichloc_deep_ic">
                    <property name="text">
                     <string>Deep - Internal capsule</string>
                    </property>
                   </widget>
                  </item>
                  <item row="4" column="1">
-                  <widget class="QCheckBox" name="ichloc8">
+                  <widget class="QCheckBox" name="ichloc_deep_ext_capsule">
                    <property name="text">
                     <string>Deep - External capsule</string>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="1">
-                  <widget class="QCheckBox" name="ichloc6">
+                  <widget class="QCheckBox" name="ichloc_deep_thalamus">
                    <property name="text">
                     <string>Deep - Thalamus</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="1">
-                  <widget class="QCheckBox" name="ichloc5">
+                  <widget class="QCheckBox" name="ichloc_deep_bganglia">
                    <property name="text">
                     <string>Deep - Basal ganglia</string>
+                   </property>
+                   <property name="checked">
+                    <bool>false</bool>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="2">
-                  <widget class="QCheckBox" name="ichloc9">
+                  <widget class="QCheckBox" name="ichloc_cerebellum_deep">
                    <property name="text">
                     <string>Cerebellum - Deep</string>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="2">
-                  <widget class="QCheckBox" name="ichloc10">
+                  <widget class="QCheckBox" name="ichloc_cerebellum_lobar">
                    <property name="text">
                     <string>Cerebellum - Lobar</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="2">
+                  <widget class="QCheckBox" name="ichloc_pons">
+                   <property name="text">
+                    <string>Pons</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="2">
+                  <widget class="QCheckBox" name="ichloc_brainstem">
+                   <property name="text">
+                    <string>Other brainstem</string>
                    </property>
                   </widget>
                  </item>
@@ -819,63 +849,63 @@
                  <item row="0" column="1">
                   <widget class="QCheckBox" name="EM_swirl">
                    <property name="text">
-                    <string>Swirl</string>
+                    <string>swirl</string>
                    </property>
                   </widget>
                  </item>
                  <item row="2" column="2">
                   <widget class="QCheckBox" name="EM_fl_level">
                    <property name="text">
-                    <string>Fluid Level</string>
+                    <string>fluid</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="2">
                   <widget class="QCheckBox" name="EM_hypodensity">
                    <property name="text">
-                    <string>Hypdensity</string>
+                    <string>hypodensity</string>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="2">
                   <widget class="QCheckBox" name="EM_satellite">
                    <property name="text">
-                    <string>Satellite</string>
+                    <string>satellite</string>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="1">
                   <widget class="QCheckBox" name="EM_barras_margins">
                    <property name="text">
-                    <string>Barras margins</string>
+                    <string>barras_margins</string>
                    </property>
                   </widget>
                  </item>
                  <item row="2" column="1">
                   <widget class="QCheckBox" name="EM_blend">
                    <property name="text">
-                    <string>Blend </string>
+                    <string>blend </string>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="0">
                   <widget class="QCheckBox" name="EM_black_hole">
                    <property name="text">
-                    <string>Black Hole</string>
+                    <string>black_hole</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="0">
                   <widget class="QCheckBox" name="EM_barras_density">
                    <property name="text">
-                    <string>Barras Density </string>
+                    <string>barras_density</string>
                    </property>
                   </widget>
                  </item>
                  <item row="2" column="0">
                   <widget class="QCheckBox" name="EM_island">
                    <property name="text">
-                    <string>Island</string>
+                    <string>island</string>
                    </property>
                   </widget>
                  </item>
