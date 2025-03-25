@@ -1,23 +1,30 @@
-default_volume_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2025_03_24 FINAL DATASET REVIEW RSNA/RSNA FINAL/FINAL_FINAL_NRRD_POST_QC_for_Guillaume/vols'
-volume_extension: "*.nrrd"
 
+#*****@ AN NI : UPDATE BELOW
+default_volume_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/FINAL_FINAL_FINAL_RSNA/NRRD/FINAL_FINAL_NRRD_POST_QC_for_Guillaume/vols'
+#*****@ AN NI : SHOULD WORK AS IS
+volume_extension: "*.nrrd"
 regex_format_volume_load : '(.*).nrrd'
 regex_format_volume_save: '(.*).nrrd'
 
-default_segmentation_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2025_03_24 FINAL DATASET REVIEW RSNA/RSNA FINAL/FINAL_FINAL_NRRD_POST_QC_for_Guillaume/masks'
+#*****@ AN NI : UPDATE BELOW
+default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/FINAL_FINAL_FINAL_RSNA/NRRD/FINAL_FINAL_NRRD_POST_QC_for_Guillaume/masks'
+#*****@ AN NI : SHOULD WORK AS IS
 segmentation_extension:  "*.seg.nrrd"
 regex_format_segmentation_load: '(.*).seg.nrrd'
 #regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
 
 # Default information regarding the annotator's name, degree and revision step
+
+#*****@ AN NI : UPDATE BELOW
 annotator_name : 'An_Ni_Wu_csv_test'
 annotator_degree : 2 # 0 is default and doest not contain anything,
 revision_step : 1 # 0 is default and doest not contain anything,
 
 
+
+#*****@ AN NI : KEEP BELOW AS IS
 KEYBOARD_SHORTCUTS:
   - method: "keyboard_toggle_fill"
-
 
 # Load new segments when loading patient (useful for adding new segment to previously segmented cases)
 LOAD_NEW_SEGMENTS: True
