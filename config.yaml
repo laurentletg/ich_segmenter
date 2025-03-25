@@ -1,29 +1,34 @@
-default_volume_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/backup_old_versions/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/A_SEGMENTER_without_duplicates_from_malo_delphine_new_volumes_without_duplicates/volumes'
+default_volume_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2025_03_24 FINAL DATASET REVIEW RSNA/RSNA FINAL/FINAL_FINAL_NRRD_POST_QC_for_Guillaume/vols'
 volume_extension: "*.nrrd"
-regex_format_volume_load: 'Volume_pt_id_(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)'
-regex_format_volume_save: "Volume_pt_id_(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)"
 
-default_segmentation_directory: '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE PROJECTS/RSNA ICH IVH DATASET/4_DATA/backup_old_versions/2024_01_10_TO_REVIEW_NEW_BATCH/TO_BE_REVIEWED/A_SEGMENTER_without_duplicates_from_malo_delphine_new_volumes_without_duplicates/Output_ANW_1/segmentations'
+regex_format_volume_load : '(.*).nrrd'
+regex_format_volume_save: '(.*).nrrd'
+
+default_segmentation_directory: '/Users/laurentletourneau-guillon/Dropbox (Personal)/CHUM/RECHERCHE/2020ICHHEMATOMAS/2025_03_24 FINAL DATASET REVIEW RSNA/RSNA FINAL/FINAL_FINAL_NRRD_POST_QC_for_Guillaume/masks'
 segmentation_extension:  "*.seg.nrrd"
-regex_format_segmentation_load:  '(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+).*'
-# regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
+regex_format_segmentation_load: '(.*).seg.nrrd'
+#regex_format_volume_save: "Segmentation(ID_[a-zA-Z0-9]+_instUid_ID_[a-zA-Z0-9]+)*""
 
-annotator_name : 'LLG_2025_02'
-annotator_degree : 4 # 0 is default and doest not contain anything,
-revision_step : 3 # 0 is default and doest not contain anything,
+# Default information regarding the annotator's name, degree and revision step
+annotator_name : 'An_Ni_Wu_csv_test'
+annotator_degree : 2 # 0 is default and doest not contain anything,
+revision_step : 1 # 0 is default and doest not contain anything,
 
 
 KEYBOARD_SHORTCUTS:
   - method: "keyboard_toggle_fill"
 
 
+# Load new segments when loading patient (useful for adding new segment to previously segmented cases)
+LOAD_NEW_SEGMENTS: True
+
 # Review mode does not load new empty segments but just the previously annotated file, saves on Next and automatically load segmentaiton
-REVIEW_MODE: True 
+# Note must also set LOAD_NEW_SEGMENTS to False.
+REVIEW_MODE: True
 
 
 # use id in segment name
 SEGMENT_NAME_WITH_ID: False
-
 
 
 OUTLIER_THRESHOLD:
@@ -107,4 +112,4 @@ labels: # !!!make sure that PHE and ICH have no gap between bounds!!!
 #    color_g: 255
 #    color_b: 255
 #    lower_bound_HU: 0
-#    upper_bound_HU: 33
+#    upper_bound_HU: 33d_HU: 33
